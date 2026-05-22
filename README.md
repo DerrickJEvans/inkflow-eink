@@ -187,7 +187,13 @@ After the Pi reboots, log back in and run:
 ```bash
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-pil python3-numpy git
+```
 
+##### 💡 RAM & Disk Space Preservation (Git Sparse-Checkout)
+The official Waveshare repository is over 1.2 GB and contains heavy PDFs and code for dozens of different microcontrollers (Arduino, STM32, Pico, etc.) that you don't need. Cloning it directly will exhaust the Raspberry Pi Zero's 512MB RAM and `/tmp` space, causing it to crash.
+
+To install **only** the Python driver files we need (less than 1MB), run these commands inside your SSH session to perform a highly-efficient **sparse partial clone**:
+```bash
 # 1. Clean up any previous failed attempts
 rm -rf e-Paper
 
@@ -212,7 +218,18 @@ From your Windows PC's PowerShell, copy the `client` directory using SCP:
 ```powershell
 scp -r "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server\client" derrickjevans1@<pi-zero-ip>:/home/derrickjevans1/
 ```
-*(On the Pi Zero 2 W, `client/config.py` is pre-configured with the driver `epd4in26`, resolution `800x480`, target server IP `192.168.1.122` on port `5000`, and `INVERT_COLORS = False` to ensure correct black-on-white rendering on your 4.26" screen)*
+*(On the Pi Zero 2 W, `client/config.py` is pre-configured with the driver `epd4in26`, resolution `800x480`, target server IP `192.168.1.122` on port `5000`, and `INVERT_COLORS = False` to ensure correct black-on-white rendering).*
+
+##### 🎨 E-Ink Color Inversion Toggle (Standard vs. Dark Mode)
+Different e-ink screens interpret colors differently. If your screen renders **white text on a black background** (inverted) and you want standard **black text on a white background** (or vice versa):
+1. Open the configuration file on your Pi:
+   ```bash
+   nano ~/client/config.py
+   ```
+2. Locate `INVERT_COLORS` and set it to `True` or `False` to easily toggle modes:
+   ```python
+   INVERT_COLORS = False # Set to True for Dark Mode / False for Standard Paper-White
+   ```
 
 #### 5. Verify & Run
 SSH into the Pi Zero 2 W and run manually to test:
@@ -222,8 +239,15 @@ python3 client.py
 ```
 *The client will connect to your Pi 5 server, auto-register as `pi_zero_4in26`, dither the image, and render it onto the physical screen!*
 
-#### 6. Register as an Automatic Boot Service
-To keep the client running indefinitely in the background and survive reboots:
+#### 6. Register as an Automatic Boot Service (Persistent Daemon)
+To keep the client running indefinitely in the background and survive reboots, configure it as a **Systemd background service**.
+
+##### 🌟 Why a Systemd Service is Critical:
+1. **Auto-Start on Power-Up:** Starts the Python client automatically every time the Pi Zero 2 W boots up.
+2. **Network Resilience:** The service waits for the Wi-Fi connection to become active (`network-online.target`) before launching, preventing connection errors on boot.
+3. **Auto-Recovery:** If the Pi Zero loses Wi-Fi connection, or the client crashes for any reason, Systemd will automatically wait 15 seconds (`RestartSec=15`) and restart the script in a clean loop.
+
+To set up the service:
 ```bash
 # Create systemd service definition
 sudo nano /etc/systemd/system/trmnl-client.service
