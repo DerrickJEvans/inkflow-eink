@@ -25,3 +25,8 @@ DISPLAY_TYPE = 'waveshare'
 # E.g. 'epd7in5_V2' (7.5" Version 2), 'epd4in2' (4.2"), 'epd4in26' (4.26" 800x480)
 WAVESHARE_MODEL = 'epd4in26'
 
+# Color Inversion
+# Set to True if your screen shows white text on a black background (inverted/dark mode)
+# Set to False for standard black text on a white paper background
+INVERT_COLORS = False
+

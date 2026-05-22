@@ -212,7 +212,7 @@ From your Windows PC's PowerShell, copy the `client` directory using SCP:
 ```powershell
 scp -r "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server\client" derrickjevans1@<pi-zero-ip>:/home/derrickjevans1/
 ```
-*(On the Pi Zero 2 W, `client/config.py` is pre-configured with the driver `epd4in26`, resolution `800x480`, and target server IP `192.168.1.122` on port `5000`)*
+*(On the Pi Zero 2 W, `client/config.py` is pre-configured with the driver `epd4in26`, resolution `800x480`, target server IP `192.168.1.122` on port `5000`, and `INVERT_COLORS = False` to ensure correct black-on-white rendering on your 4.26" screen)*
 
 #### 5. Verify & Run
 SSH into the Pi Zero 2 W and run manually to test:

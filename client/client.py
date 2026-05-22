@@ -57,7 +57,12 @@ def display_waveshare(img):
         
         # Convert image to grayscale, resize, and convert to 1-bit monochrome
         processed_img = img.convert("L").resize((epd.width, epd.height))
-        processed_img = ImageOps.invert(processed_img) # Waveshare libraries often expect inverted bits
+        
+        # Invert colors if configured (some Waveshare models require this, others don't)
+        if getattr(config, 'INVERT_COLORS', False):
+            print("[Hardware Display] Inverting color bits...")
+            processed_img = ImageOps.invert(processed_img)
+            
         mono_img = processed_img.convert("1")
         
         print("[Hardware Display] Writing frame buffer to display...")
