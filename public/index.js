@@ -38,6 +38,7 @@ const todoTitle = document.getElementById('todo-title');
 const todoEditorList = document.getElementById('todo-editor-list');
 const todoAddInput = document.getElementById('todo-add-input');
 const btnTodoAdd = document.getElementById('btn-todo-add');
+const tflModes = document.getElementById('tfl-modes');
 const btnSaveGlobal = document.getElementById('btn-save-global-settings');
 
 // Initialize Dashboard
@@ -99,7 +100,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       weather: parseInt(document.getElementById('edit-device-interval-weather').value) || 30,
       system: parseInt(document.getElementById('edit-device-interval-system').value) || 15,
       rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
-      notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15
+      notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
+      tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30
     };
 
     // Update locally
@@ -157,6 +159,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     serverConfig.settings.notes = {
       title: todoTitle.value || "Notice Board",
       items: getTodoListItems()
+    };
+
+    // TfL Rail Settings
+    serverConfig.settings.tfl = {
+      modes: tflModes.value || "tube,overground,dlr,elizabeth-line"
     };
 
     await saveSettings();
@@ -267,13 +274,14 @@ function selectDevice(deviceId, isNew = false) {
       width: 800,
       height: 480,
       refreshRate: 1800,
-      activePlugins: ["system", "weather", "rss", "notes"],
+      activePlugins: ["system", "weather", "rss", "notes", "tfl"],
       layoutMode: "grid",
       rotationIntervals: {
         weather: 30,
         system: 15,
         rss: 30,
-        notes: 15
+        notes: 15,
+        tfl: 30
       }
     };
   }
@@ -302,6 +310,7 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-interval-system').value = rotationIntervals.system || '';
     document.getElementById('edit-device-interval-rss').value = rotationIntervals.rss || '';
     document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
+    document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
 
     // Checkboxes
     document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
@@ -361,6 +370,10 @@ function renderGlobalSettings() {
   // Todo board
   const notes = settings.notes || { title: 'Family Notice Board', items: [] };
   todoTitle.value = notes.title;
+
+  // TfL Rail
+  const tfl = settings.tfl || { modes: 'tube,overground,dlr,elizabeth-line' };
+  tflModes.value = tfl.modes;
 
   renderTodoList(notes.items);
 }

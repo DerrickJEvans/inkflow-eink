@@ -116,6 +116,10 @@
                     <span class="text-sm col-6">📌 Notices</span>
                     <input type="number" class="col-6" id="edit-device-interval-notes" min="10" step="10" placeholder="15">
                   </div>
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">🚇 TfL Rail Status</span>
+                    <input type="number" class="col-6" id="edit-device-interval-tfl" min="10" step="10" placeholder="30">
+                  </div>
                 </div>
                 <span class="input-hint">Poll duration per widget. Client fetches next widget after this time.</span>
               </div>
@@ -138,6 +142,10 @@
                   <label class="checkbox-container">
                     <input type="checkbox" value="notes" checked>
                     <span class="checkbox-label">📌 Notices &amp; Todos</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="tfl" checked>
+                    <span class="checkbox-label">🚇 TfL Rail Status</span>
                   </label>
                 </div>
                 <span class="input-hint">Layout formats automatically (1, 2, 3, or 2x2 grid) based on selections.</span>
@@ -290,6 +298,18 @@
                   <div class="form-group">
                     <label for="rss-limit">Max Articles</label>
                     <input type="number" id="rss-limit" min="1" max="8">
+                  </div>
+                </div>
+              </div>
+
+              <!-- TfL Rail settings -->
+              <div class="accordion-item">
+                <button class="accordion-trigger" data-target="options-tfl">🚇 TfL Rail Status</button>
+                <div class="accordion-content" id="options-tfl">
+                  <div class="form-group">
+                    <label for="tfl-modes">Included Rail Modes (comma separated)</label>
+                    <input type="text" id="tfl-modes" placeholder="e.g. tube,overground,dlr,elizabeth-line">
+                    <span class="input-hint">Available modes: tube, overground, dlr, elizabeth-line, tram</span>
                   </div>
                 </div>
               </div>
