@@ -189,7 +189,7 @@ sudo apt-get update
 sudo apt-get install -y python3-pip python3-pil python3-numpy git
 
 # Install the official Waveshare Python E-Paper driver package globally
-sudo pip3 install git+https://github.com/waveshare/e-Paper.git#egg=waveshare-epd&subdirectory=RaspberryPi_JetsonNano/python --break-system-packages
+sudo pip3 install "git+https://github.com/waveshare/e-Paper.git#egg=waveshare-epd&subdirectory=RaspberryPi_JetsonNano/python" --break-system-packages
 ```
 
 #### 4. Transfer & Configure the Client Code
