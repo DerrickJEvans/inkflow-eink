@@ -188,13 +188,22 @@ After the Pi reboots, log back in and run:
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-pil python3-numpy git
 
-# 1. Shallow clone only the latest commit of the massive Waveshare repository to save RAM and disk space
-git clone --depth 1 https://github.com/waveshare/e-Paper.git
+# 1. Clean up any previous failed attempts
+rm -rf e-Paper
 
-# 2. Navigate to the Raspberry Pi Python package directory
-cd e-Paper/RaspberryPi_JetsonNano/python
+# 2. Clone the repository structure without downloading files (sparse partial clone)
+git clone --filter=blob:none --sparse https://github.com/waveshare/e-Paper.git
 
-# 3. Install the package globally on your Pi Zero 2 W
+# 3. Enter the repository directory
+cd e-Paper
+
+# 4. Tell Git to ONLY download the Raspberry Pi Python driver files
+git sparse-checkout set RaspberryPi_JetsonNano/python
+
+# 5. Navigate to the Python driver directory
+cd RaspberryPi_JetsonNano/python
+
+# 6. Install the package globally on your Pi Zero 2 W
 sudo pip3 install . --break-system-packages
 ```
 
