@@ -159,34 +159,94 @@ module.exports = {
   },
 
   renderSVG(data, width, height) {
-    const padding = 15;
-    const isSmall = width < 300;
+    const padding = 20;
+    const isFullScreen = height > 300;
     
-    // Draw Current Weather Widget
-    return `
-      <g>
-        <!-- Header -->
-        <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">🌤️ WEATHER FORECAST</text>
-        <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
-        
-        <!-- Large Current Temp & Condition -->
-        ${drawWeatherIcon(data.code, padding + 35, 75)}
-        
-        <text x="${padding + 85}" y="70" font-family="sans-serif" font-size="34" font-weight="bold" fill="black">${data.temp}${data.unit}</text>
-        <text x="${padding + 85}" y="92" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${data.condition}</text>
-        <text x="${padding}" y="122" font-family="sans-serif" font-size="11" fill="black">Humidity: <tspan font-weight="bold">${data.humidity}%</tspan>   Range: <tspan font-weight="bold">${data.low}° - ${data.high}°</tspan></text>
-        
-        <!-- 2 Day Small Forecast Section -->
-        <line x1="${padding}" y1="134" x2="${width - padding}" y2="134" stroke="black" stroke-dasharray="3,3" stroke-width="1" />
-        
-        <!-- Forecast Row 1 -->
-        <text x="${padding}" y="154" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${data.forecast[0].day}</text>
-        <text x="${width - padding}" y="154" font-family="sans-serif" font-size="11" text-anchor="end" fill="black">${data.forecast[0].low}° / ${data.forecast[0].high}°</text>
-        
-        <!-- Forecast Row 2 -->
-        <text x="${padding}" y="174" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${data.forecast[1].day}</text>
-        <text x="${width - padding}" y="174" font-family="sans-serif" font-size="11" text-anchor="end" fill="black">${data.forecast[1].low}° / ${data.forecast[1].high}°</text>
-      </g>
-    `;
+    if (isFullScreen) {
+      // Elegant Full-Screen Weather Station Dashboard
+      const colWidth = (width - padding * 2) / 3;
+      
+      return `
+        <g>
+          <!-- Header -->
+          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">🌤️ LOCAL WEATHER STATION</text>
+          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          
+          <!-- Primary Current Weather Section -->
+          <g transform="translate(${padding}, 70)">
+            <!-- Huge Icon -->
+            ${drawWeatherIcon(data.code, 60, 60)}
+            
+            <!-- Temperatures & Main details -->
+            <text x="160" y="70" font-family="sans-serif" font-size="72" font-weight="900" fill="black">${data.temp}${data.unit}</text>
+            <text x="160" y="110" font-family="sans-serif" font-size="22" font-weight="bold" fill="black" opacity="0.9">${data.condition}</text>
+            
+            <!-- Secondary Info -->
+            <text x="440" y="45" font-family="sans-serif" font-size="15" fill="black">Humidity: <tspan font-weight="bold">${data.humidity}%</tspan></text>
+            <text x="440" y="75" font-family="sans-serif" font-size="15" fill="black">Daily Low: <tspan font-weight="bold">${data.low}${data.unit}</tspan></text>
+            <text x="440" y="105" font-family="sans-serif" font-size="15" fill="black">Daily High: <tspan font-weight="bold">${data.high}${data.unit}</tspan></text>
+          </g>
+          
+          <!-- Divider -->
+          <line x1="${padding}" y1="240" x2="${width - padding}" y2="240" stroke="black" stroke-width="1.5" stroke-dasharray="6,6" />
+          
+          <!-- Extended 3-Day Forecast Cards -->
+          <text x="${padding}" y="275" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">📅 EXTENDED OUTLOOK</text>
+          
+          <g transform="translate(0, 290)">
+            <!-- Forecast Column 1: Today -->
+            <g transform="translate(${padding}, 0)">
+              <rect x="0" y="0" width="${colWidth - 15}" height="140" rx="10" fill="none" stroke="black" stroke-width="1.5" />
+              <text x="${(colWidth - 15) / 2}" y="30" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="black">Today</text>
+              ${drawWeatherIcon(data.code, (colWidth - 15) / 2, 70)}
+              <text x="${(colWidth - 15) / 2}" y="120" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="black">${data.low}° / ${data.high}°</text>
+            </g>
+
+            <!-- Forecast Column 2: Tomorrow -->
+            <g transform="translate(${padding + colWidth}, 0)">
+              <rect x="0" y="0" width="${colWidth - 15}" height="140" rx="10" fill="none" stroke="black" stroke-width="1.5" />
+              <text x="${(colWidth - 15) / 2}" y="30" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="black">Tomorrow</text>
+              ${drawWeatherIcon(data.forecast[0].code, (colWidth - 15) / 2, 70)}
+              <text x="${(colWidth - 15) / 2}" y="120" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="black">${data.forecast[0].low}° / ${data.forecast[0].high}°</text>
+            </g>
+
+            <!-- Forecast Column 3: Day After -->
+            <g transform="translate(${padding + colWidth * 2}, 0)">
+              <rect x="0" y="0" width="${colWidth - 15}" height="140" rx="10" fill="none" stroke="black" stroke-width="1.5" />
+              <text x="${(colWidth - 15) / 2}" y="30" font-family="sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="black">Day After</text>
+              ${drawWeatherIcon(data.forecast[1].code, (colWidth - 15) / 2, 70)}
+              <text x="${(colWidth - 15) / 2}" y="120" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="black">${data.forecast[1].low}° / ${data.forecast[1].high}°</text>
+            </g>
+          </g>
+        </g>
+      `;
+    } else {
+      // Standard compact grid cell layout
+      return `
+        <g>
+          <!-- Header -->
+          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">🌤️ WEATHER FORECAST</text>
+          <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
+          
+          <!-- Large Current Temp & Condition -->
+          ${drawWeatherIcon(data.code, padding + 35, 75)}
+          
+          <text x="${padding + 85}" y="70" font-family="sans-serif" font-size="34" font-weight="bold" fill="black">${data.temp}${data.unit}</text>
+          <text x="${padding + 85}" y="92" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${data.condition}</text>
+          <text x="${padding}" y="122" font-family="sans-serif" font-size="11" fill="black">Humidity: <tspan font-weight="bold">${data.humidity}%</tspan>   Range: <tspan font-weight="bold">${data.low}° - ${data.high}°</tspan></text>
+          
+          <!-- 2 Day Small Forecast Section -->
+          <line x1="${padding}" y1="134" x2="${width - padding}" y2="134" stroke="black" stroke-dasharray="3,3" stroke-width="1" />
+          
+          <!-- Forecast Row 1 -->
+          <text x="${padding}" y="154" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${data.forecast[0].day}</text>
+          <text x="${width - padding}" y="154" font-family="sans-serif" font-size="11" text-anchor="end" fill="black">${data.forecast[0].low}° / ${data.forecast[0].high}°</text>
+          
+          <!-- Forecast Row 2 -->
+          <text x="${padding}" y="174" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${data.forecast[1].day}</text>
+          <text x="${width - padding}" y="174" font-family="sans-serif" font-size="11" text-anchor="end" fill="black">${data.forecast[1].low}° / ${data.forecast[1].high}°</text>
+        </g>
+      `;
+    }
   }
 };

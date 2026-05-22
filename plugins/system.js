@@ -108,35 +108,79 @@ module.exports = {
   },
 
   renderSVG(data, width, height) {
-    // Determine card sizing and layout adaptations
-    const isSmall = width < 300;
-    const padding = 15;
+    const padding = 20;
+    const isFullScreen = height > 300;
     
-    // Draw gauges or progress bars
-    const drawProgressBar = (label, value, text, y) => {
-      const barWidth = width - padding * 2 - 10;
+    const drawProgressBar = (label, value, text, x, y, barWidth, barHeight = 12) => {
       return `
-        <text x="${padding}" y="${y}" font-family="sans-serif" font-size="12" font-weight="bold" fill="black">${label}</text>
-        <text x="${width - padding}" y="${y}" font-family="sans-serif" font-size="11" text-anchor="end" fill="black">${text}</text>
-        <rect x="${padding}" y="${y + 6}" width="${barWidth}" height="8" rx="4" fill="none" stroke="black" stroke-width="1.5" />
-        <rect x="${padding}" y="${y + 6}" width="${(barWidth * value) / 100}" height="8" rx="4" fill="black" />
+        <text x="${x}" y="${y}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${label}</text>
+        <text x="${x + barWidth}" y="${y}" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">${text}</text>
+        <rect x="${x}" y="${y + 8}" width="${barWidth}" height="${barHeight}" rx="${barHeight / 2}" fill="none" stroke="black" stroke-width="1.5" />
+        <rect x="${x}" y="${y + 8}" width="${(barWidth * value) / 100}" height="${barHeight}" rx="${barHeight / 2}" fill="black" />
       `;
     };
 
-    return `
-      <g>
-        <!-- Header -->
-        <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ SYSTEM HEALTH</text>
-        <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
-        
-        <!-- Metrics -->
-        <text x="${padding}" y="52" font-family="sans-serif" font-size="12" fill="black">Uptime: <tspan font-weight="bold">${data.uptime}</tspan></text>
-        <text x="${width - padding}" y="52" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">Temp: <tspan font-weight="bold">${data.cpuTemp}°C</tspan></text>
-        
-        ${drawProgressBar("CPU Load", data.cpuUsage, `${data.cpuUsage}%`, 74)}
-        ${drawProgressBar("Memory", data.ramUsage, data.ramText, 114)}
-        ${drawProgressBar("Disk Space", data.diskUsage, data.diskText, 154)}
-      </g>
-    `;
+    if (isFullScreen) {
+      const halfWidth = (width - padding * 2 - 30) / 2;
+      return `
+        <g>
+          <!-- Header -->
+          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">⚡ HOST SYSTEM TELEMETRY</text>
+          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          
+          <!-- Top Row Status Cards -->
+          <g transform="translate(${padding}, 70)">
+            <!-- Uptime Card -->
+            <g>
+              <rect x="0" y="0" width="${halfWidth}" height="100" rx="10" fill="none" stroke="black" stroke-width="1.5" />
+              <text x="20" y="30" font-family="sans-serif" font-size="12" font-weight="bold" fill="black" opacity="0.6">SYSTEM UPTIME</text>
+              <text x="20" y="70" font-family="sans-serif" font-size="28" font-weight="bold" fill="black">${data.uptime}</text>
+            </g>
+            
+            <!-- CPU Temp Card -->
+            <g transform="translate(${halfWidth + 30}, 0)">
+              <rect x="0" y="0" width="${halfWidth}" height="100" rx="10" fill="none" stroke="black" stroke-width="1.5" />
+              <text x="20" y="30" font-family="sans-serif" font-size="12" font-weight="bold" fill="black" opacity="0.6">CPU TEMPERATURE</text>
+              <text x="20" y="70" font-family="sans-serif" font-size="28" font-weight="bold" fill="black">${data.cpuTemp}°C</text>
+            </g>
+          </g>
+          
+          <!-- Resource Bars Section -->
+          <g transform="translate(${padding}, 205)">
+            <text x="0" y="0" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">📊 RESOURCE ALLOCATION</text>
+            
+            <g transform="translate(0, 20)">
+              ${drawProgressBar("CPU Load Indicator", data.cpuUsage, `${data.cpuUsage}%`, 0, 10, width - padding * 2, 14)}
+            </g>
+            
+            <g transform="translate(0, 85)">
+              ${drawProgressBar("Active Memory (RAM)", data.ramUsage, data.ramText, 0, 10, width - padding * 2, 14)}
+            </g>
+            
+            <g transform="translate(0, 150)">
+              ${drawProgressBar("Disk Storage (/)", data.diskUsage, data.diskText, 0, 10, width - padding * 2, 14)}
+            </g>
+          </g>
+        </g>
+      `;
+    } else {
+      // Standard compact grid cell layout
+      const barWidth = width - padding * 2 - 10;
+      return `
+        <g>
+          <!-- Header -->
+          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ SYSTEM HEALTH</text>
+          <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
+          
+          <!-- Metrics -->
+          <text x="${padding}" y="52" font-family="sans-serif" font-size="12" fill="black">Uptime: <tspan font-weight="bold">${data.uptime}</tspan></text>
+          <text x="${width - padding}" y="52" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">Temp: <tspan font-weight="bold">${data.cpuTemp}°C</tspan></text>
+          
+          ${drawProgressBar("CPU Load", data.cpuUsage, `${data.cpuUsage}%`, padding, 74, barWidth, 8)}
+          ${drawProgressBar("Memory", data.ramUsage, data.ramText, padding, 114, barWidth, 8)}
+          ${drawProgressBar("Disk Space", data.diskUsage, data.diskText, padding, 154, barWidth, 8)}
+        </g>
+      `;
+    }
   }
 };

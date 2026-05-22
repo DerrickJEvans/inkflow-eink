@@ -16,7 +16,7 @@ module.exports = {
 
   async fetchData(settings) {
     const feedUrl = settings.url || "https://news.ycombinator.com/rss";
-    const limit = parseInt(settings.limit) || 4;
+    const limit = parseInt(settings.limit) || 10;
 
     try {
       const feed = await parser.parseURL(feedUrl);
@@ -46,7 +46,8 @@ module.exports = {
   },
 
   renderSVG(data, width, height) {
-    const padding = 15;
+    const padding = 20;
+    const isFullScreen = height > 300;
     
     // Text truncation function to fit the width
     const truncateText = (text, maxLength) => {
@@ -54,34 +55,63 @@ module.exports = {
       return text.substring(0, maxLength - 3) + "...";
     };
 
-    // Calculate maximum characters that can fit based on width
-    // Approximately 7 pixels per character for font-size 11
-    const maxChars = Math.floor((width - padding * 2 - 15) / 7.2);
+    if (isFullScreen) {
+      // Full screen RSS Dashboard: elegant large typography, showing up to 8 items
+      const maxChars = Math.floor((width - padding * 2 - 25) / 9.5);
+      let listHtml = '';
+      const itemHeight = 45; // spacious layout height
+      const items = (data.items || []).slice(0, 8);
 
-    let listHtml = '';
-    const itemHeight = 33; // spacing between feed items
-    const items = data.items || [];
+      items.forEach((item, idx) => {
+        const yPos = 85 + idx * itemHeight;
+        const cleanTitle = truncateText(item.title, maxChars);
+        listHtml += `
+          <!-- Item ${idx + 1} -->
+          <circle cx="${padding + 6}" cy="${yPos - 6}" r="3.5" fill="black" />
+          <text x="${padding + 20}" y="${yPos}" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black">${cleanTitle}</text>
+          <text x="${padding + 20}" y="${yPos + 18}" font-family="sans-serif" font-size="11" fill="black" opacity="0.7">${item.source}</text>
+        `;
+      });
 
-    items.forEach((item, idx) => {
-      const yPos = 62 + idx * itemHeight;
-      const cleanTitle = truncateText(item.title, maxChars);
-      listHtml += `
-        <!-- Item ${idx + 1} -->
-        <circle cx="${padding + 4}" cy="${yPos - 4}" r="2" fill="black" />
-        <text x="${padding + 14}" y="${yPos}" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${cleanTitle}</text>
-        <text x="${padding + 14}" y="${yPos + 12}" font-family="sans-serif" font-size="8.5" fill="black" opacity="0.75">${item.source}</text>
+      return `
+        <g>
+          <!-- Header -->
+          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">📰 ${data.title.toUpperCase()}</text>
+          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          
+          <!-- Feed List -->
+          ${listHtml}
+        </g>
       `;
-    });
+    } else {
+      // Standard compact grid cell layout
+      const compactPadding = 15;
+      const maxChars = Math.floor((width - compactPadding * 2 - 15) / 7.2);
+      let listHtml = '';
+      const itemHeight = 33; // spacing between feed items
+      const items = (data.items || []).slice(0, 4);
 
-    return `
-      <g>
-        <!-- Header -->
-        <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">📰 ${data.title.toUpperCase()}</text>
-        <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
-        
-        <!-- Feed List -->
-        ${listHtml}
-      </g>
-    `;
+      items.forEach((item, idx) => {
+        const yPos = 62 + idx * itemHeight;
+        const cleanTitle = truncateText(item.title, maxChars);
+        listHtml += `
+          <!-- Item ${idx + 1} -->
+          <circle cx="${compactPadding + 4}" cy="${yPos - 4}" r="2" fill="black" />
+          <text x="${compactPadding + 14}" y="${yPos}" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${cleanTitle}</text>
+          <text x="${compactPadding + 14}" y="${yPos + 12}" font-family="sans-serif" font-size="8.5" fill="black" opacity="0.75">${item.source}</text>
+        `;
+      });
+
+      return `
+        <g>
+          <!-- Header -->
+          <text x="${compactPadding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">📰 ${data.title.toUpperCase()}</text>
+          <line x1="${compactPadding}" y1="32" x2="${width - compactPadding}" y2="32" stroke="black" stroke-width="1.5" />
+          
+          <!-- Feed List -->
+          ${listHtml}
+        </g>
+      `;
+    }
   }
 };
