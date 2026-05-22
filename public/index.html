@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TRMNL Pi — E-Ink Control Center</title>
+  <link rel="stylesheet" href="index.css">
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  
+  <div class="glass-bg"></div>
+
+  <!-- Main Container -->
+  <main class="app-container">
+    
+    <!-- Top Header -->
+    <header class="app-header glass-card">
+      <div class="header-logo">
+        <span class="pulse-dot"></span>
+        <h1>TRMNL <span class="accent-text">Pi</span></h1>
+        <p class="tagline">E-Ink Dashboard Hub &amp; BYOS Server</p>
+      </div>
+      <div class="header-status">
+        <div class="status-indicator">
+          <span class="label">Server Status</span>
+          <span class="value online">ONLINE</span>
+        </div>
+        <div class="status-indicator">
+          <span class="label">Hardware Clients</span>
+          <span class="value active" id="active-devices-count">0 Active</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dashboard Content Grid -->
+    <div class="dashboard-grid">
+      
+      <!-- COLUMN 1: Devices & Settings -->
+      <section class="grid-col flex-col">
+        
+        <!-- Devices Card -->
+        <div class="glass-card flex-grow">
+          <div class="card-header">
+            <h3>📱 Screen Devices</h3>
+            <button class="btn btn-sm btn-icon" id="btn-add-device" title="Add Device">+</button>
+          </div>
+          <div class="card-content">
+            <p class="card-help">Devices on your home network are auto-discovered when they poll the server.</p>
+            <div class="devices-list" id="devices-list">
+              <!-- Dynamically populated -->
+              <div class="loading-spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Device Layout Card -->
+        <div class="glass-card" id="device-layout-card" style="display: none;">
+          <div class="card-header">
+            <h3>⚙️ Layout &amp; Size</h3>
+          </div>
+          <div class="card-content">
+            <form id="device-settings-form">
+              <input type="hidden" id="edit-device-id">
+              
+              <div class="form-group">
+                <label for="edit-device-name">Device Name</label>
+                <input type="text" id="edit-device-name" required>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="edit-device-width">Width (px)</label>
+                  <input type="number" id="edit-device-width" min="100" max="2000" required>
+                </div>
+                <div class="form-group col-6">
+                  <label for="edit-device-height">Height (px)</label>
+                  <input type="number" id="edit-device-height" min="100" max="2000" required>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="edit-device-refresh">Poll Interval (seconds)</label>
+                <input type="number" id="edit-device-refresh" min="10" step="10" required>
+                <span class="input-hint">30 mins = 1800s. ESP32 will sleep for this duration.</span>
+              </div>
+
+              <div class="form-group">
+                <label>Active Dashboard Widgets</label>
+                <div class="checkbox-grid" id="plugins-selector">
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="weather" checked>
+                    <span class="checkbox-label">🌤️ Weather Forecast</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="system" checked>
+                    <span class="checkbox-label">⚡ Host System Health</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="rss" checked>
+                    <span class="checkbox-label">📰 RSS Bulletin Feed</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="notes" checked>
+                    <span class="checkbox-label">📌 Notices &amp; Todos</span>
+                  </label>
+                </div>
+                <span class="input-hint">Layout formats automatically (1, 2, 3, or 2x2 grid) based on selections.</span>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block">Save Layout</button>
+            </form>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- COLUMN 2: Mock Screen & Preview -->
+      <section class="grid-col flex-col col-span-2 justify-center align-center">
+        
+        <!-- E-Ink Device Frame Mockup -->
+        <div class="mockup-bezel glass-card">
+          <div class="mockup-header">
+            <span class="mockup-indicator">e-paper display mockup</span>
+            <span class="mockup-resolution" id="mockup-resolution">800 x 480</span>
+          </div>
+          <div class="mockup-viewport" id="mockup-viewport">
+            <div class="mockup-screen" id="mockup-screen">
+              <!-- Dynamically rendered background image -->
+              <div class="mockup-placeholder">
+                <p>Select a device to view E-Ink output</p>
+              </div>
+            </div>
+          </div>
+          <div class="mockup-actions">
+            <button class="btn btn-primary" id="btn-force-refresh">🔄 Force Refresh</button>
+            <a href="#" target="_blank" class="btn btn-secondary" id="btn-view-raw-png">🖼️ PNG URL</a>
+            <a href="#" target="_blank" class="btn btn-secondary" id="btn-view-raw-bit">💾 RAW Stream</a>
+          </div>
+        </div>
+
+        <!-- Connection Instructions -->
+        <div class="glass-card w-100 mt-4">
+          <div class="card-header">
+            <h3>🔗 Connection Guide</h3>
+          </div>
+          <div class="card-content">
+            <div class="tabs">
+              <button class="tab-btn active" data-tab="tab-arduino">🔌 ESP32 Arduino</button>
+              <button class="tab-btn" data-tab="tab-pi">🐍 Pi Zero Python</button>
+              <button class="tab-btn" data-tab="tab-trmnl">📦 TRMNL BYOS</button>
+            </div>
+            
+            <div class="tab-content active" id="tab-arduino">
+              <p>Configure your ESP32 Waveshare display by pointing the C++ client to:</p>
+              <pre class="code-box"><code id="code-arduino-url">http://[server-ip]:5000/api/display/raw?device=esp32_screen&amp;width=400&amp;height=300</code></pre>
+              <p class="text-sm">ESP32 downloads pre-dithered raw bytes directly over WiFi into screen SRAM for quick, low-power renders.</p>
+            </div>
+
+            <div class="tab-content" id="tab-pi">
+              <p>Configure the Python client on a Pi Zero by pointing the connection string in config to:</p>
+              <pre class="code-box"><code id="code-pi-url">http://[server-ip]:5000/api/display/image.png?device=pi_screen&amp;width=800&amp;height=480</code></pre>
+              <p class="text-sm">Pulls full dithered PNGs via standard HTTP GET. Supports Waveshare, Pimoroni Inky, and local mock previews.</p>
+            </div>
+
+            <div class="tab-content" id="tab-trmnl">
+              <p>To use an official TRMNL screen, access your device's WiFi Pairing Portal and configure:</p>
+              <table class="guide-table">
+                <tr><th>Setting</th><th>Value</th></tr>
+                <tr><td>Custom Server</td><td><code id="code-trmnl-url">http://[server-ip]:5000</code></td></tr>
+                <tr><td>Access Token</td><td>Any value (security disabled)</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- COLUMN 3: Global Widget Config & Live Stats -->
+      <section class="grid-col flex-col">
+        
+        <!-- Live System Telemetry -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>⚡ Pi Host Metrics</h3>
+          </div>
+          <div class="card-content flex-row justify-space-between align-center">
+            <!-- CPU Circle Gauge -->
+            <div class="circular-gauge-container">
+              <svg viewBox="0 0 36 36" class="circular-chart">
+                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="circle" id="telemetry-cpu-chart" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <text x="18" y="20.35" class="percentage" id="telemetry-cpu-text">0%</text>
+              </svg>
+              <span class="gauge-label">CPU Load</span>
+            </div>
+
+            <div class="metrics-column">
+              <div class="metric-card">
+                <span class="m-label">CPU Temp</span>
+                <span class="m-value" id="telemetry-temp">--°C</span>
+              </div>
+              <div class="metric-card">
+                <span class="m-label">RAM Free</span>
+                <span class="m-value text-sm" id="telemetry-ram">-- / --</span>
+              </div>
+              <div class="metric-card">
+                <span class="m-label">Host Uptime</span>
+                <span class="m-value text-sm" id="telemetry-uptime">--</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Widgets Settings -->
+        <div class="glass-card flex-grow">
+          <div class="card-header">
+            <h3>🛠️ Global Widget Options</h3>
+          </div>
+          <div class="card-content">
+            <div class="accordion">
+              
+              <!-- Weather settings -->
+              <div class="accordion-item">
+                <button class="accordion-trigger" data-target="options-weather">🌦️ Weather Coordinates</button>
+                <div class="accordion-content active" id="options-weather">
+                  <div class="form-row">
+                    <div class="form-group col-6">
+                      <label for="weather-lat">Latitude</label>
+                      <input type="number" step="0.0001" id="weather-lat">
+                    </div>
+                    <div class="form-group col-6">
+                      <label for="weather-lon">Longitude</label>
+                      <input type="number" step="0.0001" id="weather-lon">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="weather-unit">Temperature Unit</label>
+                    <select id="weather-unit">
+                      <option value="celsius">Celsius (°C)</option>
+                      <option value="fahrenheit">Fahrenheit (°F)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- RSS settings -->
+              <div class="accordion-item">
+                <button class="accordion-trigger" data-target="options-rss">📰 RSS Feed URL</button>
+                <div class="accordion-content" id="options-rss">
+                  <div class="form-group">
+                    <label for="rss-url">XML RSS URL</label>
+                    <input type="url" id="rss-url">
+                  </div>
+                  <div class="form-group">
+                    <label for="rss-limit">Max Articles</label>
+                    <input type="number" id="rss-limit" min="1" max="8">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Todo List settings -->
+              <div class="accordion-item">
+                <button class="accordion-trigger" data-target="options-todos">📌 Todo Notice Board</button>
+                <div class="accordion-content" id="options-todos">
+                  <div class="form-group">
+                    <label for="todo-title">Notice Board Title</label>
+                    <input type="text" id="todo-title">
+                  </div>
+                  <div class="form-group">
+                    <label>Task Check List (add/toggle/delete)</label>
+                    <div class="todo-editor-list" id="todo-editor-list">
+                      <!-- Populated via Javascript -->
+                    </div>
+                    <div class="todo-add-row mt-2">
+                      <input type="text" id="todo-add-input" placeholder="Add custom todo chore...">
+                      <button class="btn btn-primary" id="btn-todo-add">+</button>
+                    </div>
+                    <span class="input-hint">Completed items display as strike-through on E-Ink screen!</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <button class="btn btn-primary btn-block mt-4" id="btn-save-global-settings">Save Global Options</button>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <div id="toast" class="toast">Settings updated!</div>
+
+  <script src="index.js"></script>
+</body>
+</html>

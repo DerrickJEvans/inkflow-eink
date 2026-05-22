@@ -1,0 +1,142 @@
+const fs = require('fs');
+const { exec } = require('child_process');
+
+// Helper to run shell commands in a promise
+const runCmd = (cmd) => {
+  return new Promise((resolve) => {
+    exec(cmd, (err, stdout) => {
+      if (err) resolve('');
+      else resolve(stdout.trim());
+    });
+  });
+};
+
+// Calculate CPU Usage by reading /proc/stat
+let lastCpuStats = { idle: 0, total: 0 };
+const getCpuUsage = async () => {
+  try {
+    if (process.platform !== 'linux') {
+      return Math.floor(10 + Math.random() * 15); // Mock usage
+    }
+    const statStr = fs.readFileSync('/proc/stat', 'utf8').split('\n')[0];
+    const parts = statStr.split(/\s+/).slice(1).map(Number);
+    const idle = parts[3];
+    const total = parts.reduce((sum, val) => sum + val, 0);
+
+    const idleDiff = idle - lastCpuStats.idle;
+    const totalDiff = total - lastCpuStats.total;
+    lastCpuStats = { idle, total };
+
+    if (totalDiff === 0) return 0;
+    return Math.floor(100 * (1 - idleDiff / totalDiff));
+  } catch (e) {
+    return 12; // Fallback
+  }
+};
+
+module.exports = {
+  id: "system",
+  name: "System Telemetry",
+  description: "Monitors Raspberry Pi health (CPU, RAM, Temp, Disk, Uptime).",
+  configFields: [], // No custom config required for local host telemetry
+
+  async fetchData(settings) {
+    let cpuTemp = "42.5";
+    let ramUsage = 35; // %
+    let ramText = "1.2GB / 4.0GB";
+    let diskUsage = 28; // %
+    let diskText = "16GB / 64GB";
+    let uptime = "3d 4h 12m";
+
+    try {
+      if (process.platform === 'linux') {
+        // Temperature
+        if (fs.existsSync('/sys/class/thermal/thermal_zone0/temp')) {
+          const tempRaw = fs.readFileSync('/sys/class/thermal/thermal_zone0/temp', 'utf8');
+          cpuTemp = (parseInt(tempRaw) / 1000).toFixed(1);
+        } else {
+          const vcgencmd = await runCmd('vcgencmd measure_temp');
+          if (vcgencmd) {
+            cpuTemp = vcgencmd.replace('temp=', '').replace("'C", '');
+          }
+        }
+
+        // Memory usage from /proc/meminfo
+        if (fs.existsSync('/proc/meminfo')) {
+          const meminfo = fs.readFileSync('/proc/meminfo', 'utf8');
+          const memTotal = parseInt(meminfo.match(/MemTotal:\s+(\d+)/)[1]);
+          const memAvailable = parseInt(meminfo.match(/MemAvailable:\s+(\d+)/)[1]);
+          const memUsed = memTotal - memAvailable;
+          ramUsage = Math.floor((memUsed / memTotal) * 100);
+          ramText = `${(memUsed / 1024 / 1024).toFixed(1)}G / ${(memTotal / 1024 / 1024).toFixed(0)}G`;
+        }
+
+        // Disk Usage
+        const dfOut = await runCmd("df -k / | tail -n 1");
+        if (dfOut) {
+          const cols = dfOut.split(/\s+/);
+          const totalK = parseInt(cols[1]);
+          const usedK = parseInt(cols[2]);
+          diskUsage = Math.floor((usedK / totalK) * 100);
+          diskText = `${(usedK / 1024 / 1024).toFixed(1)}G / ${(totalK / 1024 / 1024).toFixed(0)}G`;
+        }
+
+        // Uptime
+        if (fs.existsSync('/proc/uptime')) {
+          const uptimeRaw = parseFloat(fs.readFileSync('/proc/uptime', 'utf8').split(' ')[0]);
+          const days = Math.floor(uptimeRaw / 86400);
+          const hours = Math.floor((uptimeRaw % 86400) / 3600);
+          const mins = Math.floor((uptimeRaw % 3600) / 60);
+          uptime = `${days > 0 ? days + 'd ' : ''}${hours}h ${mins}m`;
+        }
+      }
+    } catch (e) {
+      console.error("Error gathering system metrics:", e);
+    }
+
+    const cpuUsage = await getCpuUsage();
+
+    return {
+      cpuUsage,
+      cpuTemp,
+      ramUsage,
+      ramText,
+      diskUsage,
+      diskText,
+      uptime
+    };
+  },
+
+  renderSVG(data, width, height) {
+    // Determine card sizing and layout adaptations
+    const isSmall = width < 300;
+    const padding = 15;
+    
+    // Draw gauges or progress bars
+    const drawProgressBar = (label, value, text, y) => {
+      const barWidth = width - padding * 2 - 10;
+      return `
+        <text x="${padding}" y="${y}" font-family="sans-serif" font-size="12" font-weight="bold" fill="black">${label}</text>
+        <text x="${width - padding}" y="${y}" font-family="sans-serif" font-size="11" text-anchor="end" fill="black">${text}</text>
+        <rect x="${padding}" y="${y + 6}" width="${barWidth}" height="8" rx="4" fill="none" stroke="black" stroke-width="1.5" />
+        <rect x="${padding}" y="${y + 6}" width="${(barWidth * value) / 100}" height="8" rx="4" fill="black" />
+      `;
+    };
+
+    return `
+      <g>
+        <!-- Header -->
+        <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ SYSTEM HEALTH</text>
+        <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
+        
+        <!-- Metrics -->
+        <text x="${padding}" y="52" font-family="sans-serif" font-size="12" fill="black">Uptime: <tspan font-weight="bold">${data.uptime}</tspan></text>
+        <text x="${width - padding}" y="52" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">Temp: <tspan font-weight="bold">${data.cpuTemp}°C</tspan></text>
+        
+        ${drawProgressBar("CPU Load", data.cpuUsage, `${data.cpuUsage}%`, 74)}
+        ${drawProgressBar("Memory", data.ramUsage, data.ramText, 114)}
+        ${drawProgressBar("Disk Space", data.diskUsage, data.diskText, 154)}
+      </g>
+    `;
+  }
+};

@@ -1,0 +1,32 @@
+{
+  "devices": [
+    {
+      "id": "default_screen",
+      "name": "Living Room Screen",
+      "width": 800,
+      "height": 480,
+      "refreshRate": 1800,
+      "activePlugins": ["system", "weather", "rss", "notes"]
+    }
+  ],
+  "settings": {
+    "weather": {
+      "latitude": 51.9639,
+      "longitude": 1.3513,
+      "unit": "celsius"
+    },
+    "rss": {
+      "url": "https://news.ycombinator.com/rss",
+      "limit": 4
+    },
+    "notes": {
+      "title": "Family Notice Board",
+      "items": [
+        "Water the house plants 🌱",
+        "Pi Zero client active on port 5000",
+        "Coffee beans are in the cupboard ☕",
+        "ESP32 e-ink deep sleep enabled!"
+      ]
+    }
+  }
+}

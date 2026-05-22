@@ -1,0 +1,14 @@
+# Massive system image files
+*.img
+*.img.xz
+
+# Node dependencies
+node_modules/
+.env
+
+# Python caches
+**/__pycache__/
+*.pyc
+
+# Local system configuration / caches
+.DS_Store
