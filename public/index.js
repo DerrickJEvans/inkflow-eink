@@ -49,6 +49,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   await fetchSettings();
   startTelemetryLoop();
   
+  // Layout Mode Change Handler to toggle rotation settings visibility
+  const layoutModeSelect = document.getElementById('edit-device-layout-mode');
+  const rotationIntervalsContainer = document.getElementById('rotation-intervals-container');
+  if (layoutModeSelect && rotationIntervalsContainer) {
+    layoutModeSelect.addEventListener('change', () => {
+      if (layoutModeSelect.value === 'rotation') {
+        rotationIntervalsContainer.style.display = 'block';
+      } else {
+        rotationIntervalsContainer.style.display = 'none';
+      }
+    });
+  }
+
   // Connect default add device trigger
   document.getElementById('btn-add-device').addEventListener('click', () => {
     const id = prompt("Enter a unique Device ID (e.g. kitchen_display, paper_sign):");
@@ -68,6 +81,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const width = parseInt(document.getElementById('edit-device-width').value);
     const height = parseInt(document.getElementById('edit-device-height').value);
     const refreshRate = parseInt(document.getElementById('edit-device-refresh').value);
+    const layoutMode = document.getElementById('edit-device-layout-mode').value;
     
     // Read selected plugins
     const activePlugins = [];
@@ -80,9 +94,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    // Read rotation intervals
+    const rotationIntervals = {
+      weather: parseInt(document.getElementById('edit-device-interval-weather').value) || 30,
+      system: parseInt(document.getElementById('edit-device-interval-system').value) || 15,
+      rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
+      notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15
+    };
+
     // Update locally
     const devIdx = serverConfig.devices.findIndex(d => d.id === id);
-    const deviceData = { id, name, width, height, refreshRate, activePlugins };
+    const deviceData = { 
+      id, 
+      name, 
+      width, 
+      height, 
+      refreshRate, 
+      activePlugins, 
+      layoutMode, 
+      rotationIntervals 
+    };
     
     if (devIdx > -1) {
       serverConfig.devices[devIdx] = deviceData;
@@ -236,7 +267,14 @@ function selectDevice(deviceId, isNew = false) {
       width: 800,
       height: 480,
       refreshRate: 1800,
-      activePlugins: ["system", "weather", "rss", "notes"]
+      activePlugins: ["system", "weather", "rss", "notes"],
+      layoutMode: "grid",
+      rotationIntervals: {
+        weather: 30,
+        system: 15,
+        rss: 30,
+        notes: 15
+      }
     };
   }
 
@@ -248,6 +286,22 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-width').value = device.width;
     document.getElementById('edit-device-height').value = device.height;
     document.getElementById('edit-device-refresh').value = device.refreshRate;
+
+    // Load layout mode and toggle container visibility
+    const layoutMode = device.layoutMode || 'grid';
+    document.getElementById('edit-device-layout-mode').value = layoutMode;
+    
+    const intervalsContainer = document.getElementById('rotation-intervals-container');
+    if (intervalsContainer) {
+      intervalsContainer.style.display = layoutMode === 'rotation' ? 'block' : 'none';
+    }
+
+    // Load rotation intervals
+    const rotationIntervals = device.rotationIntervals || {};
+    document.getElementById('edit-device-interval-weather').value = rotationIntervals.weather || '';
+    document.getElementById('edit-device-interval-system').value = rotationIntervals.system || '';
+    document.getElementById('edit-device-interval-rss').value = rotationIntervals.rss || '';
+    document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
 
     // Checkboxes
     document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {

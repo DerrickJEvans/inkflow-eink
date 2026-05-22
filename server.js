@@ -78,25 +78,46 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
   const cacheKey = device.id;
   const now = Date.now();
   const cached = imageCache[cacheKey];
-  const cacheDurationMs = (device.refreshRate || 1800) * 1000;
+  
+  // Resolve dynamic refresh rate for rotation mode
+  let refreshRate = device.refreshRate || 1800;
+  if (device.layoutMode === 'rotation' && device.activePlugins && device.activePlugins.length > 0) {
+    const activePlugins = device.activePlugins;
+    const currentIndex = device.currentPluginIndex || 0;
+    const currentPlugin = activePlugins[currentIndex % activePlugins.length];
+    if (device.rotationIntervals && device.rotationIntervals[currentPlugin]) {
+      refreshRate = parseInt(device.rotationIntervals[currentPlugin]) || refreshRate;
+    }
+  }
+  
+  const cacheDurationMs = refreshRate * 1000;
 
   if (cached && !forceRefresh && (now - cached.timestamp < cacheDurationMs)) {
     return cached.data;
   }
 
-  console.log(`[Renderer] Compiling screen elements for device: ${device.id}...`);
+  console.log(`[Renderer] Compiling screen elements for device: ${device.id} (Interval: ${refreshRate}s)...`);
   try {
     const rendered = await renderDeviceImage(device, config.settings);
     
-    // Update local cache
+    // Update local cache and include the calculated refresh rate
     imageCache[cacheKey] = {
       timestamp: now,
-      data: rendered
+      data: rendered,
+      refreshRate: refreshRate
     };
 
     // Save persistent PNG copy in cache folder for absolute URLs
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.png`), rendered.png);
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.raw`), rendered.raw);
+
+    // If in rotation mode and we successfully rendered a fresh frame,
+    // advance the plugin index for the NEXT poll request!
+    if (device.layoutMode === 'rotation' && device.activePlugins && device.activePlugins.length > 1) {
+      device.currentPluginIndex = (device.currentPluginIndex + 1) % device.activePlugins.length;
+      saveConfig();
+      console.log(`[Rotation] Advanced device ${device.id} to plugin index ${device.currentPluginIndex} for the next refresh.`);
+    }
 
     return rendered;
   } catch (err) {
@@ -169,9 +190,12 @@ app.get('/api/display/raw', async (req, res) => {
     const device = getOrCreateDevice(deviceId, req.query);
     const data = await fetchDeviceDisplayData(device, force);
 
+    const cached = imageCache[deviceId];
+    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('X-Refresh-Rate', device.refreshRate.toString());
+    res.setHeader('X-Refresh-Rate', rate.toString());
     res.send(data.raw);
   } catch (err) {
     console.error(err);
@@ -194,13 +218,16 @@ app.get('/api/display', async (req, res) => {
     const serverIp = req.headers.host;
     const imageUrl = `${protocol}://${serverIp}/api/display/image.png?device=${device.id}`;
 
+    const cached = imageCache[device.id];
+    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+
     // Return official TRMNL BYOS response format
     res.json({
       image_url: imageUrl,
       image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`,
       update_firmware: false,
       firmware_url: null,
-      refresh_rate: device.refreshRate.toString(),
+      refresh_rate: rate.toString(),
       reset_firmware: false,
       status: 0
     });

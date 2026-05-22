@@ -89,6 +89,38 @@
               </div>
 
               <div class="form-group">
+                <label for="edit-device-layout-mode">Display Layout Mode</label>
+                <select id="edit-device-layout-mode">
+                  <option value="grid">Grid (Static)</option>
+                  <option value="rotation">Carousel (Rotation)</option>
+                </select>
+                <span class="input-hint">Rotation mode displays one widget at a time sequentially.</span>
+              </div>
+
+              <div class="form-group" id="rotation-intervals-container" style="display: none;">
+                <label>Rotation Durations (seconds)</label>
+                <div class="checkbox-grid">
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">🌤️ Weather</span>
+                    <input type="number" class="col-6" id="edit-device-interval-weather" min="10" step="10" placeholder="30">
+                  </div>
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">⚡ Host System</span>
+                    <input type="number" class="col-6" id="edit-device-interval-system" min="10" step="10" placeholder="15">
+                  </div>
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">📰 RSS Feed</span>
+                    <input type="number" class="col-6" id="edit-device-interval-rss" min="10" step="10" placeholder="30">
+                  </div>
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">📌 Notices</span>
+                    <input type="number" class="col-6" id="edit-device-interval-notes" min="10" step="10" placeholder="15">
+                  </div>
+                </div>
+                <span class="input-hint">Poll duration per widget. Client fetches next widget after this time.</span>
+              </div>
+
+              <div class="form-group">
                 <label>Active Dashboard Widgets</label>
                 <div class="checkbox-grid" id="plugins-selector">
                   <label class="checkbox-container">

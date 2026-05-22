@@ -99,13 +99,15 @@ const generateSVG = async (device, settings) => {
   }
 
   // 2. Setup Layout Grid Coordinates based on active count
-  const count = activePlugins.length;
   let layoutElements = '';
   let gridLines = '';
+  
+  const layoutMode = device.layoutMode || 'grid';
 
-  if (count === 1) {
-    // Full screen
-    const pId = activePlugins[0];
+  if (layoutMode === 'rotation') {
+    // Carousel Mode: Render the current active plugin full-screen
+    const currentIndex = device.currentPluginIndex || 0;
+    const pId = activePlugins[currentIndex % activePlugins.length];
     if (PLUGINS[pId] && fetchedData[pId]) {
       layoutElements += `
         <g transform="translate(0, 0)">
@@ -113,84 +115,98 @@ const generateSVG = async (device, settings) => {
         </g>
       `;
     }
-  } else if (count === 2) {
-    // Split screen side-by-side (2 columns)
-    const qw = w / 2;
-    activePlugins.forEach((pId, idx) => {
-      if (PLUGINS[pId] && fetchedData[pId]) {
-        layoutElements += `
-          <g transform="translate(${idx * qw}, 0)">
-            ${PLUGINS[pId].renderSVG(fetchedData[pId], qw, h)}
-          </g>
-        `;
-      }
-    });
-    // Draw vertical divider
-    gridLines += `<line x1="${qw}" y1="0" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />`;
-  } else if (count === 3) {
-    // 1 Top full row, 2 bottom columns
-    const qh = h / 2;
-    const qw = w / 2;
-
-    // Top Full-width
-    const p1 = activePlugins[0];
-    if (PLUGINS[p1] && fetchedData[p1]) {
-      layoutElements += `
-        <g transform="translate(0, 0)">
-          ${PLUGINS[p1].renderSVG(fetchedData[p1], w, qh)}
-        </g>
-      `;
-    }
-    // Bottom Left
-    const p2 = activePlugins[1];
-    if (PLUGINS[p2] && fetchedData[p2]) {
-      layoutElements += `
-        <g transform="translate(0, ${qh})">
-          ${PLUGINS[p2].renderSVG(fetchedData[p2], qw, qh)}
-        </g>
-      `;
-    }
-    // Bottom Right
-    const p3 = activePlugins[2];
-    if (PLUGINS[p3] && fetchedData[p3]) {
-      layoutElements += `
-        <g transform="translate(${qw}, ${qh})">
-          ${PLUGINS[p3].renderSVG(fetchedData[p3], qw, qh)}
-        </g>
-      `;
-    }
-    // Divider lines
-    gridLines += `
-      <line x1="0" y1="${qh}" x2="${w}" y2="${qh}" stroke="black" stroke-width="2" />
-      <line x1="${qw}" y1="${qh}" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />
-    `;
   } else {
-    // default/4+ plugins: 2x2 grid (displays first 4 active)
-    const qw = w / 2;
-    const qh = h / 2;
-    const gridMap = [
-      { x: 0, y: 0 },
-      { x: qw, y: 0 },
-      { x: 0, y: qh },
-      { x: qw, y: qh }
-    ];
-
-    activePlugins.slice(0, 4).forEach((pId, idx) => {
+    // Grid Mode (Existing Layout Logic)
+    const count = activePlugins.length;
+    if (count === 1) {
+      // Full screen
+      const pId = activePlugins[0];
       if (PLUGINS[pId] && fetchedData[pId]) {
-        const pos = gridMap[idx];
         layoutElements += `
-          <g transform="translate(${pos.x}, ${pos.y})">
-            ${PLUGINS[pId].renderSVG(fetchedData[pId], qw, qh)}
+          <g transform="translate(0, 0)">
+            ${PLUGINS[pId].renderSVG(fetchedData[pId], w, h)}
           </g>
         `;
       }
-    });
+    } else if (count === 2) {
+      // Split screen side-by-side (2 columns)
+      const qw = w / 2;
+      activePlugins.forEach((pId, idx) => {
+        if (PLUGINS[pId] && fetchedData[pId]) {
+          layoutElements += `
+            <g transform="translate(${idx * qw}, 0)">
+              ${PLUGINS[pId].renderSVG(fetchedData[pId], qw, h)}
+            </g>
+          `;
+        }
+      });
+      // Draw vertical divider
+      gridLines += `<line x1="${qw}" y1="0" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />`;
+    } else if (count === 3) {
+      // 1 Top full row, 2 bottom columns
+      const qh = h / 2;
+      const qw = w / 2;
 
-    // Dividers
-    gridLines += `
-      <line x1="0" y1="${qh}" x2="${w}" y2="${qh}" stroke="black" stroke-width="2" />
-      <line x1="${qw}" y1="0" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />
-    `;
+      // Top Full-width
+      const p1 = activePlugins[0];
+      if (PLUGINS[p1] && fetchedData[p1]) {
+        layoutElements += `
+          <g transform="translate(0, 0)">
+            ${PLUGINS[p1].renderSVG(fetchedData[p1], w, qh)}
+          </g>
+        `;
+      }
+      // Bottom Left
+      const p2 = activePlugins[1];
+      if (PLUGINS[p2] && fetchedData[p2]) {
+        layoutElements += `
+          <g transform="translate(0, ${qh})">
+            ${PLUGINS[p2].renderSVG(fetchedData[p2], qw, qh)}
+          </g>
+        `;
+      }
+      // Bottom Right
+      const p3 = activePlugins[2];
+      if (PLUGINS[p3] && fetchedData[p3]) {
+        layoutElements += `
+          <g transform="translate(${qw}, ${qh})">
+            ${PLUGINS[p3].renderSVG(fetchedData[p3], qw, qh)}
+          </g>
+        `;
+      }
+      // Divider lines
+      gridLines += `
+        <line x1="0" y1="${qh}" x2="${w}" y2="${qh}" stroke="black" stroke-width="2" />
+        <line x1="${qw}" y1="${qh}" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />
+      `;
+    } else {
+      // default/4+ plugins: 2x2 grid (displays first 4 active)
+      const qw = w / 2;
+      const qh = h / 2;
+      const gridMap = [
+        { x: 0, y: 0 },
+        { x: qw, y: 0 },
+        { x: 0, y: qh },
+        { x: qw, y: qh }
+      ];
+
+      activePlugins.slice(0, 4).forEach((pId, idx) => {
+        if (PLUGINS[pId] && fetchedData[pId]) {
+          const pos = gridMap[idx];
+          layoutElements += `
+            <g transform="translate(${pos.x}, ${pos.y})">
+              ${PLUGINS[pId].renderSVG(fetchedData[pId], qw, qh)}
+            </g>
+          `;
+        }
+      });
+
+      // Dividers
+      gridLines += `
+        <line x1="0" y1="${qh}" x2="${w}" y2="${qh}" stroke="black" stroke-width="2" />
+        <line x1="${qw}" y1="0" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />
+      `;
+    }
   }
 
   // Assemble full SVG document
