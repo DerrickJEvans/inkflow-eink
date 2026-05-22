@@ -172,8 +172,12 @@ app.get('/api/display/image.png', async (req, res) => {
     const device = getOrCreateDevice(deviceId, req.query);
     const data = await fetchDeviceDisplayData(device, force);
     
+    const cached = imageCache[deviceId];
+    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('X-Refresh-Rate', rate.toString());
     res.send(data.png);
   } catch (err) {
     console.error(err);
