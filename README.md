@@ -188,8 +188,14 @@ After the Pi reboots, log back in and run:
 sudo apt-get update
 sudo apt-get install -y python3-pip python3-pil python3-numpy git
 
-# Install the official Waveshare Python E-Paper driver package globally
-sudo pip3 install "git+https://github.com/waveshare/e-Paper.git#egg=waveshare-epd&subdirectory=RaspberryPi_JetsonNano/python" --break-system-packages
+# 1. Shallow clone only the latest commit of the massive Waveshare repository to save RAM and disk space
+git clone --depth 1 https://github.com/waveshare/e-Paper.git
+
+# 2. Navigate to the Raspberry Pi Python package directory
+cd e-Paper/RaspberryPi_JetsonNano/python
+
+# 3. Install the package globally on your Pi Zero 2 W
+sudo pip3 install . --break-system-packages
 ```
 
 #### 4. Transfer & Configure the Client Code
