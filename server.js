@@ -22,7 +22,17 @@ app.use(express.static(PUBLIC_DIR));
 
 // Load configuration
 let configPath = path.join(__dirname, 'config.json');
+let configExamplePath = path.join(__dirname, 'config.example.json');
 let config = { devices: [], settings: {} };
+
+if (!fs.existsSync(configPath) && fs.existsSync(configExamplePath)) {
+  try {
+    fs.copyFileSync(configExamplePath, configPath);
+    console.log("Created config.json from config.example.json");
+  } catch (err) {
+    console.error("Error copying config.example.json to config.json:", err);
+  }
+}
 
 if (fs.existsSync(configPath)) {
   try {

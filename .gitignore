@@ -12,3 +12,7 @@ node_modules/
 
 # Local system configuration / caches
 .DS_Store
+
+# Local dynamic config and cache directories
+config.json
+cache/
