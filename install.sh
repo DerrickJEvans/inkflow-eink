@@ -35,18 +35,12 @@ fi
 echo -e "${CYAN}[1/5] Updating package cache...${NC}"
 apt-get update -y
 
-# 2. Install Node.js 18 if not available
-if ! command -v node &> /dev/null; then
-  echo -e "${CYAN}[2/5] Node.js not detected. Installing NodeSource Node.js 18 LTS...${NC}"
-  apt-get install -y curl gpg
-  mkdir -p /etc/apt/keyrings
-  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
-  NODE_MAJOR=18
-  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/keyrings/nodesource.list
-  apt-get update -y
-  apt-get install -y nodejs build-essential
+# 2. Install Node.js and npm if not available
+if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
+  echo -e "${CYAN}[2/5] Node.js or npm not detected. Installing nodejs, npm, and build-essential...${NC}"
+  apt-get install -y nodejs npm build-essential
 else
-  echo -e "${GREEN}[✓] Node.js is already installed ($(node -v))${NC}"
+  echo -e "${GREEN}[✓] Node.js ($(node -v)) and npm ($(npm -v)) are already installed${NC}"
 fi
 
 # 3. Install project dependencies

@@ -78,33 +78,87 @@ graph TD
 
 ## 🚀 Getting Started & Setup
 
-### Option A: Local / Native Linux Installation
-If you already have a running Raspberry Pi or Linux system:
-1. Clone your private repository:
-   ```bash
-   git clone https://github.com/DerrickJEvans/trmnl-pi-server.git
-   cd trmnl-pi-server
-   ```
-2. Run the automated daemon installer:
-   ```bash
-   sudo ./install.sh
-   ```
-3. Open your browser and navigate to `http://<your-pi-ip>:5000` to manage your server settings!
+### Option A: Headless Native Local Network Installation (Highly Recommended)
+This is the **most robust and reliable method** for setting up your Raspberry Pi 5. It uses the official uncorrupted Raspberry Pi OS Lite, flashes it via the Imager, and copies your exact local workspace files directly over your home Wi-Fi using built-in Windows OpenSSH (`scp`).
 
-### Option B: Build a Custom Plug-and-Play OS Image
-If you want to flash a fresh SD card that boots straight into the active server headlessly:
-1. Run the custom builder script:
-   ```bash
-   sudo ./build_custom_image.sh
-   ```
-2. Once complete, locate the output image `trmnl-pi-server-headless.img` in the workspace root.
-3. Open **Raspberry Pi Imager** on your computer.
-4. Choose **"Use custom"** OS and select the output `.img` file.
-5. Click **Next** -> Choose **"Edit Settings"** to:
-   * Input your Wi-Fi SSID and Password.
-   * Enable SSH.
-   * Set username to `derrickjevans1` and set a password.
-6. Flash, insert the card into your Pi 5, power it up, and wait 3 minutes. The system will auto-install Node.js, register the background services, compile dependencies, and launch!
+#### 1. Flash a Fresh Official OS
+* Open **Raspberry Pi Imager** normally on Windows.
+* **Choose Device**: Select **Raspberry Pi 5**.
+* **Choose OS**: Navigate to **Raspberry Pi OS (other)** -> Select **Raspberry Pi OS Lite (64-bit)** (clean, official headless OS).
+* **Choose Storage**: Select your SD card.
+* Click **Next** -> Click **EDIT SETTINGS**:
+  * **General**: Set Username to `derrickjevans1`, set a password, and configure your **Wi-Fi** SSID and Password.
+  * **Services**: Check **Enable SSH** (using password authentication).
+* Click **Save** and write the image to your SD card. Insert the card into your Pi 5 and power it up.
+
+#### 2. Pack & Copy Files from Windows (via PowerShell)
+Open **PowerShell** on your Windows PC and run these commands to compress your workspace (excluding massive Windows `node_modules` and images) and copy it directly to the Pi:
+```powershell
+# cd into your workspace folder
+cd "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server"
+
+# Pack workspace into a lightweight archive in the parent directory
+tar -czf ..\trmnl-pi-server.tar.gz --exclude="node_modules" --exclude="*.img" --exclude="*.xz" .
+
+# Transfer the archive to the Pi (replace <IP-ADDRESS> with your Pi's IP address)
+scp ..\trmnl-pi-server.tar.gz derrickjevans1@<IP-ADDRESS>:/home/derrickjevans1/
+
+# Delete the temporary local archive
+Remove-Item ..\trmnl-pi-server.tar.gz
+```
+*(Tip: If `ssh` blocks the connection with a "host identification has changed" warning because you flashed a new OS, clear it with `ssh-keygen -R <IP-ADDRESS>` first).*
+
+#### 3. Extract and Install Natively on the Pi
+Connect to your Pi 5 via SSH and run the native installer to compile everything natively for the Pi's arm64 architecture:
+```bash
+# SSH into the Pi
+ssh derrickjevans1@<IP-ADDRESS>
+
+# Extract the package
+mkdir -p ~/trmnl-pi-server
+tar -xzf trmnl-pi-server.tar.gz -C ~/trmnl-pi-server
+cd ~/trmnl-pi-server
+
+# Strip Windows line endings and run the native automated installer
+sed -i 's/\r$//' *.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+Once the installer completes, the server will be running persistently in the background. Open your browser and navigate to `http://<your-pi-ip>:5000` to manage your server!
+
+---
+
+### Option B: Build a Custom Plug-and-Play OS Image (Advanced)
+If you want to build a raw custom `.img` file that can be flashed straight to an SD card:
+
+#### 1. Run the Image Builder (inside WSL Ubuntu)
+To ensure high-performance native partition loopback mounting, run the builder in WSL's local home folder:
+```bash
+# Sync files to WSL
+wsl mkdir -p ~/trmnl-pi-server
+wsl rsync -a --exclude="node_modules" --exclude="*.img" --exclude="*.xz" /mnt/c/Users/derri/.gemini/antigravity/scratch/trmnl-pi-server/ ~/trmnl-pi-server/
+
+# Normalize line endings and run as root to mount loop offsets natively
+wsl -u root -d Ubuntu -e bash -c "sed -i 's/\r$//' /home/derrick/trmnl-pi-server/*.sh"
+wsl -u root -d Ubuntu -e bash -c "cd /home/derrick/trmnl-pi-server && ./build_custom_image.sh"
+
+# Copy the finished image (2.7 GB) back to Windows and clean up WSL
+wsl cp /home/derrick/trmnl-pi-server/trmnl-pi-server-headless.img /mnt/c/Users/derri/.gemini/antigravity/scratch/trmnl-pi-server/
+wsl rm -rf /home/derrick/trmnl-pi-server
+```
+
+#### 2. Flash via Imager with OS Customizations Enabled
+To unlock Raspberry Pi Imager's hidden **OS Customization (Edit Settings)** menu for a custom `.img` file, you must launch the Imager pointing to the custom local repository JSON file we created (`trmnl-imager-repo.json`):
+
+Run this command in Windows Command Prompt (CMD) or PowerShell:
+```cmd
+"C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server\trmnl-imager-repo.json"
+```
+* **Choose Device**: Select **Raspberry Pi 5**.
+* **Choose OS**: Select **TRMNL Pi Server OS** -> **TRMNL Pi Headless Server**.
+* **Choose Storage**: Select your SD card.
+* Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings** to configure your Wi-Fi, SSH, and set your username to `derrickjevans1`.
+* Flash, insert the card into your Pi 5, power it up, and wait 3 minutes for native first-boot provisioning!
 
 ---
 

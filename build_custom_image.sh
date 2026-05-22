@@ -21,7 +21,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-PROJECT_DIR="/home/derrickjevans1/trmnl-pi-server"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_IMAGE_XZ="2024-11-19-raspios-bookworm-arm64-lite.img.xz"
 BASE_IMAGE_URL="https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2024-11-19/${BASE_IMAGE_XZ}"
 OUTPUT_IMAGE="trmnl-pi-server-headless.img"
@@ -59,12 +59,12 @@ PART2_SIZE_MB=$((PART2_SIZE / 1024 / 1024))
 
 echo -e "Rootfs Partition starts at byte offset: ${YELLOW}${PART2_START}${NC} (${PART2_START_MB} MB)"
 
-# 6. Mount filesystem in user-space using FUSE directly from the image file!
-echo -e "${CYAN}[5/7] Mounting ext4 rootfs directly from '${OUTPUT_IMAGE}' via FUSE (fuse2fs)...${NC}"
+# 6. Mount filesystem using kernel loop mount directly from the image file!
+echo -e "${CYAN}[5/7] Mounting ext4 rootfs directly from '${OUTPUT_IMAGE}' via kernel loop mount...${NC}"
 mkdir -p "$MNT_ROOT"
 # Unmount first if previously left mounted
 umount "$MNT_ROOT" 2>/dev/null || true
-fuse2fs -o offset="$PART2_START" "$OUTPUT_IMAGE" "$MNT_ROOT"
+mount -o loop,offset="$PART2_START" "$OUTPUT_IMAGE" "$MNT_ROOT"
 sleep 1.5
 
 # 7. Copy project files and configure setup scripts
