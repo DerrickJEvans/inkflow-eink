@@ -153,12 +153,34 @@ app.get('/api/settings', (req, res) => {
 app.post('/api/settings', (req, res) => {
   try {
     const { devices, settings } = req.body;
-    if (devices) config.devices = devices;
-    if (settings) config.settings = settings;
+    
+    if (devices) {
+      // Merge incoming devices with existing ones to avoid deleting auto-registered devices
+      devices.forEach(incomingDevice => {
+        let existingDevice = config.devices.find(d => d.id === incomingDevice.id);
+        if (existingDevice) {
+          // Update properties of the existing device
+          Object.assign(existingDevice, incomingDevice);
+        } else {
+          // Add new device
+          config.devices.push(incomingDevice);
+        }
+      });
+    }
+    
+    if (settings) {
+      config.settings = settings;
+    }
+    
+    // Invalidate ALL device image caches on settings change
+    config.devices.forEach(d => {
+      delete imageCache[d.id];
+    });
     
     saveConfig();
     res.json({ success: true, message: "Settings saved successfully!" });
   } catch (err) {
+    console.error("Error saving settings:", err);
     res.status(500).json({ error: "Failed to update configuration settings" });
   }
 });

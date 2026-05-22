@@ -2,11 +2,26 @@
   "devices": [
     {
       "id": "default_screen",
-      "name": "Living Room Screen",
+      "name": "Living Room Screen (Updated UI)",
       "width": 800,
       "height": 480,
       "refreshRate": 1800,
-      "activePlugins": ["system", "weather", "rss", "notes", "tfl"]
+      "activePlugins": [
+        "system",
+        "rss"
+      ],
+      "layoutMode": "grid"
+    },
+    {
+      "id": "pi_zero_4in26",
+      "name": "Kitchen EPD",
+      "width": 800,
+      "height": 480,
+      "refreshRate": 1800,
+      "activePlugins": [
+        "system"
+      ],
+      "layoutMode": "grid"
     }
   ],
   "settings": {

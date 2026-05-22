@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   await fetchSettings();
   startTelemetryLoop();
+  startDeviceListSync();
   
   // Layout Mode Change Handler to toggle rotation settings visibility
   const layoutModeSelect = document.getElementById('edit-device-layout-mode');
@@ -536,4 +537,31 @@ async function startTelemetryLoop() {
   
   await updateStats();
   setInterval(updateStats, 3000);
+}
+
+// Background sync loop to auto-discover registered screens
+function startDeviceListSync() {
+  setInterval(async () => {
+    try {
+      const res = await fetch('/api/settings');
+      if (!res.ok) return;
+      const latestConfig = await res.json();
+      
+      let hasNewDevice = false;
+      latestConfig.devices.forEach(d => {
+        // Add new devices that auto-registered on the backend
+        if (!serverConfig.devices.find(existing => existing.id === d.id)) {
+          serverConfig.devices.push(d);
+          hasNewDevice = true;
+        }
+      });
+      
+      if (hasNewDevice) {
+        renderDevicesList();
+        showToast("New display screen auto-discovered!");
+      }
+    } catch (err) {
+      console.warn("Background device sync offline:", err);
+    }
+  }, 10000);
 }
