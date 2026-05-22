@@ -167,11 +167,84 @@ Run this command in Windows Command Prompt (CMD) or PowerShell:
 ### 1. Arduino C++ (ESP32 + Waveshare E-Paper)
 Navigate to the [`arduino/`](file:///home/derrickjevans1/trmnl-pi-server/arduino) directory, open `arduino_client.ino` in the Arduino IDE, install `GxEPD2` and `Adafruit GFX`, adjust your WiFi configurations, select your exact driver chip, and upload!
 
-### 2. Python Client (Raspberry Pi Zero / Mock Testing)
-Navigate to the [`client/`](file:///home/derrickjevans1/trmnl-pi-server/client) directory, copy `config.py.example` to `config.py` (specifying target server IP, resolution, and display driver), and run:
+### 2. Python Client (Raspberry Pi Zero 2 W + Waveshare 4.26" 800x480 Display)
+Designed to run on a headless Raspberry Pi Zero 2 W equipped with a **Waveshare E-Paper Driver HAT Rev 2.3** and a **4.26" e-Paper Display (800x480)**.
+
+#### 1. Assembly & Hardware Setup
+* Plug the **Waveshare E-Paper Driver HAT Rev 2.3** directly onto the Pi Zero 2 W's 40-pin GPIO header.
+* Connect the **4.26" e-Paper panel** to the HAT using the flat ribbon cable (FFC) via the GH1.25 9-pin connector. Make sure pins face down and the black latch is firmly locked.
+* Boot a clean **Raspberry Pi OS Lite (64-bit)** card flashed with Imager (enabling SSH & Wi-Fi in the custom settings).
+
+#### 2. OS SPI Configuration
+Connect to the Pi Zero 2 W via SSH and enable the hardware SPI bus:
 ```bash
+sudo raspi-config
+# Select 'Interface Options' -> 'SPI' -> 'Enable (Yes)' -> 'Finish' & Reboot.
+```
+
+#### 3. Install System Dependencies & Drivers
+After the Pi reboots, log back in and run:
+```bash
+sudo apt-get update
+sudo apt-get install -y python3-pip python3-pil python3-numpy git
+
+# Install the official Waveshare Python E-Paper driver package globally
+sudo pip3 install git+https://github.com/waveshare/e-Paper.git#egg=waveshare-epd&subdirectory=RaspberryPi_JetsonNano/python --break-system-packages
+```
+
+#### 4. Transfer & Configure the Client Code
+From your Windows PC's PowerShell, copy the `client` directory using SCP:
+```powershell
+scp -r "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server\client" derrickjevans1@<pi-zero-ip>:/home/derrickjevans1/
+```
+*(On the Pi Zero 2 W, `client/config.py` is pre-configured with the driver `epd4in26`, resolution `800x480`, and target server IP `192.168.1.122` on port `5000`)*
+
+#### 5. Verify & Run
+SSH into the Pi Zero 2 W and run manually to test:
+```bash
+cd ~/client
 python3 client.py
 ```
+*The client will connect to your Pi 5 server, auto-register as `pi_zero_4in26`, dither the image, and render it onto the physical screen!*
+
+#### 6. Register as an Automatic Boot Service
+To keep the client running indefinitely in the background and survive reboots:
+```bash
+# Create systemd service definition
+sudo nano /etc/systemd/system/trmnl-client.service
+```
+Paste this configuration:
+```ini
+[Unit]
+Description=TRMNL E-Ink Display Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=derrickjevans1
+WorkingDirectory=/home/derrickjevans1/client
+ExecStart=/usr/bin/python3 /home/derrickjevans1/client/client.py
+Restart=always
+RestartSec=15
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=trmnl-client
+
+[Install]
+WantedBy=multi-user.target
+```
+Enable and start the background service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable trmnl-client.service
+sudo systemctl start trmnl-client.service
+```
+Check real-time activity logs:
+```bash
+journalctl -u trmnl-client.service -f -n 50
+```
+
 
 ---
 
