@@ -30,6 +30,68 @@ const cleanGeneratedCode = (rawText) => {
 };
 
 /**
+ * Helper delay function
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * Robust content generator with fallback models and retry capability
+ */
+const generateContentWithFallback = async (prompt, systemInstruction = null) => {
+  const primaryModelName = "gemini-2.5-flash-lite";
+  const fallbackModelName = "gemini-2.5-flash";
+
+  const attemptCall = async (modelName) => {
+    const modelOptions = { model: modelName };
+    if (systemInstruction) {
+      modelOptions.systemInstruction = systemInstruction;
+    }
+    const model = genAI.getGenerativeModel(modelOptions);
+    return await model.generateContent(prompt);
+  };
+
+  const attemptWithRetry = async (modelName, maxRetries = 1) => {
+    for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+      try {
+        return await attemptCall(modelName);
+      } catch (err) {
+        const isTemporary = 
+          err.status === 503 || 
+          err.status === 429 || 
+          (err.message && (
+            err.message.includes("503") || 
+            err.message.includes("429") || 
+            err.message.includes("Service Unavailable") || 
+            err.message.includes("Too Many Requests") ||
+            err.message.includes("high demand")
+          ));
+        
+        if (isTemporary && attempt <= maxRetries) {
+          const delay = attempt * 1500;
+          console.warn(`[AI Core] Model ${modelName} failed with temporary error (attempt ${attempt}/${maxRetries + 1}): ${err.message}. Retrying in ${delay}ms...`);
+          await sleep(delay);
+        } else {
+          throw err;
+        }
+      }
+    }
+  };
+
+  try {
+    console.log(`[AI Core] Requesting Gemini using primary model: ${primaryModelName}...`);
+    return await attemptWithRetry(primaryModelName, 1);
+  } catch (err) {
+    console.warn(`[AI Core] Primary model ${primaryModelName} exhausted. Falling back to ${fallbackModelName}. Reason: ${err.message}`);
+    try {
+      return await attemptWithRetry(fallbackModelName, 1);
+    } catch (fallbackErr) {
+      console.error(`[AI Core] Fallback model ${fallbackModelName} also failed:`, fallbackErr);
+      throw err; // throw the original error if fallback also fails
+    }
+  }
+};
+
+/**
  * Outcome A: Generates fully compliant, hot-reloadable JavaScript plugin code based on user prompt
  */
 const generatePluginCode = async (userPrompt) => {
@@ -77,12 +139,10 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
 `;
 
   try {
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash-lite",
-      systemInstruction: systemInstruction
-    });
-
-    const result = await model.generateContent(`Generate a custom InkFlow widget based on this request: ${userPrompt}`);
+    const result = await generateContentWithFallback(
+      `Generate a custom InkFlow widget based on this request: ${userPrompt}`,
+      systemInstruction
+    );
     const rawText = result.response.text();
     const cleanCode = cleanGeneratedCode(rawText);
 
@@ -133,8 +193,7 @@ Write a premium morning brief synthesizing these elements:
 `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt);
     return result.response.text().trim();
   } catch (err) {
     console.error("[AI Core] Briefing generation failed:", err);
@@ -162,8 +221,7 @@ Write your Sys-Admin recommendations:
 `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-    const result = await model.generateContent(prompt);
+    const result = await generateContentWithFallback(prompt);
     return result.response.text().trim();
   } catch (err) {
     console.error("[AI Core] Telemetry insights failed:", err);
