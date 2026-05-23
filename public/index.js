@@ -63,8 +63,6 @@ const telemetryUptime = document.getElementById('telemetry-uptime');
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
   setupMainTabs();
-  setupAccordion();
-  setupTodoHandlers();
 
   // Widget Search catalog filter listener
   if (widgetSearch) {
@@ -450,7 +448,6 @@ async function fetchSettings() {
     serverConfig = await res.json();
     
     renderDevicesList();
-    renderGlobalSettings();
     renderHostedWidgetsList();
     updateAiPreviewMockup(activePreviewPluginId);
     
