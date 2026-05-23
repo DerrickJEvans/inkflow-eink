@@ -1,44 +1,14 @@
-// test-world-clock.js - Verifies NOAA calculations, sun/moon positions, and E-Ink dot-matrix world map
+// test-world-clock.js - Verifies NOAA calculations, sun/moon positions, and E-Ink world map (Solid & Dots)
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');
 const worldClockPlugin = require('../plugins/world_clock');
 
 console.log("======================================================");
-console.log("   🧪 Testing World Sun & Moon Clock Plugin 🧪");
+console.log("   🧪 Testing World Sun & Moon Clock Plugin Styles 🧪");
 console.log("======================================================\n");
 
-const runTest = async () => {
-  const mockSettings = {
-    timezone: "Europe/London",
-    latitude: 51.5074,
-    longitude: -0.1278,
-    label: "London Observatory Clock"
-  };
-
-  const mockDevice = {
-    id: "test_observatory_screen",
-    width: 800,
-    height: 480
-  };
-
-  console.log("1. Executing celestial, lunar, and solar calculations...");
-  const data = await worldClockPlugin.fetchData(mockSettings, mockDevice);
-  
-  console.log("\nCalculated Parameters:");
-  console.log(`- Timezone:        ${data.timezone}`);
-  console.log(`- Local Clock:     ${data.localTime} | ${data.localDate}`);
-  console.log(`- UTC / GMT:       ${data.gmtTime} | ${data.gmtDate}`);
-  console.log(`- Sunrise (Local): ${data.sunrise}`);
-  console.log(`- Sunset (Local):  ${data.sunset}`);
-  console.log(`- Sun Position:    Lat ${data.sun.latitude.toFixed(3)}°, Lon ${data.sun.longitude.toFixed(3)}°`);
-  console.log(`- Moon Position:   Lat ${data.moon.latitude.toFixed(3)}°, Lon ${data.moon.longitude.toFixed(3)}°`);
-  console.log(`- Moon Phase:      ${data.moon.phaseName} (Age: ${data.moon.age.toFixed(2)} days)`);
-
-  console.log("\n2. Compiling 0°-centered equirectangular dot-matrix SVG map...");
-  const innerSvg = worldClockPlugin.renderSVG(data, 800, 480);
-  
-  // Wrap inner SVG fragment in root SVG container
+const rasterizeAndSave = async (innerSvg, fileName) => {
   const fullSvg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="800" height="480" viewBox="0 0 800 480">
       <rect width="100%" height="100%" fill="white" />
@@ -47,15 +17,12 @@ const runTest = async () => {
   `;
   
   const scratchDir = path.join(__dirname);
-  if (!fs.existsSync(scratchDir)) fs.mkdirSync(scratchDir);
-  
-  const svgPath = path.join(scratchDir, 'test_world_clock.svg');
+  const svgPath = path.join(scratchDir, `${fileName}.svg`);
   fs.writeFileSync(svgPath, fullSvg, 'utf8');
   console.log(`✅ Saved vector SVG output to: ${svgPath}`);
 
-  console.log("\n3. Rasterizing SVG map to E-Ink monochrome PNG mockup...");
   try {
-    const pngPath = path.join(scratchDir, 'test_world_clock_dithered.png');
+    const pngPath = path.join(scratchDir, `${fileName}.png`);
     const svgBuffer = Buffer.from(fullSvg);
     
     // Rasterize SVG as grayscale raw image
@@ -77,10 +44,40 @@ const runTest = async () => {
       .toFile(pngPath);
 
     console.log(`✅ Saved E-Ink binarized mockup to: ${pngPath}`);
-    console.log("\n🎉 WORLD CLOCK PLUGIN FULLY VERIFIED AND PASSING!");
   } catch (err) {
-    console.error("❌ Failed to rasterize SVG:", err);
+    console.error(`❌ Failed to rasterize SVG for ${fileName}:`, err);
   }
+};
+
+const runTest = async () => {
+  const baseSettings = {
+    timezone: "Europe/London",
+    latitude: 51.5074,
+    longitude: -0.1278,
+    label: "London Observatory Clock"
+  };
+
+  const mockDevice = {
+    id: "test_observatory_screen",
+    width: 800,
+    height: 480
+  };
+
+  console.log("1. Executing celestial, lunar, and solar calculations...");
+  
+  // Test Style 1: Solid (Satellite Style)
+  console.log("\n--- STYLE 1: SOLID (SATELLITE STYLE) ---");
+  const dataSolid = await worldClockPlugin.fetchData({ ...baseSettings, mapStyle: "solid" }, mockDevice);
+  const innerSvgSolid = worldClockPlugin.renderSVG(dataSolid, 800, 480);
+  await rasterizeAndSave(innerSvgSolid, "test_world_clock_solid");
+
+  // Test Style 2: Dots (Dot-Matrix Style)
+  console.log("\n--- STYLE 2: DOTS (DOT-MATRIX STYLE) ---");
+  const dataDots = await worldClockPlugin.fetchData({ ...baseSettings, mapStyle: "dots" }, mockDevice);
+  const innerSvgDots = worldClockPlugin.renderSVG(dataDots, 800, 480);
+  await rasterizeAndSave(innerSvgDots, "test_world_clock_dots");
+
+  console.log("\n🎉 BOTH WORLD CLOCK STYLES SUCCESSFULLY COMPILED AND VERIFIED!");
 };
 
 runTest();

@@ -47,6 +47,7 @@ const xkcdMode = document.getElementById('xkcd-mode');
 const worldClockTimezone = document.getElementById('world-clock-timezone');
 const worldClockLat = document.getElementById('world-clock-lat');
 const worldClockLon = document.getElementById('world-clock-lon');
+const worldClockStyle = document.getElementById('world-clock-style');
 const btnSaveGlobal = document.getElementById('btn-save-global-settings');
 
 // Initialize Dashboard
@@ -235,7 +236,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     serverConfig.settings.world_clock = {
       timezone: worldClockTimezone.value || "Europe/London",
       latitude: parseFloat(worldClockLat.value) || 51.5074,
-      longitude: parseFloat(worldClockLon.value) || -0.1278
+      longitude: parseFloat(worldClockLon.value) || -0.1278,
+      mapStyle: worldClockStyle.value || "solid"
     };
 
     await saveSettings();
@@ -492,10 +494,11 @@ function renderGlobalSettings() {
   xkcdMode.value = xkcd.mode;
 
   // World Clock
-  const worldClock = settings.world_clock || { timezone: 'Europe/London', latitude: 51.5074, longitude: -0.1278 };
+  const worldClock = settings.world_clock || { timezone: 'Europe/London', latitude: 51.5074, longitude: -0.1278, mapStyle: 'solid' };
   worldClockTimezone.value = worldClock.timezone || 'Europe/London';
   worldClockLat.value = worldClock.latitude !== undefined ? worldClock.latitude : 51.5074;
   worldClockLon.value = worldClock.longitude !== undefined ? worldClock.longitude : -0.1278;
+  worldClockStyle.value = worldClock.mapStyle || 'solid';
 
   renderTodoList(notes.items);
 }

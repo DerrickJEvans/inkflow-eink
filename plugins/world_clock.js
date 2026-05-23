@@ -203,6 +203,7 @@ module.exports = {
     { key: "timezone", label: "Local Timezone", type: "text", default: "Europe/London" },
     { key: "latitude", label: "Station Latitude", type: "number", default: 51.5074 },
     { key: "longitude", label: "Station Longitude", type: "number", default: -0.1278 },
+    { key: "mapStyle", label: "Map Render Style", type: "select", default: "solid", options: ["solid", "dots"] },
     { key: "label", label: "Clock Title", type: "text", default: "Greenwich Meridian Clock" }
   ],
 
@@ -250,7 +251,8 @@ module.exports = {
       sunrise: sunriseStr,
       sunset: sunsetStr,
       sun: sunPos,
-      moon: moonPos
+      moon: moonPos,
+      mapStyle: settings.mapStyle || "solid"
     };
   },
 
@@ -272,8 +274,9 @@ module.exports = {
       mapY = 110;
     }
 
-    // Grid dots rendering loop
+    // Grid dots/solid pixels rendering loop
     let dotsHtml = '';
+    const mapStyle = data.mapStyle || 'solid';
     
     for (let y = 0; y < mapHeightCells; y++) {
       const phi = 90 - (y + 0.5) * (180 / mapHeightCells);
@@ -281,7 +284,9 @@ module.exports = {
       
       for (let x = 0; x < mapWidthCells; x++) {
         const char = MAP_GRID[y][x];
-        if (char !== '#') continue;
+        const isLand = char === '#';
+        
+        if (mapStyle === 'dots' && !isLand) continue;
         
         const lambda = (x - 30) * (360 / mapWidthCells);
         
@@ -298,10 +303,30 @@ module.exports = {
         const cx = mapX + x * dx;
         const cy = mapY + y * dy;
         
-        if (isDay) {
-          dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.38}" fill="black" />`;
+        if (mapStyle === 'dots') {
+          if (isDay) {
+            dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.38}" fill="black" />`;
+          } else {
+            dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.35}" fill="none" stroke="black" stroke-width="1" opacity="0.45" />`;
+          }
         } else {
-          dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.35}" fill="none" stroke="black" stroke-width="1" opacity="0.45" />`;
+          // mapStyle === 'solid'
+          const pxW = dx + 0.5;
+          const pxH = dy + 0.5;
+          const rx = cx - dx / 2;
+          const ry = cy - dy / 2;
+
+          if (isLand) {
+            if (isDay) {
+              dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" />`;
+            } else {
+              dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.32" />`;
+            }
+          } else {
+            if (!isDay) {
+              dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.14" />`;
+            }
+          }
         }
       }
     }
