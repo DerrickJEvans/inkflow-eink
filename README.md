@@ -26,6 +26,9 @@ graph TD
   * **Weather**: Full forecast with min/max temp, precipitation, and wind speeds using coordinates.
   * **RSS Feed**: Aggregates and displays formatted news items (default: Hacker News).
   * **Family Notice Board**: Serves custom notes, lists, or announcements.
+  * **Daily AI Briefing**: Synthesizes RSS headlines and weather forecasts using Google Gemini into an elegant newspaper editorial bulletin.
+  * **AI Telemetry Advisor**: Diagnoses CPU loads, temperature spikes, and memory diagnostics to print proactive system administrator advice.
+  * **AI Widget Builder**: Generates and compiles new compliant widgets on-the-fly from a simple natural language prompt directly in the control panel.
 
 ### 2. High-Performance E-Ink Processing
 * **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
@@ -159,6 +162,34 @@ Run this command in Windows Command Prompt (CMD) or PowerShell:
 * **Choose Storage**: Select your SD card.
 * Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings** to configure your Wi-Fi, SSH, and set your username to `derrickjevans1`.
 * Flash, insert the card into your Pi 5, power it up, and wait 3 minutes for native first-boot provisioning!
+
+---
+
+## 🧠 Google Gemini AI Integration
+
+InkFlow E-Ink Server has been upgraded to support a **deep, modular integration with Google Gemini AI** (powered by the fast and highly capable `gemini-2.5-flash` model). This adds three dynamic, cognitive features to your low-power display:
+
+### 1. ✨ AI Widget Builder (Natural Language Generator)
+Describe any custom widget you want in the control panel (e.g. *"Build a widget that displays random developer jokes with a cool pixel border"* or *"A cryptocurrency ticker displaying BTC and ETH"*), and Gemini will automatically generate, compile, and register a compliant JavaScript plugin in real-time **without restarting the server!**
+
+### 2. 🗞️ Daily AI Briefing (`plugins/ai_briefing.js`)
+An elegant editorial newspaper-style morning bulletin written in the voice of an elite print editor, synthesizing your weather parameters and RSS news items into a concise, engaging narrative. Renders using broadsheet serif typography and dynamic SVG line-wrapping.
+
+### 3. 🛠️ AI Telemetry Advisor (`plugins/ai_advisor.js`)
+A proactive diagnostic monitor that parses real-time system performance data (CPU load, temperature, RAM utilization, and disk space) and returns exactly 2-3 short, actionable system administrator recommendations inside a technical E-Ink monospace card.
+
+### 🔑 Setting up the Gemini API Key
+To activate these features:
+1. Obtain a free API Key from [Google AI Studio (aistudio.google.com)](https://aistudio.google.com/).
+2. Create a `.env` file in your server's root folder:
+   ```env
+   GEMINI_API_KEY=AIzaSyYourActualKeyHere
+   ```
+3. Run the update script to pull new code, install dependencies (`npm install`), and reload services:
+   ```bash
+   ./update.sh
+   ```
+   *(Note: The `update.sh` script now automatically runs `npm install --no-audit --no-fund` to make sure all dependencies like `@google/generative-ai` are completely installed).*
 
 ---
 

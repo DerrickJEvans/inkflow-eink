@@ -81,6 +81,15 @@ else
     echo -e "\n${YELLOW}[5/5] No backup to restore. Active configuration template initialized.${NC}"
 fi
 
+# 5.5 Install package dependencies
+echo -e "\n${BLUE}📦 Installing package dependencies...${NC}"
+npm install --no-audit --no-fund
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✅ Dependencies installed successfully.${NC}"
+else
+    echo -e "${YELLOW}⚠️ npm install warning. Verify package dependencies manually if problems arise.${NC}"
+fi
+
 # 6. Restart backend daemon service if active
 echo -e "\n${BLUE}🔄 Restarting backend services...${NC}"
 if systemctl is-active --quiet trmnl-pi 2>/dev/null || systemctl is-enabled --quiet trmnl-pi 2>/dev/null; then
