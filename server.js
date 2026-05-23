@@ -4,6 +4,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const { renderDeviceImage, PLUGINS } = require('./renderer');
+const scheduler = require('./scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +50,9 @@ const saveConfig = () => {
     console.error("Error saving config.json:", err);
   }
 };
+
+// Start background scheduler for decoupled cache updates
+scheduler.start(config, saveConfig);
 
 // Memory cache for compiled screen data
 const imageCache = {};
@@ -147,6 +151,59 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
   }
 };
 
+/**
+ * Resolves the dynamic battery deep sleep interval for the device.
+ * Checks TfL and UK Train caches for disruptions/delays.
+ * Returns 300 (5 minutes) if active disruption is found, else 1800 (30 minutes).
+ */
+const resolveDeepSleepInterval = (device) => {
+  try {
+    const activePlugins = device.activePlugins || [];
+    for (const pluginId of activePlugins) {
+      if (pluginId === 'tfl') {
+        const cachePath = path.join(CACHE_DIR, `data_${device.id}_tfl.json`);
+        if (fs.existsSync(cachePath)) {
+          const data = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+          if (data && Array.isArray(data.lines)) {
+            const hasDisruption = data.lines.some(l => l.severity !== 10);
+            if (hasDisruption) {
+              console.log(`[Deep Sleep] TfL disruption detected for ${device.id}. Deep sleep interval set to 300s.`);
+              return 300;
+            }
+          }
+        }
+      }
+      if (pluginId === 'uk_trains') {
+        const cachePath = path.join(CACHE_DIR, `data_${device.id}_uk_trains.json`);
+        if (fs.existsSync(cachePath)) {
+          const data = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+          if (data) {
+            if (Array.isArray(data.alerts) && data.alerts.length > 0) {
+              console.log(`[Deep Sleep] UK Trains alert detected for ${device.id}. Deep sleep interval set to 300s.`);
+              return 300;
+            }
+            if (Array.isArray(data.services)) {
+              const hasDelay = data.services.some(s => {
+                if (s.isCancelled) return true;
+                const status = (s.status || "").toLowerCase();
+                if (status.includes("delayed") || status.includes("late") || status.includes("cancel")) return true;
+                return false;
+              });
+              if (hasDelay) {
+                console.log(`[Deep Sleep] UK Trains delay/cancellation detected for ${device.id}. Deep sleep interval set to 300s.`);
+                return 300;
+              }
+            }
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error(`[Deep Sleep] Error resolving sleep interval for ${device.id}:`, err);
+  }
+  return 1800;
+};
+
 // ==========================================
 //              API ENDPOINTS
 // ==========================================
@@ -213,10 +270,12 @@ app.get('/api/display/image.png', async (req, res) => {
     
     const cached = imageCache[deviceId];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = resolveDeepSleepInterval(device);
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('X-Refresh-Rate', rate.toString());
+    res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
     res.send(data.png);
   } catch (err) {
     console.error(err);
@@ -235,10 +294,12 @@ app.get('/api/display/raw', async (req, res) => {
 
     const cached = imageCache[deviceId];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = resolveDeepSleepInterval(device);
 
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('X-Refresh-Rate', rate.toString());
+    res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
     res.send(data.raw);
   } catch (err) {
     console.error(err);
@@ -263,6 +324,9 @@ app.get('/api/display', async (req, res) => {
 
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = resolveDeepSleepInterval(device);
+
+    res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
 
     // Return official TRMNL BYOS response format
     res.json({

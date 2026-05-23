@@ -113,6 +113,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const height = parseInt(document.getElementById('edit-device-height').value);
     const refreshRate = parseInt(document.getElementById('edit-device-refresh').value);
     const layoutMode = document.getElementById('edit-device-layout-mode').value;
+    const ditherMode = document.getElementById('edit-device-dither').value;
+    const layoutRatio = document.getElementById('edit-device-ratio').value;
     
     // Read selected plugins
     const activePlugins = [];
@@ -146,6 +148,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       refreshRate, 
       activePlugins, 
       layoutMode, 
+      ditherMode,
+      layoutRatio,
       rotationIntervals 
     };
     
@@ -333,6 +337,8 @@ function selectDevice(deviceId, isNew = false) {
       refreshRate: 1800,
       activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains", "xkcd"],
       layoutMode: "grid",
+      ditherMode: "floyd-steinberg",
+      layoutRatio: "equal",
       rotationIntervals: {
         weather: 30,
         system: 15,
@@ -377,6 +383,10 @@ function selectDevice(deviceId, isNew = false) {
     document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
       cb.checked = device.activePlugins.includes(cb.value);
     });
+
+    // Load ditherMode and layoutRatio
+    document.getElementById('edit-device-dither').value = device.ditherMode || 'floyd-steinberg';
+    document.getElementById('edit-device-ratio').value = device.layoutRatio || 'equal';
 
     updateScreenMockup(device.id);
     updateGuides(device);

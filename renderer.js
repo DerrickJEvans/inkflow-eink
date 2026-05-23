@@ -22,14 +22,27 @@ const PLUGINS = {
   xkcd: xkcdPlugin
 };
 
+const CACHE_DIR = path.join(__dirname, 'cache');
+const getCachePath = (deviceId, pluginId) => {
+  return path.join(CACHE_DIR, `data_${deviceId}_${pluginId}.json`);
+};
+
 /**
  * Applies Floyd-Steinberg Dithering to a Grayscale Raw Buffer
  * Uses Int16Array to prevent overflow when diffusing error values
  */
-const applyFloydSteinbergDither = (grayscaleBuffer, width, height) => {
+const applyFloydSteinbergDither = (grayscaleBuffer, width, height, ditherMode = 'floyd-steinberg') => {
   const pixelCount = width * height;
-  const temp = new Int16Array(grayscaleBuffer);
   const dithered = Buffer.alloc(pixelCount);
+
+  if (ditherMode === 'threshold') {
+    for (let i = 0; i < pixelCount; i++) {
+      dithered[i] = grayscaleBuffer[i] < 128 ? 0 : 255;
+    }
+    return dithered;
+  }
+
+  const temp = new Int16Array(grayscaleBuffer);
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -110,7 +123,20 @@ const generateSVG = async (device, settings) => {
   const fetchedData = {};
   for (const pluginId of pluginsToFetch) {
     try {
-      fetchedData[pluginId] = await PLUGINS[pluginId].fetchData(settings[pluginId] || {}, device);
+      let data = null;
+      const cacheFile = getCachePath(device.id, pluginId);
+      if (fs.existsSync(cacheFile)) {
+        try {
+          data = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        } catch (e) {
+          console.error(`Error reading cache for plugin [${pluginId}]:`, e);
+        }
+      }
+      if (!data) {
+        console.log(`[Renderer] Cache miss for [${pluginId}] on device [${device.id}]. Fetching on-the-fly...`);
+        data = await PLUGINS[pluginId].fetchData(settings[pluginId] || {}, device);
+      }
+      fetchedData[pluginId] = data;
     } catch (err) {
       console.error(`Error loading data for plugin [${pluginId}]:`, err);
       fetchedData[pluginId] = null;
@@ -147,18 +173,36 @@ const generateSVG = async (device, settings) => {
       }
     } else if (count === 2) {
       // Split screen side-by-side (2 columns)
-      const qw = w / 2;
-      activePlugins.forEach((pId, idx) => {
-        if (PLUGINS[pId] && fetchedData[pId]) {
-          layoutElements += `
-            <g transform="translate(${idx * qw}, 0)">
-              ${PLUGINS[pId].renderSVG(fetchedData[pId], qw, h)}
-            </g>
-          `;
-        }
-      });
+      let w1 = Math.round(w / 2);
+      let w2 = w - w1;
+      const ratio = device.layoutRatio || 'equal';
+      if (ratio === 'wide-left') {
+        w1 = Math.round(w * 2 / 3);
+        w2 = w - w1;
+      } else if (ratio === 'wide-right') {
+        w1 = Math.round(w * 1 / 3);
+        w2 = w - w1;
+      }
+
+      const pId1 = activePlugins[0];
+      const pId2 = activePlugins[1];
+
+      if (pId1 && PLUGINS[pId1] && fetchedData[pId1]) {
+        layoutElements += `
+          <g transform="translate(0, 0)">
+            ${PLUGINS[pId1].renderSVG(fetchedData[pId1], w1, h)}
+          </g>
+        `;
+      }
+      if (pId2 && PLUGINS[pId2] && fetchedData[pId2]) {
+        layoutElements += `
+          <g transform="translate(${w1}, 0)">
+            ${PLUGINS[pId2].renderSVG(fetchedData[pId2], w2, h)}
+          </g>
+        `;
+      }
       // Draw vertical divider
-      gridLines += `<line x1="${qw}" y1="0" x2="${qw}" y2="${h}" stroke="black" stroke-width="2" />`;
+      gridLines += `<line x1="${w1}" y1="0" x2="${w1}" y2="${h}" stroke="black" stroke-width="2" />`;
     } else if (count === 3) {
       // 1 Top full row, 2 bottom columns
       const qh = h / 2;
@@ -262,7 +306,8 @@ const renderDeviceImage = async (device, settings) => {
     .toBuffer();
 
   // 3. Error Diffusion Dithering
-  const dithered = applyFloydSteinbergDither(rawGrayscale, w, h);
+  const ditherMode = device.ditherMode || 'floyd-steinberg';
+  const dithered = applyFloydSteinbergDither(rawGrayscale, w, h, ditherMode);
 
   // 4. Export PNG
   const pngBuffer = await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
