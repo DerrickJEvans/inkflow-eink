@@ -124,7 +124,8 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
     // If in rotation mode and we successfully rendered a fresh frame,
     // advance the plugin index for the NEXT poll request!
     if (device.layoutMode === 'rotation' && device.activePlugins && device.activePlugins.length > 1) {
-      device.currentPluginIndex = (device.currentPluginIndex + 1) % device.activePlugins.length;
+      const currentIndex = parseInt(device.currentPluginIndex) || 0;
+      device.currentPluginIndex = (currentIndex + 1) % device.activePlugins.length;
       saveConfig();
       console.log(`[Rotation] Advanced device ${device.id} to plugin index ${device.currentPluginIndex} for the next refresh.`);
     }
