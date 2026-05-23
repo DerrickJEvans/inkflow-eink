@@ -41,9 +41,9 @@ module.exports = {
     let systemText = '';
     const sysData = getCachedData('system');
     if (sysData) {
-      systemText = `CPU Load: ${sysData.cpuLoad || 0}%, Temp: ${sysData.cpuTemp || 0}°C, RAM: ${sysData.memoryUsedPercent || 0}%, Disk: ${sysData.diskUsedPercent || 0}%, Uptime: ${sysData.uptimeHours || 0} hrs, Active Hardware Clients: ${sysData.activeClients || 0}`;
+      systemText = `CPU Load: ${sysData.cpuUsage || 0}%, Temp: ${sysData.cpuTemp || 0}°C, RAM: ${sysData.ramUsage || 0}%, Disk: ${sysData.diskUsage || 0}%, Uptime: ${sysData.uptime || 'N/A'}`;
     } else {
-      systemText = "CPU Load: 68.2%, Temp: 74°C, RAM: 84.5%, Disk: 48.2%, Uptime: 452 hrs, Active Hardware Clients: 4";
+      systemText = "CPU Load: 68.2%, Temp: 74°C, RAM: 84.5%, Disk: 48.2%, Uptime: 4d 12h 30m";
     }
 
     // 2. Generate expert diagnostic recommendations via Gemini
@@ -60,7 +60,7 @@ module.exports = {
       insights: parsedLines,
       stats: {
         cpuTemp: sysData ? sysData.cpuTemp || 45 : 74,
-        cpuLoad: sysData ? sysData.cpuLoad || 12 : 68.2
+        cpuLoad: sysData ? sysData.cpuUsage || 12 : 68.2
       }
     };
   },

@@ -61,8 +61,8 @@ const start = (sharedConfig, sharedSaveConfig) => {
 
   console.log("[Scheduler] Decoupled Caching Scheduler initialized.");
   
-  // Trigger initial fetch loop asynchronously on startup
-  setTimeout(runAllFetches, 1000);
+  // Trigger initial fetch loop after 25 seconds to allow network interfaces to fully associate on boot!
+  setTimeout(runAllFetches, 25000);
 
   // Run fetches every 4 minutes (240,000ms) to ensure timetables and feeds stay fresh
   setInterval(runAllFetches, 240000);
