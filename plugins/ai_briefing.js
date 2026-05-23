@@ -70,7 +70,7 @@ module.exports = {
     let weatherText = '';
     const weatherData = getCachedData('weather');
     if (weatherData) {
-      weatherText = `${weatherData.temp || 15}°C, ${weatherData.condition || 'Clear'}. High of ${weatherData.tempMax || 18}°C, low of ${weatherData.tempMin || 11}°C. ${weatherData.summary || ''}`;
+      weatherText = `${weatherData.temp || 15}${weatherData.unit || '°C'}, ${weatherData.condition || 'Clear'}. High of ${weatherData.high || 18}${weatherData.unit || '°C'}, low of ${weatherData.low || 11}${weatherData.unit || '°C'}.`;
     } else {
       weatherText = "16°C, Mild and breezy. High of 19°C, low of 12°C. Gentle south-westerly wind.";
     }
