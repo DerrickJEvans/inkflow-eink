@@ -7,6 +7,9 @@ const path = require('path');
 const systemPlugin = require('./plugins/system');
 const weatherPlugin = require('./plugins/weather');
 const rssPlugin = require('./plugins/rss');
+const rssTechPlugin = require('./plugins/rss_tech');
+const rssUkPlugin = require('./plugins/rss_uk');
+const rssWorldPlugin = require('./plugins/rss_world');
 const notesPlugin = require('./plugins/notes');
 const tflPlugin = require('./plugins/tfl');
 
@@ -14,6 +17,9 @@ const PLUGINS = {
   system: systemPlugin,
   weather: weatherPlugin,
   rss: rssPlugin,
+  rss_tech: rssTechPlugin,
+  rss_uk: rssUkPlugin,
+  rss_world: rssWorldPlugin,
   notes: notesPlugin,
   tfl: tflPlugin
 };

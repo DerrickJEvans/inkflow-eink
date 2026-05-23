@@ -101,6 +101,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       weather: parseInt(document.getElementById('edit-device-interval-weather').value) || 30,
       system: parseInt(document.getElementById('edit-device-interval-system').value) || 15,
       rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
+      rss_tech: parseInt(document.getElementById('edit-device-interval-rss_tech').value) || 30,
+      rss_uk: parseInt(document.getElementById('edit-device-interval-rss_uk').value) || 30,
+      rss_world: parseInt(document.getElementById('edit-device-interval-rss_world').value) || 30,
       notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
       tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30
     };
@@ -281,6 +284,9 @@ function selectDevice(deviceId, isNew = false) {
         weather: 30,
         system: 15,
         rss: 30,
+        rss_tech: 30,
+        rss_uk: 30,
+        rss_world: 30,
         notes: 15,
         tfl: 30
       }
@@ -310,6 +316,9 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-interval-weather').value = rotationIntervals.weather || '';
     document.getElementById('edit-device-interval-system').value = rotationIntervals.system || '';
     document.getElementById('edit-device-interval-rss').value = rotationIntervals.rss || '';
+    document.getElementById('edit-device-interval-rss_tech').value = rotationIntervals.rss_tech || '';
+    document.getElementById('edit-device-interval-rss_uk').value = rotationIntervals.rss_uk || '';
+    document.getElementById('edit-device-interval-rss_world').value = rotationIntervals.rss_world || '';
     document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
     document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
 

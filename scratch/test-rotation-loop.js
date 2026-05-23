@@ -65,12 +65,15 @@ const run = async () => {
         width: 800,
         height: 480,
         refreshRate: 30, // 30 seconds refresh
-        activePlugins: ["tfl", "weather", "rss"],
+        activePlugins: ["tfl", "weather", "rss", "rss_tech", "rss_uk", "rss_world"],
         layoutMode: "rotation",
         rotationIntervals: {
           tfl: 30,
           weather: 30,
-          rss: 30
+          rss: 30,
+          rss_tech: 30,
+          rss_uk: 30,
+          rss_world: 30
         }
       }
     ]
@@ -79,12 +82,8 @@ const run = async () => {
   const saveRes = await postJson('/api/settings', configPayload);
   console.log("Save Settings Status:", saveRes.data);
 
-  // Step 2: Simulate 4 sequential refreshes separated by 1000ms but with force=true or cache-clearing
-  // Wait, to simulate actual time passing, we can either wait 31 seconds OR just pass force=true to simulate expiration.
-  // Wait, let's look at how the index is advanced. Passing force=true forces a fresh render and advances the index!
-  // Let's perform 4 sequential requests passing force=true and see which plugins render!
-  
-  for (let i = 1; i <= 4; i++) {
+  // Step 2: Simulate 7 sequential refreshes
+  for (let i = 1; i <= 7; i++) {
     console.log(`\n--- Request #${i} (force=true) ---`);
     
     // We fetch settings first to see the current index
