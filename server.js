@@ -128,9 +128,9 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
   const now = Date.now();
   const cached = imageCache[cacheKey];
   
-  // Resolve dynamic refresh rate for rotation mode
+  // Resolve dynamic refresh rate for Carousel Mode
   let refreshRate = device.refreshRate || 1800;
-  if (device.layoutMode === 'rotation' && device.activePlugins && device.activePlugins.length > 0) {
+  if (device.activePlugins && device.activePlugins.length > 0) {
     const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
     if (activePlugins.length > 0) {
       const currentIndex = device.currentPluginIndex || 0;
@@ -163,9 +163,8 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.png`), rendered.png);
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.raw`), rendered.raw);
 
-    // If in rotation mode and we successfully rendered a fresh frame,
-    // advance the plugin index for the NEXT poll request!
-    if (device.layoutMode === 'rotation' && device.activePlugins && device.activePlugins.length > 1) {
+    // In Carousel Mode, advance the plugin index for the NEXT poll request!
+    if (device.activePlugins && device.activePlugins.length > 1) {
       const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
       if (activePlugins.length > 1) {
         const currentIndex = parseInt(device.currentPluginIndex) || 0;

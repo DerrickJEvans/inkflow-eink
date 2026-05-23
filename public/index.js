@@ -84,18 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   startTelemetryLoop();
   startDeviceListSync();
   
-  // Layout Mode Change Handler to toggle rotation settings visibility
-  const layoutModeSelect = document.getElementById('edit-device-layout-mode');
-  const rotationIntervalsContainer = document.getElementById('rotation-intervals-container');
-  if (layoutModeSelect && rotationIntervalsContainer) {
-    layoutModeSelect.addEventListener('change', () => {
-      if (layoutModeSelect.value === 'rotation') {
-        rotationIntervalsContainer.style.display = 'block';
-      } else {
-        rotationIntervalsContainer.style.display = 'none';
-      }
-    });
-  }
+
 
   // Connect default add device trigger
   document.getElementById('btn-add-device').addEventListener('click', () => {
@@ -116,9 +105,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const width = parseInt(document.getElementById('edit-device-width').value);
     const height = parseInt(document.getElementById('edit-device-height').value);
     const refreshRate = parseInt(document.getElementById('edit-device-refresh').value);
-    const layoutMode = document.getElementById('edit-device-layout-mode').value;
+    const layoutMode = "rotation";
     const ditherMode = document.getElementById('edit-device-dither').value;
-    const layoutRatio = document.getElementById('edit-device-ratio').value;
     
     // Read selected plugins
     const activePlugins = [];
@@ -152,9 +140,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       height, 
       refreshRate, 
       activePlugins, 
-      layoutMode, 
+      layoutMode: "rotation", 
       ditherMode,
-      layoutRatio,
       rotationIntervals 
     };
     
@@ -349,9 +336,8 @@ function selectDevice(deviceId, isNew = false) {
       height: 480,
       refreshRate: 1800,
       activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains", "xkcd", "world_clock"],
-      layoutMode: "grid",
+      layoutMode: "rotation",
       ditherMode: "floyd-steinberg",
-      layoutRatio: "equal",
       rotationIntervals: {
         weather: 30,
         system: 15,
@@ -374,13 +360,9 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-height').value = device.height;
     document.getElementById('edit-device-refresh').value = device.refreshRate;
 
-    // Load layout mode and toggle container visibility
-    const layoutMode = device.layoutMode || 'grid';
-    document.getElementById('edit-device-layout-mode').value = layoutMode;
-    
     const intervalsContainer = document.getElementById('rotation-intervals-container');
     if (intervalsContainer) {
-      intervalsContainer.style.display = layoutMode === 'rotation' ? 'block' : 'none';
+      intervalsContainer.style.display = 'block';
     }
 
     // Load rotation intervals
@@ -399,9 +381,8 @@ function selectDevice(deviceId, isNew = false) {
       cb.checked = device.activePlugins.includes(cb.value);
     });
 
-    // Load ditherMode and layoutRatio
+    // Load ditherMode
     document.getElementById('edit-device-dither').value = device.ditherMode || 'floyd-steinberg';
-    document.getElementById('edit-device-ratio').value = device.layoutRatio || 'equal';
 
     updateScreenMockup(device.id);
     updateGuides(device);
