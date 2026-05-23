@@ -2,6 +2,18 @@
 const fs = require('fs');
 const path = require('path');
 
+const mapPath = path.join(__dirname, '..', 'public', 'world_map_bg.png');
+let mapBase64 = '';
+try {
+  if (fs.existsSync(mapPath)) {
+    mapBase64 = fs.readFileSync(mapPath, 'base64');
+  } else {
+    console.warn(`[world_clock] Warning: World map image not found at ${mapPath}`);
+  }
+} catch (e) {
+  console.error("[world_clock] Error reading world map file:", e);
+}
+
 // 60x20 Minimalist Dot-Matrix World Map Outline
 const MAP_GRID = [
   "                  ######                                    ",
@@ -203,7 +215,7 @@ module.exports = {
     { key: "timezone", label: "Local Timezone", type: "text", default: "Europe/London" },
     { key: "latitude", label: "Station Latitude", type: "number", default: 51.5074 },
     { key: "longitude", label: "Station Longitude", type: "number", default: -0.1278 },
-    { key: "mapStyle", label: "Map Render Style", type: "select", default: "solid", options: ["solid", "dots"] },
+    { key: "mapStyle", label: "Map Render Style", type: "select", default: "hires", options: ["hires", "solid", "dots"] },
     { key: "label", label: "Clock Title", type: "text", default: "Greenwich Meridian Clock" }
   ],
 
@@ -252,7 +264,7 @@ module.exports = {
       sunset: sunsetStr,
       sun: sunPos,
       moon: moonPos,
-      mapStyle: settings.mapStyle || "solid"
+      mapStyle: settings.mapStyle || "hires"
     };
   },
 
@@ -274,57 +286,105 @@ module.exports = {
       mapY = 110;
     }
 
+    const mapWidth = mapWidthCells * dx;
+    const mapHeight = mapHeightCells * dy;
+
     // Grid dots/solid pixels rendering loop
     let dotsHtml = '';
-    const mapStyle = data.mapStyle || 'solid';
+    const mapStyle = data.mapStyle || 'hires';
     
-    for (let y = 0; y < mapHeightCells; y++) {
-      const phi = 90 - (y + 0.5) * (180 / mapHeightCells);
-      const phiRad = phi * Math.PI / 180;
+    if (mapStyle === 'hires') {
+      if (mapBase64) {
+        dotsHtml += `<image href="data:image/png;base64,${mapBase64}" x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" />`;
+      } else {
+        dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
+        dotsHtml += `<text x="${mapX + mapWidth / 2}" y="${mapY + mapHeight / 2}" font-family="sans-serif" font-size="12" fill="black" text-anchor="middle">Map Background Missing</text>`;
+      }
+
+      // Generate smooth terminator polygon points
+      const points = [];
+      const delta = data.sun.latitude;
+      const deltaRad = delta * Math.PI / 180;
+      const sunLonRad = data.sun.longitude * Math.PI / 180;
       
-      for (let x = 0; x < mapWidthCells; x++) {
-        const char = MAP_GRID[y][x];
-        const isLand = char === '#';
-        
-        if (mapStyle === 'dots' && !isLand) continue;
-        
-        const lambda = (x - 30) * (360 / mapWidthCells);
-        
-        // Solar zenith distance
-        const sunLatRad = data.sun.latitude * Math.PI / 180;
-        const sunLonRad = data.sun.longitude * Math.PI / 180;
+      const tanDelta = Math.tan(deltaRad);
+      const divisor = Math.abs(tanDelta) < 1e-6 ? 1e-6 * Math.sign(tanDelta || 1) : tanDelta;
+
+      const steps = 120;
+      for (let i = 0; i <= steps; i++) {
+        const lambda = -180 + (i / steps) * 360;
         const lambdaRad = lambda * Math.PI / 180;
         
-        const cosTheta = Math.sin(phiRad) * Math.sin(sunLatRad) + 
-                         Math.cos(phiRad) * Math.cos(sunLatRad) * Math.cos(lambdaRad - sunLonRad);
+        const phiRad = Math.atan(-Math.cos(lambdaRad - sunLonRad) / divisor);
+        const phi = phiRad * 180 / Math.PI;
         
-        const isDay = cosTheta >= 0;
-        
-        const cx = mapX + x * dx;
-        const cy = mapY + y * dy;
-        
-        if (mapStyle === 'dots') {
-          if (isDay) {
-            dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.38}" fill="black" />`;
-          } else {
-            dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.35}" fill="none" stroke="black" stroke-width="1" opacity="0.45" />`;
-          }
-        } else {
-          // mapStyle === 'solid'
-          const pxW = dx + 0.5;
-          const pxH = dy + 0.5;
-          const rx = cx - dx / 2;
-          const ry = cy - dy / 2;
+        const px = mapX + (i / steps) * mapWidth;
+        const py = mapY + ((90 - phi) / 180) * mapHeight;
+        points.push(`${px.toFixed(1)},${py.toFixed(1)}`);
+      }
 
-          if (isLand) {
+      // Close polygon based on season (solar declination)
+      if (delta >= 0) {
+        points.push(`${(mapX + mapWidth).toFixed(1)},${(mapY + mapHeight).toFixed(1)}`);
+        points.push(`${mapX.toFixed(1)},${(mapY + mapHeight).toFixed(1)}`);
+      } else {
+        points.push(`${(mapX + mapWidth).toFixed(1)},${mapY.toFixed(1)}`);
+        points.push(`${mapX.toFixed(1)},${mapY.toFixed(1)}`);
+      }
+
+      const terminatorPoints = points.join(' ');
+      // 32% black opacity renders as a gorgeous stippled E-Ink dither shadow
+      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" opacity="0.32" />`;
+      dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
+    } else {
+      for (let y = 0; y < mapHeightCells; y++) {
+        const phi = 90 - (y + 0.5) * (180 / mapHeightCells);
+        const phiRad = phi * Math.PI / 180;
+        
+        for (let x = 0; x < mapWidthCells; x++) {
+          const char = MAP_GRID[y][x];
+          const isLand = char === '#';
+          
+          if (mapStyle === 'dots' && !isLand) continue;
+          
+          const lambda = (x - 30) * (360 / mapWidthCells);
+          
+          // Solar zenith distance
+          const sunLatRad = data.sun.latitude * Math.PI / 180;
+          const sunLonRad = data.sun.longitude * Math.PI / 180;
+          const lambdaRad = lambda * Math.PI / 180;
+          
+          const cosTheta = Math.sin(phiRad) * Math.sin(sunLatRad) + 
+                           Math.cos(phiRad) * Math.cos(sunLatRad) * Math.cos(lambdaRad - sunLonRad);
+          
+          const isDay = cosTheta >= 0;
+          
+          const cx = mapX + x * dx;
+          const cy = mapY + y * dy;
+          
+          if (mapStyle === 'dots') {
             if (isDay) {
-              dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" />`;
+              dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.38}" fill="black" />`;
             } else {
-              dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.32" />`;
+              dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.35}" fill="none" stroke="black" stroke-width="1" opacity="0.45" />`;
             }
           } else {
-            if (!isDay) {
-              dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.14" />`;
+            // mapStyle === 'solid'
+            const pxW = dx + 0.5;
+            const pxH = dy + 0.5;
+            const rx = cx - dx / 2;
+            const ry = cy - dy / 2;
+
+            if (isLand) {
+              if (isDay) {
+                dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" />`;
+              } else {
+                dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.32" />`;
+              }
+            } else {
+              if (!isDay) {
+                dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.14" />`;
+              }
             }
           }
         }
