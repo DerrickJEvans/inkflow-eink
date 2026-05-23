@@ -126,40 +126,40 @@ module.exports = {
       });
 
       let otherHtml = '';
-      const otherItemHeight = 36;
+      const otherItemHeight = 22;
       
       otherLines.forEach((line, idx) => {
-        const yPos = 85 + idx * otherItemHeight;
+        const yPos = 78 + idx * otherItemHeight;
         const isNormal = line.severity === 10;
-        let statusStyle = 'font-size="12.5" fill="black" opacity="0.6"';
+        let statusStyle = 'font-size="11" fill="black" opacity="0.6"';
         if (!isNormal) {
-          statusStyle = 'font-size="12.5" font-weight="bold" fill="black"';
+          statusStyle = 'font-size="11" font-weight="bold" fill="black"';
         }
 
         otherHtml += `
-          <text x="0" y="${yPos}" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black">${escapeXml(line.name)}</text>
+          <text x="0" y="${yPos}" font-family="sans-serif" font-size="12" font-weight="bold" fill="black">${escapeXml(line.name)}</text>
           <text x="320" y="${yPos}" font-family="sans-serif" ${statusStyle} text-anchor="end">${escapeXml(line.status)}</text>
-          <line x1="0" y1="${yPos + 8}" x2="320" y2="${yPos + 8}" stroke="black" stroke-width="0.5" opacity="0.15" />
+          <line x1="0" y1="${yPos + 5}" x2="320" y2="${yPos + 5}" stroke="black" stroke-width="0.5" opacity="0.15" />
         `;
       });
 
       let bulletinHtml = '';
       const disrupted = data.lines.filter(l => l.severity !== 10);
-      bulletinHtml += `<text x="0" y="245" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">⚠️ DISRUPTION BULLETIN</text>`;
+      bulletinHtml += `<text x="0" y="262" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" letter-spacing="0.5">⚠️ DISRUPTION BULLETIN</text>`;
       
       if (disrupted.length === 0) {
         bulletinHtml += `
-          <rect x="0" y="260" width="320" height="175" rx="6" fill="none" stroke="black" stroke-width="1" opacity="0.3" stroke-dasharray="4,4" />
-          <text x="160" y="340" font-family="sans-serif" font-size="13.5" font-weight="bold" text-anchor="middle" fill="black" opacity="0.7">🌿 All network services normal.</text>
-          <text x="160" y="365" font-family="sans-serif" font-size="12" text-anchor="middle" fill="black" opacity="0.5">Have a pleasant and safe journey!</text>
+          <rect x="0" y="278" width="320" height="175" rx="6" fill="none" stroke="black" stroke-width="1" opacity="0.3" stroke-dasharray="4,4" />
+          <text x="160" y="358" font-family="sans-serif" font-size="13.5" font-weight="bold" text-anchor="middle" fill="black" opacity="0.7">🌿 All network services normal.</text>
+          <text x="160" y="383" font-family="sans-serif" font-size="12" text-anchor="middle" fill="black" opacity="0.5">Have a pleasant and safe journey!</text>
         `;
       } else {
         bulletinHtml += `
-          <rect x="0" y="260" width="320" height="175" rx="6" fill="none" stroke="black" stroke-width="1.5" />
+          <rect x="0" y="278" width="320" height="175" rx="6" fill="none" stroke="black" stroke-width="1.5" />
         `;
         let textRows = '';
         disrupted.slice(0, 3).forEach((line, idx) => {
-          const rowY = 290 + idx * 52;
+          const rowY = 308 + idx * 52;
           const cleanReason = line.reason ? line.reason.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>') : "No details provided.";
           
           const words = cleanReason.split(' ');
@@ -200,7 +200,7 @@ module.exports = {
           <!-- Right Column (Overground/DLR/Elizabeth & Bulletin) -->
           <g transform="translate(${width / 2 + padding}, 0)">
             ${otherHtml}
-            <line x1="0" y1="215" x2="320" y2="215" stroke="black" stroke-width="1.5" stroke-dasharray="4,4" />
+            <line x1="0" y1="248" x2="320" y2="248" stroke="black" stroke-width="1.5" stroke-dasharray="4,4" />
             ${bulletinHtml}
           </g>
         </g>
