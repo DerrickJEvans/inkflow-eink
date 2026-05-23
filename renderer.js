@@ -85,32 +85,43 @@ const packToRaw1Bit = (ditheredBuffer, width, height) => {
 const generateSVG = async (device, settings) => {
   const w = device.width || 800;
   const h = device.height || 480;
-  const activePlugins = device.activePlugins || ["system", "weather", "rss", "notes"];
-  
-  // 1. Fetch data for each active plugin
+  const layoutMode = device.layoutMode || 'grid';
+
+  // Resolve active plugins list, filtering out any invalid/legacy/deleted ones safely
+  const activePlugins = (device.activePlugins || ["system", "weather", "rss", "notes"])
+    .filter(pId => PLUGINS[pId]);
+
+  // 1. Fetch data only for the active plugin in rotation mode, or all plugins in grid mode
+  let pluginsToFetch = [];
+  if (layoutMode === 'rotation' && activePlugins.length > 0) {
+    const currentIndex = device.currentPluginIndex || 0;
+    const currentPlugin = activePlugins[currentIndex % activePlugins.length];
+    if (currentPlugin) {
+      pluginsToFetch = [currentPlugin];
+    }
+  } else {
+    pluginsToFetch = activePlugins;
+  }
+
   const fetchedData = {};
-  for (const pluginId of activePlugins) {
-    if (PLUGINS[pluginId]) {
-      try {
-        fetchedData[pluginId] = await PLUGINS[pluginId].fetchData(settings[pluginId] || {}, device);
-      } catch (err) {
-        console.error(`Error loading data for plugin [${pluginId}]:`, err);
-        fetchedData[pluginId] = null;
-      }
+  for (const pluginId of pluginsToFetch) {
+    try {
+      fetchedData[pluginId] = await PLUGINS[pluginId].fetchData(settings[pluginId] || {}, device);
+    } catch (err) {
+      console.error(`Error loading data for plugin [${pluginId}]:`, err);
+      fetchedData[pluginId] = null;
     }
   }
 
   // 2. Setup Layout Grid Coordinates based on active count
   let layoutElements = '';
   let gridLines = '';
-  
-  const layoutMode = device.layoutMode || 'grid';
 
   if (layoutMode === 'rotation') {
     // Carousel Mode: Render the current active plugin full-screen
     const currentIndex = device.currentPluginIndex || 0;
     const pId = activePlugins[currentIndex % activePlugins.length];
-    if (PLUGINS[pId] && fetchedData[pId]) {
+    if (pId && PLUGINS[pId] && fetchedData[pId]) {
       layoutElements += `
         <g transform="translate(0, 0)">
           ${PLUGINS[pId].renderSVG(fetchedData[pId], w, h)}
