@@ -489,15 +489,15 @@ module.exports = {
             <circle cx="5" cy="-4" r="3.5" fill="black" />
             <text x="14" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Daylight</text>
             
-            <circle cx="75" cy="-4" r="3" fill="none" stroke="black" stroke-width="1" opacity="0.5" />
-            <text x="84" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Nighttime</text>
+            <circle cx="65" cy="-4" r="3" fill="none" stroke="black" stroke-width="1" opacity="0.5" />
+            <text x="74" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Nighttime</text>
             
-            <circle cx="160" cy="-4" r="3" fill="white" stroke="black" stroke-width="1.2" />
-            <text x="169" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Sun</text>
+            <circle cx="135" cy="-4" r="3" fill="white" stroke="black" stroke-width="1.2" />
+            <text x="144" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Sun</text>
             
-            <circle cx="215" cy="-4" r="3" fill="black" />
-            <path d="M 215 -8.5 A 4.5 4.5 0 0 1 215 .5 A 4.5 4.5 0 0 0 215 -8.5" fill="white" />
-            <text x="224" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Moon</text>
+            <circle cx="175" cy="-4" r="3" fill="black" />
+            <path d="M 175 -8.5 A 4.5 4.5 0 0 1 175 .5 A 4.5 4.5 0 0 0 175 -8.5" fill="white" />
+            <text x="184" y="0" font-family="sans-serif" font-size="10" fill="black" opacity="0.65">Moon</text>
           </g>
           
           <!-- Header Bar -->
