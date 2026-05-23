@@ -1,6 +1,6 @@
-# 🚀 TRMNL Pi Server — Custom E-Ink Dashboard & OS Builder
+# 🚀 InkFlow E-Ink Server — Custom Dashboard & OS Builder
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins, generates responsive grid layouts, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins, compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
 
 Includes a complete **automated headless Raspberry Pi OS raw image builder** utilizing user-space FUSE mounts, making setup fully plug-and-play.
 
@@ -19,8 +19,8 @@ graph TD
     F --> H[ESP32 Deep-Sleep Arduino Client]
 ```
 
-### 1. Dynamic Layout Grid
-* Supports 1, 2, 3, or 4 plugins rendered in a clean grid separated by e-ink safe border dividers.
+### 1. Symmetrical Carousel (Rotation) Mode
+* Seamlessly cycles through all of your active widgets at full-screen resolution. Displays one widget per refresh cycle, ensuring maximum legibility, large premium typography, and 0% text truncation!
 * Core plugins included:
   * **System Stats**: CPU load, memory utilization, disk usage, uptime, and temperature.
   * **Weather**: Full forecast with min/max temp, precipitation, and wind speeds using coordinates.
@@ -44,7 +44,7 @@ graph TD
 * [**`renderer.js`**](file:///home/derrickjevans1/trmnl-pi-server/renderer.js): Core graphic engine (plugin coordinator, SVG parser, Sharp rasterizer, ditherer, and raw byte packetizer).
 * [**`plugins/`**](file:///home/derrickjevans1/trmnl-pi-server/plugins): Javascript widgets performing web fetches and compiling custom e-ink SVG code.
   * [`system.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/system.js), [`weather.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/weather.js), [`rss.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/rss.js), [`notes.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/notes.js).
-* [**`public/`**](file:///home/derrickjevans1/trmnl-pi-server/public): Sleek HTML5 / CSS3 local control panel to configure grid size, coordinate systems, and active widgets.
+* [**`public/`**](file:///home/derrickjevans1/trmnl-pi-server/public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
 * [**`client/`**](file:///home/derrickjevans1/trmnl-pi-server/client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
 * [**`arduino/`**](file:///home/derrickjevans1/trmnl-pi-server/arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
 * [**`build_custom_image.sh`**](file:///home/derrickjevans1/trmnl-pi-server/build_custom_image.sh): Native image packaging script using `fuse2fs`.
