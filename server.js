@@ -377,7 +377,7 @@ app.post('/api/display/refresh', async (req, res) => {
 // Start Server
 app.listen(PORT, HOST, () => {
   console.log(`====================================================`);
-  console.log(`   🚀 TRMNL Pi E-Ink Server Running! 🚀`);
+  console.log(`   🚀 InkFlow E-Ink Server Running! 🚀`);
   console.log(`   Local Address: http://localhost:${PORT}`);
   console.log(`   Host Network:  http://${HOST}:${PORT}`);
   console.log(`====================================================`);
