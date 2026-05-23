@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       timezone: worldClockTimezone.value || "Europe/London",
       latitude: parseFloat(worldClockLat.value) || 51.5074,
       longitude: parseFloat(worldClockLon.value) || -0.1278,
-      mapStyle: worldClockStyle.value || "solid"
+      mapStyle: worldClockStyle.value || "hires"
     };
 
     await saveSettings();
@@ -494,11 +494,11 @@ function renderGlobalSettings() {
   xkcdMode.value = xkcd.mode;
 
   // World Clock
-  const worldClock = settings.world_clock || { timezone: 'Europe/London', latitude: 51.5074, longitude: -0.1278, mapStyle: 'solid' };
+  const worldClock = settings.world_clock || { timezone: 'Europe/London', latitude: 51.5074, longitude: -0.1278, mapStyle: 'hires' };
   worldClockTimezone.value = worldClock.timezone || 'Europe/London';
   worldClockLat.value = worldClock.latitude !== undefined ? worldClock.latitude : 51.5074;
   worldClockLon.value = worldClock.longitude !== undefined ? worldClock.longitude : -0.1278;
-  worldClockStyle.value = worldClock.mapStyle || 'solid';
+  worldClockStyle.value = worldClock.mapStyle || 'hires';
 
   renderTodoList(notes.items);
 }
