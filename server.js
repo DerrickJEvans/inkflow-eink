@@ -386,6 +386,50 @@ app.get('/api/display/image.png', async (req, res) => {
   }
 });
 
+// Single widget preview PNG renderer
+app.get('/api/display/preview-plugin.png', async (req, res) => {
+  try {
+    const pluginId = req.query.plugin;
+    if (!pluginId || !PLUGINS[pluginId]) {
+      return res.status(404).send("Plugin not found");
+    }
+
+    const width = parseInt(req.query.width) || 800;
+    const height = parseInt(req.query.height) || 480;
+    const ditherMode = req.query.dither || 'floyd-steinberg';
+
+    // Clear JSON cache for this specific plugin under preview_temp to force fresh fetches
+    const cacheFile = path.join(CACHE_DIR, `data_preview_temp_${pluginId}.json`);
+    if (fs.existsSync(cacheFile)) {
+      try {
+        fs.unlinkSync(cacheFile);
+      } catch (e) {
+        console.error("Failed to clear preview cache:", e);
+      }
+    }
+
+    const mockDevice = {
+      id: 'preview_temp',
+      name: 'Preview',
+      width,
+      height,
+      activePlugins: [pluginId],
+      layoutMode: 'rotation',
+      currentPluginIndex: 0,
+      ditherMode
+    };
+
+    const data = await renderDeviceImage(mockDevice, config.settings);
+
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.send(data.png);
+  } catch (err) {
+    console.error("Preview render engine error:", err);
+    res.status(500).send("Preview render engine error");
+  }
+});
+
 // Direct RAW 1-bit monochrome byte stream URL (for ESP32 client)
 app.get('/api/display/raw', async (req, res) => {
   try {

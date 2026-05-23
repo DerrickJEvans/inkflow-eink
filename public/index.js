@@ -28,6 +28,16 @@ const btnForceRefresh = document.getElementById('btn-force-refresh');
 const btnViewPng = document.getElementById('btn-view-raw-png');
 const btnViewRaw = document.getElementById('btn-view-raw-bit');
 
+// Dedicated AI Previewer & Hosted Widget Elements
+const aiMockupScreen = document.getElementById('ai-mockup-screen');
+const aiMockupRes = document.getElementById('ai-mockup-resolution');
+const aiMockupViewport = document.getElementById('ai-mockup-viewport');
+const btnAiPreviewRefresh = document.getElementById('btn-ai-preview-refresh');
+const btnAiViewPng = document.getElementById('btn-ai-view-png');
+const widgetSearch = document.getElementById('widget-search');
+const hostedWidgetsGrid = document.getElementById('hosted-widgets-grid');
+let activePreviewPluginId = 'weather';
+
 // Connection guide codes
 const codeArduino = document.getElementById('code-arduino-url');
 const codePi = document.getElementById('code-pi-url');
@@ -72,8 +82,32 @@ const btnSaveGlobal = document.getElementById('btn-save-global-settings');
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
+  setupMainTabs();
   setupAccordion();
   setupTodoHandlers();
+
+  // Widget Search catalog filter listener
+  if (widgetSearch) {
+    widgetSearch.addEventListener('input', (e) => {
+      renderHostedWidgetsList(e.target.value);
+    });
+  }
+
+  // Dedicated AI Preview Refresh button
+  if (btnAiPreviewRefresh) {
+    btnAiPreviewRefresh.addEventListener('click', () => {
+      btnAiPreviewRefresh.disabled = true;
+      btnAiPreviewRefresh.innerText = "⚡ Rendering...";
+      try {
+        updateAiPreviewMockup(activePreviewPluginId);
+      } finally {
+        setTimeout(() => {
+          btnAiPreviewRefresh.disabled = false;
+          btnAiPreviewRefresh.innerText = "🔄 Refresh Preview";
+        }, 800);
+      }
+    });
+  }
 
   // RSS preset checkboxes change handler for selection limit and custom URL visibility
   document.querySelectorAll('.rss-preset-cb').forEach(cb => {
@@ -295,6 +329,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else {
             renderPluginsSelector([]);
           }
+          
+          renderHostedWidgetsList();
+          updateAiPreviewMockup(reply.pluginId);
         } else {
           showToast(reply.error || "Generation failed!", true);
         }
@@ -519,6 +556,8 @@ async function fetchSettings() {
     
     renderDevicesList();
     renderGlobalSettings();
+    renderHostedWidgetsList();
+    updateAiPreviewMockup(activePreviewPluginId);
     
     if (serverConfig.devices.length > 0 && !activeDeviceId) {
       selectDevice(serverConfig.devices[0].id);
@@ -928,4 +967,113 @@ function startDeviceListSync() {
       console.warn("Background device sync offline:", err);
     }
   }, 10000);
+}
+
+// Main Top-Level Tabs UI handler
+function setupMainTabs() {
+  document.querySelectorAll('.main-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.main-tab-view').forEach(view => view.classList.remove('active'));
+      
+      btn.classList.add('active');
+      const targetId = btn.dataset.mainTab;
+      document.getElementById(targetId).classList.add('active');
+      
+      // Auto refresh previews when switching
+      if (targetId === 'main-tab-widgets') {
+        renderHostedWidgetsList(widgetSearch ? widgetSearch.value : '');
+        updateAiPreviewMockup(activePreviewPluginId);
+      } else {
+        if (activeDeviceId) {
+          updateScreenMockup(activeDeviceId);
+        }
+      }
+    });
+  });
+}
+
+// Updates the secondary AI preview bezel screen frame
+function updateAiPreviewMockup(pluginId) {
+  if (!pluginId || !aiMockupScreen) return;
+  activePreviewPluginId = pluginId;
+
+  // Render outline highlight in list
+  document.querySelectorAll('.hosted-widget-item').forEach(el => {
+    if (el.dataset.id === pluginId) el.classList.add('active-preview');
+    else el.classList.remove('active-preview');
+  });
+
+  const width = 800; // default preview size
+  const height = 480;
+  if (aiMockupRes) aiMockupRes.innerText = `${width} x ${height}`;
+  if (aiMockupViewport) aiMockupViewport.style.aspectRatio = `${width} / ${height}`;
+
+  const imgUrl = `/api/display/preview-plugin.png?plugin=${pluginId}&width=${width}&height=${height}&t=${Date.now()}`;
+  aiMockupScreen.innerHTML = '';
+  aiMockupScreen.style.backgroundImage = `url('${imgUrl}')`;
+
+  // Update PNG URL link
+  if (btnAiViewPng) btnAiViewPng.href = imgUrl;
+}
+
+// Renders the list of hosted widgets on Tab 2
+function renderHostedWidgetsList(filterText = '') {
+  if (!hostedWidgetsGrid) return;
+  hostedWidgetsGrid.innerHTML = '';
+
+  const query = filterText.toLowerCase().trim();
+
+  // List of core built-in plugin IDs to distinguish from AI ones
+  const corePluginIds = ['weather', 'system', 'rss', 'notes', 'tfl', 'uk_trains', 'xkcd', 'world_clock', 'ai_briefing', 'ai_advisor'];
+
+  const filtered = availablePlugins.filter(plugin => {
+    return plugin.name.toLowerCase().includes(query) || 
+           plugin.id.toLowerCase().includes(query) ||
+           (plugin.description || '').toLowerCase().includes(query);
+  });
+
+  if (filtered.length === 0) {
+    hostedWidgetsGrid.innerHTML = `<p class="card-help text-center" style="grid-column: 1/-1; padding: 20px;">No hosted widgets match your search.</p>`;
+    return;
+  }
+
+  filtered.forEach(plugin => {
+    const isCore = corePluginIds.includes(plugin.id);
+    const badgeText = isCore ? 'Core Plugin' : 'AI Generated';
+    const badgeClass = isCore ? 'core' : 'ai';
+    const icon = pluginIcons[plugin.id] || '🧩';
+
+    const card = document.createElement('div');
+    card.className = `hosted-widget-item ${plugin.id === activePreviewPluginId ? 'active-preview' : ''}`;
+    card.dataset.id = plugin.id;
+
+    card.innerHTML = `
+      <div class="hosted-widget-header">
+        <div class="hosted-widget-icon">${icon}</div>
+        <div class="hosted-widget-info">
+          <span class="hosted-widget-name">${plugin.name}</span>
+          <span class="hosted-widget-id">${plugin.id}</span>
+        </div>
+      </div>
+      <p class="hosted-widget-desc">${plugin.description || 'Custom compiled E-Ink widget.'}</p>
+      <div class="hosted-widget-meta">
+        <span class="hosted-widget-badge ${badgeClass}">${badgeText}</span>
+        <button class="btn-preview-action" data-plugin-id="${plugin.id}">🔬 Preview</button>
+      </div>
+    `;
+
+    // Click on preview button triggers render
+    card.querySelector('.btn-preview-action').addEventListener('click', (e) => {
+      e.stopPropagation();
+      updateAiPreviewMockup(plugin.id);
+    });
+
+    // Clicking card itself also previews
+    card.addEventListener('click', () => {
+      updateAiPreviewMockup(plugin.id);
+    });
+
+    hostedWidgetsGrid.appendChild(card);
+  });
 }
