@@ -16,18 +16,71 @@ const escapeXml = (unsafe) => {
     .replace(/'/g, '&apos;');
 };
 
+const PRESETS = {
+  bbc_tech: {
+    title: "BBC Tech News",
+    url: "https://feeds.bbci.co.uk/news/technology/rss.xml"
+  },
+  bbc_uk: {
+    title: "BBC UK News",
+    url: "https://feeds.bbci.co.uk/news/uk/rss.xml"
+  },
+  bbc_world: {
+    title: "BBC World News",
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml"
+  },
+  hn: {
+    title: "Hacker News",
+    url: "https://news.ycombinator.com/rss"
+  },
+  nyt: {
+    title: "NYT Homepage",
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+  },
+  cnn: {
+    title: "CNN Top Stories",
+    url: "http://rss.cnn.com/rss/cnn_topstories.rss"
+  }
+};
+
 module.exports = {
   id: "rss",
   name: "RSS Bulletin",
-  description: "Fetches and displays headlines from custom RSS news feeds.",
+  description: "Fetches and displays headlines from preset or custom RSS news feeds.",
   configFields: [
     { key: "url", label: "RSS Feed URL", type: "text", default: "https://news.ycombinator.com/rss" },
     { key: "limit", label: "Maximum Stories", type: "number", default: 4 }
   ],
 
-  async fetchData(settings) {
-    const feedUrl = settings.url || "https://news.ycombinator.com/rss";
+  async fetchData(settings, device = {}) {
     const limit = parseInt(settings.limit) || 10;
+
+    // Resolve which feeds are enabled from configuration settings
+    let feedsToUse = [];
+    if (settings.enabledFeeds && Array.isArray(settings.enabledFeeds) && settings.enabledFeeds.length > 0) {
+      feedsToUse = settings.enabledFeeds;
+    } else {
+      // Backward compatibility and default
+      feedsToUse = ["custom"];
+    }
+
+    // Resolve active sequence index
+    let currentIndex = parseInt(device.currentRssFeedIndex) || 0;
+    if (currentIndex < 0 || currentIndex >= feedsToUse.length) {
+      currentIndex = 0;
+    }
+
+    const currentFeedId = feedsToUse[currentIndex];
+    let feedUrl = "https://news.ycombinator.com/rss";
+    let feedDisplayName = "RSS Bulletin";
+
+    if (currentFeedId === "custom") {
+      feedUrl = settings.customUrl || settings.url || "https://news.ycombinator.com/rss";
+      feedDisplayName = "Custom RSS Feed";
+    } else if (PRESETS[currentFeedId]) {
+      feedUrl = PRESETS[currentFeedId].url;
+      feedDisplayName = PRESETS[currentFeedId].title;
+    }
 
     try {
       const feed = await parser.parseURL(feedUrl);
@@ -35,22 +88,34 @@ module.exports = {
       const items = feed.items.slice(0, limit).map(item => {
         return {
           title: item.title,
-          source: feed.title || "News"
+          source: feed.title || feedDisplayName
         };
       });
 
+      // Increment rotation index for the NEXT refresh cycle if multiple feeds are enabled
+      if (feedsToUse.length > 1) {
+        device.currentRssFeedIndex = (currentIndex + 1) % feedsToUse.length;
+      } else {
+        device.currentRssFeedIndex = 0;
+      }
+
       return {
-        title: feed.title || "RSS Bulletin",
+        title: feed.title || feedDisplayName,
         items
       };
     } catch (e) {
-      console.error("Error parsing RSS feed:", e);
+      console.error(`Error parsing RSS feed (${feedUrl}):`, e);
+
+      // Still increment index on failure to prevent getting permanently stuck on an offline source
+      if (feedsToUse.length > 1) {
+        device.currentRssFeedIndex = (currentIndex + 1) % feedsToUse.length;
+      }
+
       return {
-        title: "News Feed Offline",
+        title: feedDisplayName + " Offline",
         items: [
-          { title: "Unable to load RSS feed. Check network connection.", source: "System" },
-          { title: "Configure RSS feed URL in the control panel.", source: "System" },
-          { title: "Hacker News (ycombinator.com) acts as default.", source: "System" }
+          { title: `Unable to load RSS feed from ${feedDisplayName}.`, source: "System" },
+          { title: "Check your internet connection or source URL.", source: "System" }
         ]
       };
     }

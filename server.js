@@ -109,6 +109,7 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
   console.log(`[Renderer] Compiling screen elements for device: ${device.id} (Interval: ${refreshRate}s)...`);
   try {
     const rendered = await renderDeviceImage(device, config.settings);
+    saveConfig();
     
     // Update local cache and include the calculated refresh rate
     imageCache[cacheKey] = {

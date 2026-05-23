@@ -46,6 +46,30 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
   setupAccordion();
   setupTodoHandlers();
+
+  // RSS preset checkboxes change handler for selection limit and custom URL visibility
+  document.querySelectorAll('.rss-preset-cb').forEach(cb => {
+    cb.addEventListener('change', () => {
+      if (cb.id === 'rss-preset-custom-cb') {
+        const customUrlGroup = document.getElementById('rss-custom-url-group');
+        if (customUrlGroup) {
+          customUrlGroup.style.display = cb.checked ? 'block' : 'none';
+        }
+      }
+
+      const checkedCount = document.querySelectorAll('.rss-preset-cb:checked').length;
+      if (checkedCount > 5) {
+        cb.checked = false;
+        if (cb.id === 'rss-preset-custom-cb') {
+          const customUrlGroup = document.getElementById('rss-custom-url-group');
+          if (customUrlGroup) {
+            customUrlGroup.style.display = 'none';
+          }
+        }
+        showToast("You can select up to 5 RSS feeds!", true);
+      }
+    });
+  });
   
   await fetchSettings();
   startTelemetryLoop();
@@ -101,9 +125,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       weather: parseInt(document.getElementById('edit-device-interval-weather').value) || 30,
       system: parseInt(document.getElementById('edit-device-interval-system').value) || 15,
       rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
-      rss_tech: parseInt(document.getElementById('edit-device-interval-rss_tech').value) || 30,
-      rss_uk: parseInt(document.getElementById('edit-device-interval-rss_uk').value) || 30,
-      rss_world: parseInt(document.getElementById('edit-device-interval-rss_world').value) || 30,
       notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
       tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30
     };
@@ -154,8 +175,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // RSS
+    const enabledFeeds = [];
+    document.querySelectorAll('.rss-preset-cb:checked').forEach(cb => {
+      enabledFeeds.push(cb.value);
+    });
+
+    if (enabledFeeds.length === 0) {
+      enabledFeeds.push('hn');
+      const hnCb = document.querySelector('.rss-preset-cb[value="hn"]');
+      if (hnCb) hnCb.checked = true;
+    }
+
     serverConfig.settings.rss = {
-      url: rssUrl.value || "https://news.ycombinator.com/rss",
+      enabledFeeds: enabledFeeds,
+      customUrl: rssUrl.value || '',
       limit: parseInt(rssLimit.value) || 4
     };
 
@@ -284,9 +317,6 @@ function selectDevice(deviceId, isNew = false) {
         weather: 30,
         system: 15,
         rss: 30,
-        rss_tech: 30,
-        rss_uk: 30,
-        rss_world: 30,
         notes: 15,
         tfl: 30
       }
@@ -316,9 +346,6 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-interval-weather').value = rotationIntervals.weather || '';
     document.getElementById('edit-device-interval-system').value = rotationIntervals.system || '';
     document.getElementById('edit-device-interval-rss').value = rotationIntervals.rss || '';
-    document.getElementById('edit-device-interval-rss_tech').value = rotationIntervals.rss_tech || '';
-    document.getElementById('edit-device-interval-rss_uk').value = rotationIntervals.rss_uk || '';
-    document.getElementById('edit-device-interval-rss_world').value = rotationIntervals.rss_world || '';
     document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
     document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
 
@@ -373,9 +400,30 @@ function renderGlobalSettings() {
   weatherUnit.value = weather.unit;
 
   // RSS
-  const rss = settings.rss || { url: 'https://news.ycombinator.com/rss', limit: 4 };
-  rssUrl.value = rss.url;
-  rssLimit.value = rss.limit;
+  const rss = settings.rss || { enabledFeeds: ['hn'], customUrl: '', limit: 4 };
+
+  // Uncheck all RSS preset checkboxes first
+  document.querySelectorAll('.rss-preset-cb').forEach(cb => {
+    cb.checked = false;
+  });
+
+  // Bind values from settings to checkboxes
+  const enabledFeeds = rss.enabledFeeds || [];
+  enabledFeeds.forEach(feedId => {
+    const cb = document.querySelector(`.rss-preset-cb[value="${feedId}"]`);
+    if (cb) cb.checked = true;
+  });
+
+  // Backwards compatibility with standard url if customUrl is not defined
+  rssUrl.value = rss.customUrl || rss.url || '';
+  rssLimit.value = rss.limit || 4;
+
+  // Toggle custom url field visibility dynamically based on custom check state
+  const customCb = document.getElementById('rss-preset-custom-cb');
+  const customUrlGroup = document.getElementById('rss-custom-url-group');
+  if (customCb && customUrlGroup) {
+    customUrlGroup.style.display = customCb.checked ? 'block' : 'none';
+  }
 
   // Todo board
   const notes = settings.notes || { title: 'Family Notice Board', items: [] };

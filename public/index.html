@@ -109,20 +109,8 @@
                     <input type="number" class="col-6" id="edit-device-interval-system" min="10" step="10" placeholder="15">
                   </div>
                   <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">📰 RSS Custom</span>
+                    <span class="text-sm col-6">📰 RSS Bulletin</span>
                     <input type="number" class="col-6" id="edit-device-interval-rss" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">💻 BBC Tech</span>
-                    <input type="number" class="col-6" id="edit-device-interval-rss_tech" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🇬🇧 BBC UK</span>
-                    <input type="number" class="col-6" id="edit-device-interval-rss_uk" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🌍 BBC World</span>
-                    <input type="number" class="col-6" id="edit-device-interval-rss_world" min="10" step="10" placeholder="30">
                   </div>
                   <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
                     <span class="text-sm col-6">📌 Notices</span>
@@ -149,19 +137,7 @@
                   </label>
                   <label class="checkbox-container">
                     <input type="checkbox" value="rss" checked>
-                    <span class="checkbox-label">📰 Custom RSS Feed</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="rss_tech" checked>
-                    <span class="checkbox-label">💻 BBC Tech News</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="rss_uk" checked>
-                    <span class="checkbox-label">🇬🇧 BBC UK News</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="rss_world" checked>
-                    <span class="checkbox-label">🌍 BBC World News</span>
+                    <span class="checkbox-label">📰 RSS Bulletin Feed</span>
                   </label>
                   <label class="checkbox-container">
                     <input type="checkbox" value="notes" checked>
@@ -313,15 +289,48 @@
 
               <!-- RSS settings -->
               <div class="accordion-item">
-                <button class="accordion-trigger" data-target="options-rss">📰 RSS Feed URL</button>
+                <button class="accordion-trigger" data-target="options-rss">📰 RSS Bulletin Feed</button>
                 <div class="accordion-content" id="options-rss">
                   <div class="form-group">
-                    <label for="rss-url">XML RSS URL</label>
-                    <input type="url" id="rss-url">
+                    <label>Select News Feeds (Up to 5, cycles in sequence)</label>
+                    <div class="checkbox-grid" style="margin-top: 5px;">
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="bbc_tech" class="rss-preset-cb">
+                        <span class="checkbox-label">💻 BBC Tech News</span>
+                      </label>
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="bbc_uk" class="rss-preset-cb">
+                        <span class="checkbox-label">🇬🇧 BBC UK News</span>
+                      </label>
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="bbc_world" class="rss-preset-cb">
+                        <span class="checkbox-label">🌍 BBC World News</span>
+                      </label>
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="hn" class="rss-preset-cb">
+                        <span class="checkbox-label">🧡 Hacker News</span>
+                      </label>
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="nyt" class="rss-preset-cb">
+                        <span class="checkbox-label">🗞️ NYT Homepage</span>
+                      </label>
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="cnn" class="rss-preset-cb">
+                        <span class="checkbox-label">🔴 CNN Top Stories</span>
+                      </label>
+                      <label class="checkbox-container">
+                        <input type="checkbox" value="custom" class="rss-preset-cb" id="rss-preset-custom-cb">
+                        <span class="checkbox-label">⚙️ Custom RSS Feed</span>
+                      </label>
+                    </div>
+                  </div>
+                  <div class="form-group" id="rss-custom-url-group" style="display: none;">
+                    <label for="rss-url">Custom XML RSS URL</label>
+                    <input type="url" id="rss-url" placeholder="e.g. https://news.ycombinator.com/rss">
                   </div>
                   <div class="form-group">
-                    <label for="rss-limit">Max Articles</label>
-                    <input type="number" id="rss-limit" min="1" max="8">
+                    <label for="rss-limit">Max Articles per Feed</label>
+                    <input type="number" id="rss-limit" min="1" max="8" placeholder="4">
                   </div>
                 </div>
               </div>
