@@ -78,7 +78,7 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
 
   try {
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       systemInstruction: systemInstruction
     });
 
@@ -133,7 +133,7 @@ Write a premium morning brief synthesizing these elements:
 `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
   } catch (err) {
@@ -162,7 +162,7 @@ Write your Sys-Admin recommendations:
 `;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
     const result = await model.generateContent(prompt);
     return result.response.text().trim();
   } catch (err) {
