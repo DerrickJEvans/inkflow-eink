@@ -57,27 +57,7 @@ const telemetryTemp = document.getElementById('telemetry-temp');
 const telemetryRam = document.getElementById('telemetry-ram');
 const telemetryUptime = document.getElementById('telemetry-uptime');
 
-// Global Option Elements
-const weatherLat = document.getElementById('weather-lat');
-const weatherLon = document.getElementById('weather-lon');
-const weatherUnit = document.getElementById('weather-unit');
-const rssUrl = document.getElementById('rss-url');
-const rssLimit = document.getElementById('rss-limit');
-const todoTitle = document.getElementById('todo-title');
-const todoEditorList = document.getElementById('todo-editor-list');
-const todoAddInput = document.getElementById('todo-add-input');
-const btnTodoAdd = document.getElementById('btn-todo-add');
-const tflModes = document.getElementById('tfl-modes');
-const trainsCrs = document.getElementById('trains-crs');
-const trainsFilterCrs = document.getElementById('trains-filter-crs');
-const trainsMode = document.getElementById('trains-mode');
-const trainsLimit = document.getElementById('trains-limit');
-const xkcdMode = document.getElementById('xkcd-mode');
-const worldClockTimezone = document.getElementById('world-clock-timezone');
-const worldClockLat = document.getElementById('world-clock-lat');
-const worldClockLon = document.getElementById('world-clock-lon');
-const worldClockStyle = document.getElementById('world-clock-style');
-const btnSaveGlobal = document.getElementById('btn-save-global-settings');
+
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', async () => {
@@ -109,29 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // RSS preset checkboxes change handler for selection limit and custom URL visibility
-  document.querySelectorAll('.rss-preset-cb').forEach(cb => {
-    cb.addEventListener('change', () => {
-      if (cb.id === 'rss-preset-custom-cb') {
-        const customUrlGroup = document.getElementById('rss-custom-url-group');
-        if (customUrlGroup) {
-          customUrlGroup.style.display = cb.checked ? 'block' : 'none';
-        }
-      }
 
-      const checkedCount = document.querySelectorAll('.rss-preset-cb:checked').length;
-      if (checkedCount > 5) {
-        cb.checked = false;
-        if (cb.id === 'rss-preset-custom-cb') {
-          const customUrlGroup = document.getElementById('rss-custom-url-group');
-          if (customUrlGroup) {
-            customUrlGroup.style.display = 'none';
-          }
-        }
-        showToast("You can select up to 5 RSS feeds!", true);
-      }
-    });
-  });
   
   await fetchSettings();
   startTelemetryLoop();
@@ -218,70 +176,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Global Settings save trigger
-  btnSaveGlobal.addEventListener('click', async () => {
-    // Weather
-    serverConfig.settings.weather = {
-      latitude: parseFloat(weatherLat.value) || 51.5074,
-      longitude: parseFloat(weatherLon.value) || -0.1278,
-      unit: weatherUnit.value
-    };
 
-    // RSS
-    const enabledFeeds = [];
-    document.querySelectorAll('.rss-preset-cb:checked').forEach(cb => {
-      enabledFeeds.push(cb.value);
-    });
-
-    if (enabledFeeds.length === 0) {
-      enabledFeeds.push('hn');
-      const hnCb = document.querySelector('.rss-preset-cb[value="hn"]');
-      if (hnCb) hnCb.checked = true;
-    }
-
-    serverConfig.settings.rss = {
-      enabledFeeds: enabledFeeds,
-      customUrl: rssUrl.value || '',
-      limit: parseInt(rssLimit.value) || 4
-    };
-
-    // Notice Board (title has input, list holds live checklist items)
-    serverConfig.settings.notes = {
-      title: todoTitle.value || "Notice Board",
-      items: getTodoListItems()
-    };
-
-    // TfL Rail Settings
-    serverConfig.settings.tfl = {
-      modes: tflModes.value || "tube,overground,dlr,elizabeth-line"
-    };
-
-    // UK Train Board Settings
-    serverConfig.settings.uk_trains = {
-      crs: trainsCrs.value || "LST",
-      filterCrs: trainsFilterCrs.value || "",
-      mode: trainsMode.value || "departures",
-      limit: parseInt(trainsLimit.value) || 6
-    };
-
-    // XKCD Comics Settings
-    serverConfig.settings.xkcd = {
-      mode: xkcdMode.value || "latest"
-    };
-
-    // World Clock Settings
-    serverConfig.settings.world_clock = {
-      timezone: worldClockTimezone.value || "Europe/London",
-      latitude: parseFloat(worldClockLat.value) || 51.5074,
-      longitude: parseFloat(worldClockLon.value) || -0.1278,
-      mapStyle: worldClockStyle.value || "hires"
-    };
-
-    await saveSettings();
-    if (activeDeviceId) {
-      await triggerManualRefresh(activeDeviceId);
-    }
-  });
 
   // AI Widget Generator Click Handler
   if (btnBuildWidget) {
@@ -717,191 +612,168 @@ function updateGuides(device) {
   codeTrmnl.innerHTML = `${protocol}//${ipHost}`;
 }
 
-// Renders Global Plugin Options
-function renderGlobalSettings() {
-  const settings = serverConfig.settings || {};
-
-  // Weather
-  const weather = settings.weather || { latitude: 51.5074, longitude: -0.1278, unit: 'celsius' };
-  weatherLat.value = weather.latitude;
-  weatherLon.value = weather.longitude;
-  weatherUnit.value = weather.unit;
-
-  // RSS
-  const rss = settings.rss || { enabledFeeds: ['hn'], customUrl: '', limit: 4 };
-
-  // Uncheck all RSS preset checkboxes first
-  document.querySelectorAll('.rss-preset-cb').forEach(cb => {
-    cb.checked = false;
-  });
-
-  // Bind values from settings to checkboxes
-  const enabledFeeds = rss.enabledFeeds || [];
-  enabledFeeds.forEach(feedId => {
-    const cb = document.querySelector(`.rss-preset-cb[value="${feedId}"]`);
-    if (cb) cb.checked = true;
-  });
-
-  // Backwards compatibility with standard url if customUrl is not defined
-  rssUrl.value = rss.customUrl || rss.url || '';
-  rssLimit.value = rss.limit || 4;
-
-  // Toggle custom url field visibility dynamically based on custom check state
-  const customCb = document.getElementById('rss-preset-custom-cb');
-  const customUrlGroup = document.getElementById('rss-custom-url-group');
-  if (customCb && customUrlGroup) {
-    customUrlGroup.style.display = customCb.checked ? 'block' : 'none';
-  }
-
-  // Todo board
-  const notes = settings.notes || { title: 'Family Notice Board', items: [] };
-  todoTitle.value = notes.title;
-
-  // TfL Rail
-  const tfl = settings.tfl || { modes: 'tube,overground,dlr,elizabeth-line' };
-  tflModes.value = tfl.modes;
-
-  // UK Train Board
-  const trains = settings.uk_trains || { crs: 'LST', filterCrs: '', mode: 'departures', limit: 6 };
-  trainsCrs.value = trains.crs;
-  trainsFilterCrs.value = trains.filterCrs;
-  trainsMode.value = trains.mode;
-  trainsLimit.value = trains.limit;
-
-  // XKCD Comics
-  const xkcd = settings.xkcd || { mode: 'latest' };
-  xkcdMode.value = xkcd.mode;
-
-  // World Clock
-  const worldClock = settings.world_clock || { timezone: 'Europe/London', latitude: 51.5074, longitude: -0.1278, mapStyle: 'hires' };
-  worldClockTimezone.value = worldClock.timezone || 'Europe/London';
-  worldClockLat.value = worldClock.latitude !== undefined ? worldClock.latitude : 51.5074;
-  worldClockLon.value = worldClock.longitude !== undefined ? worldClock.longitude : -0.1278;
-  worldClockStyle.value = worldClock.mapStyle || 'hires';
-
-  renderTodoList(notes.items);
-}
-
-// Render Todo items inside checklist editor
-function renderTodoList(items) {
-  todoEditorList.innerHTML = '';
-  if (!items || items.length === 0) {
-    todoEditorList.innerHTML = `<span class="text-sm text-center" style="display:block;padding:10px;">Notice checklist is empty.</span>`;
-    return;
-  }
-
-  items.forEach((item, idx) => {
-    const row = document.createElement('div');
-    row.className = 'todo-editor-item';
-    
-    let isCompleted = false;
-    let text = item;
-    
-    if (text.startsWith('[x]') || text.startsWith('[X]')) {
-      isCompleted = true;
-      text = text.substring(3).trim();
-      row.classList.add('completed');
-    } else if (text.startsWith('[ ]')) {
-      text = text.substring(3).trim();
-    }
-
-    row.innerHTML = `
-      <input type="checkbox" class="todo-check" ${isCompleted ? 'checked' : ''}>
-      <span>${text}</span>
-      <button class="btn-todo-del" title="Delete">×</button>
+// Dynamic Inline Configuration Templates for each plugin
+const widgetConfigTemplates = {
+  weather: (settings) => `
+    <div class="inline-config-form">
+      <div class="form-row">
+        <div class="form-group col-6">
+          <label>Latitude</label>
+          <input type="number" step="0.0001" class="inline-cfg-lat" value="${settings.latitude !== undefined ? settings.latitude : 51.5074}">
+        </div>
+        <div class="form-group col-6">
+          <label>Longitude</label>
+          <input type="number" step="0.0001" class="inline-cfg-lon" value="${settings.longitude !== undefined ? settings.longitude : -0.1278}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Temperature Unit</label>
+        <select class="inline-cfg-unit">
+          <option value="celsius" ${settings.unit === 'celsius' ? 'selected' : ''}>Celsius (°C)</option>
+          <option value="fahrenheit" ${settings.unit === 'fahrenheit' ? 'selected' : ''}>Fahrenheit (°F)</option>
+        </select>
+      </div>
+    </div>
+  `,
+  rss: (settings) => {
+    const feeds = settings.enabledFeeds || ['hn'];
+    const customUrl = settings.customUrl || '';
+    const limit = settings.limit || 4;
+    return `
+      <div class="inline-config-form">
+        <div class="form-group">
+          <label>Select News Feeds (Up to 5)</label>
+          <div class="checkbox-grid inline-rss-presets">
+            <label class="checkbox-container">
+              <input type="checkbox" value="bbc_tech" class="inline-rss-preset-cb" ${feeds.includes('bbc_tech') ? 'checked' : ''}>
+              <span class="checkbox-label">💻 Tech</span>
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" value="bbc_uk" class="inline-rss-preset-cb" ${feeds.includes('bbc_uk') ? 'checked' : ''}>
+              <span class="checkbox-label">🇬🇧 UK</span>
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" value="bbc_world" class="inline-rss-preset-cb" ${feeds.includes('bbc_world') ? 'checked' : ''}>
+              <span class="checkbox-label">🌍 World</span>
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" value="hn" class="inline-rss-preset-cb" ${feeds.includes('hn') ? 'checked' : ''}>
+              <span class="checkbox-label">🧡 HN</span>
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" value="nyt" class="inline-rss-preset-cb" ${feeds.includes('nyt') ? 'checked' : ''}>
+              <span class="checkbox-label">🗞️ NYT</span>
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" value="cnn" class="inline-rss-preset-cb" ${feeds.includes('cnn') ? 'checked' : ''}>
+              <span class="checkbox-label">🔴 CNN</span>
+            </label>
+            <label class="checkbox-container">
+              <input type="checkbox" value="custom" class="inline-rss-preset-cb inline-rss-custom-cb" ${feeds.includes('custom') ? 'checked' : ''}>
+              <span class="checkbox-label">⚙️ Custom</span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group inline-rss-custom-group" style="display: ${feeds.includes('custom') ? 'block' : 'none'};">
+          <label>Custom XML RSS URL</label>
+          <input type="url" class="inline-cfg-rss-url" placeholder="https://news.ycombinator.com/rss" value="${customUrl}">
+        </div>
+        <div class="form-group">
+          <label>Max Articles</label>
+          <input type="number" class="inline-cfg-rss-limit" min="1" max="8" value="${limit}">
+        </div>
+      </div>
     `;
-
-    // Toggle completed state
-    row.querySelector('.todo-check').addEventListener('change', (e) => {
-      if (e.target.checked) row.classList.add('completed');
-      else row.classList.remove('completed');
-    });
-
-    // Delete item
-    row.querySelector('.btn-todo-del').addEventListener('click', () => {
-      row.remove();
-    });
-
-    todoEditorList.appendChild(row);
-  });
-}
-
-// Collect items from Checklist Editor
-function getTodoListItems() {
-  const items = [];
-  document.querySelectorAll('.todo-editor-item').forEach(row => {
-    const isCompleted = row.querySelector('.todo-check').checked;
-    const text = row.querySelector('span').innerText;
-    items.push(`${isCompleted ? '[x]' : '[ ]'} ${text}`);
-  });
-  return items;
-}
-
-// Checklist custom add handlers
-function setupTodoHandlers() {
-  const addTodo = () => {
-    const text = todoAddInput.value.trim();
-    if (!text) return;
-
-    const row = document.createElement('div');
-    row.className = 'todo-editor-item';
-    row.innerHTML = `
-      <input type="checkbox" class="todo-check">
-      <span>${text}</span>
-      <button class="btn-todo-del">×</button>
-    `;
-
-    row.querySelector('.todo-check').addEventListener('change', (e) => {
-      if (e.target.checked) row.classList.add('completed');
-      else row.classList.remove('completed');
-    });
-
-    row.querySelector('.btn-todo-del').addEventListener('click', () => row.remove());
-
-    // remove placeholder if present
-    const emptySpan = todoEditorList.querySelector('span[style*="display:block"]');
-    if (emptySpan) emptySpan.remove();
-
-    todoEditorList.appendChild(row);
-    todoAddInput.value = '';
-    todoAddInput.focus();
-  };
-
-  btnTodoAdd.addEventListener('click', addTodo);
-  todoAddInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addTodo();
-  });
-}
-
-// Tabs UI handler
-function setupTabs() {
-  document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-      
-      btn.classList.add('active');
-      document.getElementById(btn.dataset.tab).classList.add('active');
-    });
-  });
-}
-
-// Accordion Options handler
-function setupAccordion() {
-  document.querySelectorAll('.accordion-trigger').forEach(trigger => {
-    trigger.addEventListener('click', () => {
-      const targetId = trigger.dataset.target;
-      const target = document.getElementById(targetId);
-      const isOpen = target.classList.contains('active');
-
-      document.querySelectorAll('.accordion-content').forEach(c => c.classList.remove('active'));
-      
-      if (!isOpen) {
-        target.classList.add('active');
-      }
-    });
-  });
-}
+  },
+  tfl: (settings) => `
+    <div class="inline-config-form">
+      <div class="form-group">
+        <label>Included Rail Modes</label>
+        <input type="text" class="inline-cfg-tfl-modes" placeholder="tube,overground,dlr,elizabeth-line" value="${settings.modes || 'tube,overground,dlr,elizabeth-line'}">
+        <span class="input-hint">tube, overground, dlr, elizabeth-line, tram</span>
+      </div>
+    </div>
+  `,
+  uk_trains: (settings) => `
+    <div class="inline-config-form">
+      <div class="form-group">
+        <label>Station CRS Code (3 letters)</label>
+        <input type="text" class="inline-cfg-trains-crs" placeholder="e.g. LST" maxlength="3" style="text-transform: uppercase;" value="${settings.crs || 'LST'}">
+      </div>
+      <div class="form-group">
+        <label>Filter Station Code (Optional)</label>
+        <input type="text" class="inline-cfg-trains-filter" placeholder="e.g. CBG" maxlength="3" style="text-transform: uppercase;" value="${settings.filterCrs || ''}">
+      </div>
+      <div class="form-group">
+        <label>Board Mode</label>
+        <select class="inline-cfg-trains-mode">
+          <option value="departures" ${settings.mode === 'departures' ? 'selected' : ''}>Departures</option>
+          <option value="arrivals" ${settings.mode === 'arrivals' ? 'selected' : ''}>Arrivals</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Maximum Services Shown</label>
+        <input type="number" class="inline-cfg-trains-limit" min="1" max="10" value="${settings.limit || 6}">
+      </div>
+    </div>
+  `,
+  xkcd: (settings) => `
+    <div class="inline-config-form">
+      <div class="form-group">
+        <label>Retrieval Mode</label>
+        <select class="inline-cfg-xkcd-mode">
+          <option value="latest" ${settings.mode === 'latest' ? 'selected' : ''}>Latest Comic Strip</option>
+          <option value="sequential" ${settings.mode === 'sequential' ? 'selected' : ''}>Sequential RSS cycling</option>
+          <option value="random" ${settings.mode === 'random' ? 'selected' : ''}>Random Archive Comic</option>
+        </select>
+      </div>
+    </div>
+  `,
+  notes: (settings) => `
+    <div class="inline-config-form">
+      <div class="form-group">
+        <label>Notice Board Title</label>
+        <input type="text" class="inline-cfg-todo-title" value="${settings.title || 'Notice Board'}">
+      </div>
+      <div class="form-group">
+        <label>Task Check List</label>
+        <div class="todo-editor-list inline-todo-list" style="max-height: 150px; overflow-y: auto; margin-top: 6px; padding: 4px;">
+          <!-- Dynamically loaded checklist -->
+        </div>
+        <div class="todo-add-row mt-2" style="display:flex; gap:6px;">
+          <input type="text" class="inline-todo-add-input" placeholder="Add chore..." style="flex:1;">
+          <button class="btn btn-primary btn-inline-todo-add" style="padding:0 12px; font-size:16px;">+</button>
+        </div>
+      </div>
+    </div>
+  `,
+  world_clock: (settings) => `
+    <div class="inline-config-form">
+      <div class="form-group">
+        <label>Local Timezone</label>
+        <input type="text" class="inline-cfg-wc-tz" placeholder="e.g. Europe/London" value="${settings.timezone || 'Europe/London'}">
+      </div>
+      <div class="form-row">
+        <div class="form-group col-6">
+          <label>Latitude</label>
+          <input type="number" step="0.0001" class="inline-cfg-wc-lat" placeholder="51.5074" value="${settings.latitude !== undefined ? settings.latitude : 51.5074}">
+        </div>
+        <div class="form-group col-6">
+          <label>Longitude</label>
+          <input type="number" step="0.0001" class="inline-cfg-wc-lon" placeholder="-0.1278" value="${settings.longitude !== undefined ? settings.longitude : -0.1278}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Map Render Style</label>
+        <select class="inline-cfg-wc-style">
+          <option value="hires" ${settings.mapStyle === 'hires' ? 'selected' : ''}>High-Resolution Map</option>
+          <option value="solid" ${settings.mapStyle === 'solid' ? 'selected' : ''}>Dithered Solid Grid</option>
+          <option value="dots" ${settings.mapStyle === 'dots' ? 'selected' : ''}>Dot-Matrix Map</option>
+        </select>
+      </div>
+    </div>
+  `
+};
 
 // Toast indicator animation
 function showToast(message, isError = false) {
@@ -1017,7 +889,7 @@ function updateAiPreviewMockup(pluginId) {
   if (btnAiViewPng) btnAiViewPng.href = imgUrl;
 }
 
-// Renders the list of hosted widgets on Tab 2
+// Renders the list of hosted widgets on Tab 2 with modular in-tile options forms
 function renderHostedWidgetsList(filterText = '') {
   if (!hostedWidgetsGrid) return;
   hostedWidgetsGrid.innerHTML = '';
@@ -1063,16 +935,237 @@ function renderHostedWidgetsList(filterText = '') {
       </div>
     `;
 
-    // Click on preview button triggers render
+    // Click on preview button triggers render only
     card.querySelector('.btn-preview-action').addEventListener('click', (e) => {
       e.stopPropagation();
       updateAiPreviewMockup(plugin.id);
     });
 
-    // Clicking card itself also previews
-    card.addEventListener('click', () => {
-      updateAiPreviewMockup(plugin.id);
-    });
+    // Check if there is a config form template defined for this plugin
+    const hasConfig = typeof widgetConfigTemplates[plugin.id] === 'function';
+    if (hasConfig) {
+      const settings = serverConfig.settings[plugin.id] || {};
+      const inlineHTML = widgetConfigTemplates[plugin.id](settings);
+      
+      const configWrapper = document.createElement('div');
+      configWrapper.className = 'hosted-widget-config-container';
+      configWrapper.style.display = 'none';
+      configWrapper.innerHTML = `
+        ${inlineHTML}
+        <div class="inline-config-actions">
+          <button type="button" class="btn-save-inline-config">Save Options</button>
+        </div>
+      `;
+      card.appendChild(configWrapper);
+
+      // Stop propagation inside config panel so typing doesn't trigger parent card events
+      configWrapper.addEventListener('click', (e) => e.stopPropagation());
+      configWrapper.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      // Bind plugin-specific sub-controllers
+      if (plugin.id === 'rss') {
+        const customCb = configWrapper.querySelector('.inline-rss-custom-cb');
+        const customGroup = configWrapper.querySelector('.inline-rss-custom-group');
+        if (customCb && customGroup) {
+          customCb.addEventListener('change', () => {
+            customGroup.style.display = customCb.checked ? 'block' : 'none';
+          });
+        }
+
+        configWrapper.querySelectorAll('.inline-rss-preset-cb').forEach(cb => {
+          cb.addEventListener('change', () => {
+            const checkedCount = configWrapper.querySelectorAll('.inline-rss-preset-cb:checked').length;
+            if (checkedCount > 5) {
+              cb.checked = false;
+              if (cb === customCb && customGroup) {
+                customGroup.style.display = 'none';
+              }
+              showToast("You can select up to 5 RSS feeds!", true);
+            }
+          });
+        });
+      }
+
+      if (plugin.id === 'notes') {
+        const todoListContainer = configWrapper.querySelector('.inline-todo-list');
+        const items = settings.items || [];
+        
+        const renderInlineTodoList = () => {
+          todoListContainer.innerHTML = '';
+          if (items.length === 0) {
+            todoListContainer.innerHTML = `<span class="text-sm" style="display:block;padding:6px;color:rgba(255,255,255,0.4);text-align:center;">Notice checklist is empty.</span>`;
+            return;
+          }
+          items.forEach((item, index) => {
+            const isCompleted = item.startsWith('[x]');
+            const cleanText = item.replace(/^\[[ x]\]\s*/, '');
+            
+            const row = document.createElement('div');
+            row.className = 'todo-editor-item inline-todo-item-row';
+            row.style.padding = '4px 8px';
+            row.style.marginBottom = '4px';
+            row.style.background = 'rgba(255,255,255,0.02)';
+            row.style.borderRadius = '6px';
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.justifyContent = 'space-between';
+            if (isCompleted) row.classList.add('completed');
+            
+            row.innerHTML = `
+              <div style="display:flex;align-items:center;gap:6px;">
+                <input type="checkbox" class="todo-check inline-todo-check" ${isCompleted ? 'checked' : ''}>
+                <span style="font-size:12px;">${cleanText}</span>
+              </div>
+              <button class="btn-todo-del inline-todo-del-btn" style="padding:0 4px;font-size:14px;cursor:pointer;">×</button>
+            `;
+            
+            row.querySelector('.inline-todo-check').addEventListener('change', (e) => {
+              if (e.target.checked) {
+                row.classList.add('completed');
+                items[index] = `[x] ${cleanText}`;
+              } else {
+                row.classList.remove('completed');
+                items[index] = `[ ] ${cleanText}`;
+              }
+            });
+            
+            row.querySelector('.inline-todo-del-btn').addEventListener('click', (e) => {
+              e.stopPropagation();
+              items.splice(index, 1);
+              renderInlineTodoList();
+            });
+            
+            todoListContainer.appendChild(row);
+          });
+        };
+        
+        renderInlineTodoList();
+
+        const addBtn = configWrapper.querySelector('.btn-inline-todo-add');
+        const addInput = configWrapper.querySelector('.inline-todo-add-input');
+        
+        const addInlineTodo = (e) => {
+          if (e) e.stopPropagation();
+          const text = addInput.value.trim();
+          if (!text) return;
+          items.push(`[ ] ${text}`);
+          addInput.value = '';
+          renderInlineTodoList();
+          addInput.focus();
+        };
+        
+        addBtn.addEventListener('click', addInlineTodo);
+        addInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.stopPropagation();
+            addInlineTodo();
+          }
+        });
+      }
+
+      // Bind in-card Save Options button
+      const btnSave = configWrapper.querySelector('.btn-save-inline-config');
+      btnSave.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        
+        // Grab inputs inside this card
+        if (plugin.id === 'weather') {
+          serverConfig.settings.weather = {
+            latitude: parseFloat(configWrapper.querySelector('.inline-cfg-lat').value) || 51.5074,
+            longitude: parseFloat(configWrapper.querySelector('.inline-cfg-lon').value) || -0.1278,
+            unit: configWrapper.querySelector('.inline-cfg-unit').value
+          };
+        } else if (plugin.id === 'rss') {
+          const enabledFeeds = [];
+          configWrapper.querySelectorAll('.inline-rss-preset-cb:checked').forEach(cb => {
+            enabledFeeds.push(cb.value);
+          });
+          if (enabledFeeds.length === 0) enabledFeeds.push('hn');
+
+          serverConfig.settings.rss = {
+            enabledFeeds,
+            customUrl: configWrapper.querySelector('.inline-cfg-rss-url').value || '',
+            limit: parseInt(configWrapper.querySelector('.inline-cfg-rss-limit').value) || 4
+          };
+        } else if (plugin.id === 'tfl') {
+          serverConfig.settings.tfl = {
+            modes: configWrapper.querySelector('.inline-cfg-tfl-modes').value || 'tube,overground,dlr,elizabeth-line'
+          };
+        } else if (plugin.id === 'uk_trains') {
+          serverConfig.settings.uk_trains = {
+            crs: configWrapper.querySelector('.inline-cfg-trains-crs').value.toUpperCase() || 'LST',
+            filterCrs: configWrapper.querySelector('.inline-cfg-trains-filter').value.toUpperCase() || '',
+            mode: configWrapper.querySelector('.inline-cfg-trains-mode').value,
+            limit: parseInt(configWrapper.querySelector('.inline-cfg-trains-limit').value) || 6
+          };
+        } else if (plugin.id === 'xkcd') {
+          serverConfig.settings.xkcd = {
+            mode: configWrapper.querySelector('.inline-cfg-xkcd-mode').value
+          };
+        } else if (plugin.id === 'notes') {
+          // Task checklist items are already mutated reactively in items array
+          serverConfig.settings.notes = {
+            title: configWrapper.querySelector('.inline-cfg-todo-title').value || 'Notice Board',
+            items: settings.items || []
+          };
+        } else if (plugin.id === 'world_clock') {
+          serverConfig.settings.world_clock = {
+            timezone: configWrapper.querySelector('.inline-cfg-wc-tz').value || 'Europe/London',
+            latitude: parseFloat(configWrapper.querySelector('.inline-cfg-wc-lat').value) || 51.5074,
+            longitude: parseFloat(configWrapper.querySelector('.inline-cfg-wc-lon').value) || -0.1278,
+            mapStyle: configWrapper.querySelector('.inline-cfg-wc-style').value
+          };
+        }
+
+        btnSave.disabled = true;
+        btnSave.innerText = "Saving...";
+        try {
+          await saveSettings();
+          updateAiPreviewMockup(plugin.id);
+        } finally {
+          btnSave.disabled = false;
+          btnSave.innerText = "Save Options";
+        }
+      });
+
+      // Card-level accordion toggle click listener
+      card.addEventListener('click', (e) => {
+        // Prevent toggle if we explicitly clicked inside the config form itself or on the preview button
+        if (e.target.closest('.hosted-widget-config-container') || e.target.closest('.btn-preview-action')) {
+          return;
+        }
+
+        // Preview it
+        updateAiPreviewMockup(plugin.id);
+
+        const isOpen = card.classList.contains('config-expanded');
+
+        // Collapse all other tiles
+        document.querySelectorAll('.hosted-widget-item').forEach(otherCard => {
+          if (otherCard !== card) {
+            otherCard.classList.remove('config-expanded');
+            const panel = otherCard.querySelector('.hosted-widget-config-container');
+            if (panel) panel.style.display = 'none';
+          }
+        });
+
+        // Toggle current
+        if (isOpen) {
+          card.classList.remove('config-expanded');
+          configWrapper.style.display = 'none';
+        } else {
+          card.classList.add('config-expanded');
+          configWrapper.style.display = 'block';
+        }
+      });
+
+    } else {
+      // Direct catalog click behavior if no options form is available (e.g. dynamic custom AI widgets)
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('.btn-preview-action')) return;
+        updateAiPreviewMockup(plugin.id);
+      });
+    }
 
     hostedWidgetsGrid.appendChild(card);
   });

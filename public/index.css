@@ -1160,3 +1160,108 @@ textarea:focus {
   border-color: var(--accent-cyan) !important;
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
 }
+
+/* ==========================================
+   InkFlow Inline In-Tile Configuration Panels
+   ========================================== */
+
+.hosted-widget-config-container {
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+  margin-top: 14px;
+  padding-top: 14px;
+  width: 100%;
+  animation: slideDownConfig 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  cursor: default;
+}
+
+@keyframes slideDownConfig {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+    max-height: 0;
+    overflow: hidden;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 800px;
+  }
+}
+
+.inline-config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: left;
+}
+
+.inline-config-form .form-group {
+  margin-bottom: 0;
+}
+
+.inline-config-form label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.inline-config-form input,
+.inline-config-form select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.inline-config-form input:focus,
+.inline-config-form select:focus {
+  border-color: var(--accent-cyan);
+  outline: none;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.1);
+}
+
+.hosted-widget-item.config-expanded {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.inline-config-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 10px;
+}
+
+.btn-save-inline-config {
+  font-family: var(--font-header);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 6px 14px;
+  background: var(--accent-cyan);
+  border: 1px solid var(--accent-cyan);
+  color: #020604;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save-inline-config:hover {
+  box-shadow: 0 4px 12px rgba(0, 240, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.btn-save-inline-config:active {
+  transform: scale(0.95);
+}
+
