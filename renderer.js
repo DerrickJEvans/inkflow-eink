@@ -11,6 +11,7 @@ const notesPlugin = require('./plugins/notes');
 const tflPlugin = require('./plugins/tfl');
 const ukTrainsPlugin = require('./plugins/uk_trains');
 const xkcdPlugin = require('./plugins/xkcd');
+const worldClockPlugin = require('./plugins/world_clock');
 
 const PLUGINS = {
   system: systemPlugin,
@@ -19,7 +20,8 @@ const PLUGINS = {
   notes: notesPlugin,
   tfl: tflPlugin,
   uk_trains: ukTrainsPlugin,
-  xkcd: xkcdPlugin
+  xkcd: xkcdPlugin,
+  world_clock: worldClockPlugin
 };
 
 const CACHE_DIR = path.join(__dirname, 'cache');

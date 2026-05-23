@@ -44,6 +44,9 @@ const trainsFilterCrs = document.getElementById('trains-filter-crs');
 const trainsMode = document.getElementById('trains-mode');
 const trainsLimit = document.getElementById('trains-limit');
 const xkcdMode = document.getElementById('xkcd-mode');
+const worldClockTimezone = document.getElementById('world-clock-timezone');
+const worldClockLat = document.getElementById('world-clock-lat');
+const worldClockLon = document.getElementById('world-clock-lon');
 const btnSaveGlobal = document.getElementById('btn-save-global-settings');
 
 // Initialize Dashboard
@@ -135,7 +138,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
       tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30,
       uk_trains: parseInt(document.getElementById('edit-device-interval-uk_trains').value) || 30,
-      xkcd: parseInt(document.getElementById('edit-device-interval-xkcd').value) || 30
+      xkcd: parseInt(document.getElementById('edit-device-interval-xkcd').value) || 30,
+      world_clock: parseInt(document.getElementById('edit-device-interval-world_clock').value) || 30
     };
 
     // Update locally
@@ -225,6 +229,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // XKCD Comics Settings
     serverConfig.settings.xkcd = {
       mode: xkcdMode.value || "latest"
+    };
+
+    // World Clock Settings
+    serverConfig.settings.world_clock = {
+      timezone: worldClockTimezone.value || "Europe/London",
+      latitude: parseFloat(worldClockLat.value) || 51.5074,
+      longitude: parseFloat(worldClockLon.value) || -0.1278
     };
 
     await saveSettings();
@@ -335,7 +346,7 @@ function selectDevice(deviceId, isNew = false) {
       width: 800,
       height: 480,
       refreshRate: 1800,
-      activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains", "xkcd"],
+      activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains", "xkcd", "world_clock"],
       layoutMode: "grid",
       ditherMode: "floyd-steinberg",
       layoutRatio: "equal",
@@ -346,7 +357,8 @@ function selectDevice(deviceId, isNew = false) {
         notes: 15,
         tfl: 30,
         uk_trains: 30,
-        xkcd: 30
+        xkcd: 30,
+        world_clock: 30
       }
     };
   }
@@ -378,6 +390,7 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
     document.getElementById('edit-device-interval-uk_trains').value = rotationIntervals.uk_trains || '';
     document.getElementById('edit-device-interval-xkcd').value = rotationIntervals.xkcd || '';
+    document.getElementById('edit-device-interval-world_clock').value = rotationIntervals.world_clock || '';
 
     // Checkboxes
     document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
@@ -477,6 +490,12 @@ function renderGlobalSettings() {
   // XKCD Comics
   const xkcd = settings.xkcd || { mode: 'latest' };
   xkcdMode.value = xkcd.mode;
+
+  // World Clock
+  const worldClock = settings.world_clock || { timezone: 'Europe/London', latitude: 51.5074, longitude: -0.1278 };
+  worldClockTimezone.value = worldClock.timezone || 'Europe/London';
+  worldClockLat.value = worldClock.latitude !== undefined ? worldClock.latitude : 51.5074;
+  worldClockLon.value = worldClock.longitude !== undefined ? worldClock.longitude : -0.1278;
 
   renderTodoList(notes.items);
 }
