@@ -51,6 +51,38 @@ const saveConfig = () => {
   }
 };
 
+const clearDeviceJsonCache = (deviceId) => {
+  try {
+    if (fs.existsSync(CACHE_DIR)) {
+      const files = fs.readdirSync(CACHE_DIR);
+      files.forEach(file => {
+        if (file.startsWith(`data_${deviceId}_`) && file.endsWith('.json')) {
+          fs.unlinkSync(path.join(CACHE_DIR, file));
+        }
+      });
+      console.log(`[Cache] Cleared JSON data cache for device: ${deviceId}`);
+    }
+  } catch (err) {
+    console.error(`[Cache] Failed to clear JSON cache for device ${deviceId}:`, err);
+  }
+};
+
+const clearAllJsonCache = () => {
+  try {
+    if (fs.existsSync(CACHE_DIR)) {
+      const files = fs.readdirSync(CACHE_DIR);
+      files.forEach(file => {
+        if (file.startsWith('data_') && file.endsWith('.json')) {
+          fs.unlinkSync(path.join(CACHE_DIR, file));
+        }
+      });
+      console.log(`[Cache] Cleared all JSON data cache files.`);
+    }
+  } catch (err) {
+    console.error(`[Cache] Failed to clear JSON cache:`, err);
+  }
+};
+
 // Start background scheduler for decoupled cache updates
 scheduler.start(config, saveConfig);
 
@@ -89,6 +121,9 @@ const getOrCreateDevice = (deviceId, reqQuery = {}) => {
  * Checks cache validity and rebuilds if needed
  */
 const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
+  if (forceRefresh) {
+    clearDeviceJsonCache(device.id);
+  }
   const cacheKey = device.id;
   const now = Date.now();
   const cached = imageCache[cacheKey];
@@ -244,6 +279,7 @@ app.post('/api/settings', (req, res) => {
     
     if (settings) {
       config.settings = settings;
+      clearAllJsonCache();
     }
     
     // Invalidate ALL device image caches on settings change
