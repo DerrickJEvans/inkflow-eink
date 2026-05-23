@@ -197,7 +197,13 @@ Write a premium morning brief synthesizing these elements:
     return result.response.text().trim();
   } catch (err) {
     console.error("[AI Core] Briefing generation failed:", err);
-    return "Error generating AI briefing. Check local network connection and API key status.";
+    if (err.status === 429 || (err.message && err.message.includes("429"))) {
+      return "ERROR: Gemini API rate limit exceeded. Please verify your Google AI Studio quota limits.";
+    }
+    if (err.status === 503 || (err.message && err.message.includes("503"))) {
+      return "ERROR: Gemini service is currently experiencing high demand. Retrying on next refresh.";
+    }
+    return "ERROR: Error generating AI briefing. Check local network connection and API key status.";
   }
 };
 
@@ -225,7 +231,13 @@ Write your Sys-Admin recommendations:
     return result.response.text().trim();
   } catch (err) {
     console.error("[AI Core] Telemetry insights failed:", err);
-    return "Unable to compile telemetry insights. Verify network configuration.";
+    if (err.status === 429 || (err.message && err.message.includes("429"))) {
+      return "ERROR: Gemini API rate limit exceeded. Please verify your Google AI Studio quota limits.";
+    }
+    if (err.status === 503 || (err.message && err.message.includes("503"))) {
+      return "ERROR: Gemini service is currently experiencing high demand. Retrying on next refresh.";
+    }
+    return "ERROR: Unable to compile telemetry insights. Verify network configuration.";
   }
 };
 

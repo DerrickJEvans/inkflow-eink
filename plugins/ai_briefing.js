@@ -91,19 +91,42 @@ module.exports = {
     });
 
     const prevBriefingData = getCachedData('ai_briefing');
-    const isError = !briefingText || briefingText.includes("Error generating AI briefing") || briefingText.includes("Error compiling");
+    const isError = !briefingText || briefingText.includes("Error generating AI briefing") || briefingText.includes("Error compiling") || briefingText.startsWith("ERROR:");
 
-    if (isError && prevBriefingData && prevBriefingData.briefing && !prevBriefingData.briefing.includes("Error generating")) {
+    let sourceLabel = "SYNTHESIZED BY GOOGLE GEMINI AI";
+    let statusLabel = "LIVE";
+    if (isError) {
+      if (briefingText && briefingText.includes("rate limit")) {
+        sourceLabel = "CACHED BULLETIN • GEMINI RATE LIMITED";
+        statusLabel = "RATE LIMITED (CACHED)";
+      } else if (briefingText && briefingText.includes("high demand")) {
+        sourceLabel = "CACHED BULLETIN • GEMINI OVERLOADED";
+        statusLabel = "OVERLOADED (CACHED)";
+      } else {
+        sourceLabel = "CACHED BULLETIN • OFFLINE FALLBACK";
+        statusLabel = "CACHED";
+      }
+    }
+
+    // Clean prefix for raw display
+    let cleanBriefingText = briefingText;
+    if (isError && briefingText && briefingText.startsWith("ERROR: ")) {
+      cleanBriefingText = briefingText.replace("ERROR: ", "");
+    }
+
+    if (isError && prevBriefingData && prevBriefingData.briefing && !prevBriefingData.briefing.includes("Error generating") && !prevBriefingData.briefing.includes("rate limit") && !prevBriefingData.briefing.includes("high demand")) {
       console.log("[AI Briefing] Reusing previous cached briefing due to API failure.");
       briefingText = prevBriefingData.briefing;
       dateStr = prevBriefingData.date || dateStr;
-    } else if (isError) {
-      briefingText = briefingText || "Error generating AI briefing. Check local network connection and API key status.";
+    } else {
+      briefingText = cleanBriefingText || "Error generating AI briefing. Check local network connection and API key status.";
     }
 
     return {
       briefing: briefingText,
-      date: dateStr
+      date: dateStr,
+      sourceLabel: sourceLabel,
+      statusLabel: statusLabel
     };
   },
 
@@ -138,7 +161,7 @@ module.exports = {
           <!-- Header Labels -->
           <text x="${width / 2}" y="48" font-family="Georgia, serif" font-size="${headerSize}" font-weight="bold" fill="black" text-anchor="middle" letter-spacing="1.5">🗞️ THE INKFLOW DAILY BULLETIN</text>
           <text x="${width / 2}" y="73" font-family="sans-serif" font-size="${dateSize}" font-weight="bold" fill="black" opacity="0.65" text-anchor="middle" letter-spacing="2">
-            ${escapeXml(data.date.toUpperCase())}  •  SYNTHESIZED BY GOOGLE GEMINI AI
+            ${escapeXml(data.date.toUpperCase())}  •  ${escapeXml(data.sourceLabel || "SYNTHESIZED BY GOOGLE GEMINI AI")}
           </text>
           
           <!-- Newspaper Column text -->
@@ -153,11 +176,12 @@ module.exports = {
       `;
     } else {
       // Carousel/Rotation compact widget card
+      const subtitleText = data.statusLabel ? `${data.date.toUpperCase()} (${data.statusLabel})` : data.date.toUpperCase();
       return `
         <g>
           <text x="${padding}" y="25" font-family="Georgia, serif" font-size="${headerSize}" font-weight="bold" fill="black">🗞️ AI DAILY BRIEFING</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
-          <text x="${padding}" y="44" font-family="sans-serif" font-size="${dateSize}" font-weight="bold" fill="black" opacity="0.55">${escapeXml(data.date.toUpperCase())}</text>
+          <text x="${padding}" y="44" font-family="sans-serif" font-size="${dateSize}" font-weight="bold" fill="black" opacity="0.55">${escapeXml(subtitleText)}</text>
           
           <!-- Rendered Text block -->
           ${textHtml}

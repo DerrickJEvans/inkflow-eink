@@ -66,13 +66,30 @@ module.exports = {
 
     let parsedLines = [];
     const prevAdvisorData = getCachedData('ai_advisor');
-    const isError = !insightsText || insightsText.includes("Unable to compile telemetry insights") || insightsText.includes("Error compiling");
+    const isError = !insightsText || insightsText.includes("Unable to compile telemetry insights") || insightsText.includes("Error compiling") || insightsText.startsWith("ERROR:");
 
-    if (isError && prevAdvisorData && prevAdvisorData.insights && prevAdvisorData.insights.length > 0 && !prevAdvisorData.insights[0].includes("Unable to compile")) {
+    let statusLabel = "ACTIVE ANALYST";
+    if (isError) {
+      if (insightsText && insightsText.includes("rate limit")) {
+        statusLabel = "RATE LIMITED (CACHED)";
+      } else if (insightsText && insightsText.includes("high demand")) {
+        statusLabel = "OVERLOADED (CACHED)";
+      } else {
+        statusLabel = "OFFLINE FALLBACK";
+      }
+    }
+
+    // Clean prefix for raw display
+    let cleanInsightsText = insightsText;
+    if (isError && insightsText && insightsText.startsWith("ERROR: ")) {
+      cleanInsightsText = insightsText.replace("ERROR: ", "");
+    }
+
+    if (isError && prevAdvisorData && prevAdvisorData.insights && prevAdvisorData.insights.length > 0 && !prevAdvisorData.insights[0].includes("Unable to compile") && !prevAdvisorData.insights[0].includes("rate limit") && !prevAdvisorData.insights[0].includes("high demand")) {
       console.log("[AI Advisor] Reusing previous cached insights due to API failure.");
       parsedLines = prevAdvisorData.insights;
     } else {
-      const finalInsightsText = insightsText || "Unable to compile telemetry insights. Verify network configuration.";
+      const finalInsightsText = cleanInsightsText || "Unable to compile telemetry insights. Verify network configuration.";
       // Parse response into clean bulleted lines
       parsedLines = finalInsightsText
         .split('\n')
@@ -83,6 +100,7 @@ module.exports = {
 
     return {
       insights: parsedLines,
+      statusLabel: statusLabel,
       stats: {
         cpuTemp: sysData ? sysData.cpuTemp || 45 : 74,
         cpuLoad: sysData ? sysData.cpuUsage || 12 : 68.2
@@ -148,7 +166,7 @@ module.exports = {
           <!-- Technical Metadata Footer -->
           <line x1="${padding}" y1="${height - 40}" x2="${width - padding}" y2="${height - 40}" stroke="black" stroke-width="1.5" stroke-dasharray="2,2" opacity="0.4" />
           <text x="${padding + 10}" y="${height - 20}" font-family="monospace" font-size="9.5" fill="black" opacity="0.55">CPU TEMP: ${data.stats.cpuTemp}°C | CPU LOAD: ${data.stats.cpuLoad}%</text>
-          <text x="${width - padding - 10}" y="${height - 20}" font-family="monospace" font-size="9.5" fill="black" opacity="0.55" text-anchor="end">STATUS: ACTIVE ANALYST</text>
+          <text x="${width - padding - 10}" y="${height - 20}" font-family="monospace" font-size="9.5" fill="black" opacity="0.55" text-anchor="end">STATUS: ${escapeXml(data.statusLabel || "ACTIVE ANALYST")}</text>
         </g>
       `;
     } else {
