@@ -120,6 +120,10 @@
                     <span class="text-sm col-6">🚇 TfL Rail Status</span>
                     <input type="number" class="col-6" id="edit-device-interval-tfl" min="10" step="10" placeholder="30">
                   </div>
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">🚊 UK Train Board</span>
+                    <input type="number" class="col-6" id="edit-device-interval-uk_trains" min="10" step="10" placeholder="30">
+                  </div>
                 </div>
                 <span class="input-hint">Poll duration per widget. Client fetches next widget after this time.</span>
               </div>
@@ -146,6 +150,10 @@
                   <label class="checkbox-container">
                     <input type="checkbox" value="tfl" checked>
                     <span class="checkbox-label">🚇 TfL Rail Status</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="uk_trains" checked>
+                    <span class="checkbox-label">🚊 UK Train Board</span>
                   </label>
                 </div>
                 <span class="input-hint">Layout formats automatically (1, 2, 3, or 2x2 grid) based on selections.</span>
@@ -343,6 +351,34 @@
                     <label for="tfl-modes">Included Rail Modes (comma separated)</label>
                     <input type="text" id="tfl-modes" placeholder="e.g. tube,overground,dlr,elizabeth-line">
                     <span class="input-hint">Available modes: tube, overground, dlr, elizabeth-line, tram</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- UK Train Board settings -->
+              <div class="accordion-item">
+                <button class="accordion-trigger" data-target="options-uk-trains">🚊 UK Train Board</button>
+                <div class="accordion-content" id="options-uk-trains">
+                  <div class="form-group">
+                    <label for="trains-crs">Station CRS Code (3 letters)</label>
+                    <input type="text" id="trains-crs" placeholder="e.g. LST" maxlength="3" style="text-transform: uppercase;">
+                    <span class="input-hint">Liverpool Street (LST), King's Cross (KGX), Cambridge (CBG), Waterloo (WAT)</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="trains-filter-crs">Filter Station Code (Optional)</label>
+                    <input type="text" id="trains-filter-crs" placeholder="e.g. CBG" maxlength="3" style="text-transform: uppercase;">
+                    <span class="input-hint">Show only departures to / arrivals from this destination code</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="trains-mode">Board Mode</label>
+                    <select id="trains-mode">
+                      <option value="departures">Departures</option>
+                      <option value="arrivals">Arrivals</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="trains-limit">Maximum Services Shown</label>
+                    <input type="number" id="trains-limit" min="1" max="10" placeholder="6">
                   </div>
                 </div>
               </div>

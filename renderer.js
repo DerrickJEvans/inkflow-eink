@@ -9,13 +9,15 @@ const weatherPlugin = require('./plugins/weather');
 const rssPlugin = require('./plugins/rss');
 const notesPlugin = require('./plugins/notes');
 const tflPlugin = require('./plugins/tfl');
+const ukTrainsPlugin = require('./plugins/uk_trains');
 
 const PLUGINS = {
   system: systemPlugin,
   weather: weatherPlugin,
   rss: rssPlugin,
   notes: notesPlugin,
-  tfl: tflPlugin
+  tfl: tflPlugin,
+  uk_trains: ukTrainsPlugin
 };
 
 /**

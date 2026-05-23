@@ -39,6 +39,10 @@ const todoEditorList = document.getElementById('todo-editor-list');
 const todoAddInput = document.getElementById('todo-add-input');
 const btnTodoAdd = document.getElementById('btn-todo-add');
 const tflModes = document.getElementById('tfl-modes');
+const trainsCrs = document.getElementById('trains-crs');
+const trainsFilterCrs = document.getElementById('trains-filter-crs');
+const trainsMode = document.getElementById('trains-mode');
+const trainsLimit = document.getElementById('trains-limit');
 const btnSaveGlobal = document.getElementById('btn-save-global-settings');
 
 // Initialize Dashboard
@@ -126,7 +130,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       system: parseInt(document.getElementById('edit-device-interval-system').value) || 15,
       rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
       notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
-      tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30
+      tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30,
+      uk_trains: parseInt(document.getElementById('edit-device-interval-uk_trains').value) || 30
     };
 
     // Update locally
@@ -201,6 +206,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // TfL Rail Settings
     serverConfig.settings.tfl = {
       modes: tflModes.value || "tube,overground,dlr,elizabeth-line"
+    };
+
+    // UK Train Board Settings
+    serverConfig.settings.uk_trains = {
+      crs: trainsCrs.value || "LST",
+      filterCrs: trainsFilterCrs.value || "",
+      mode: trainsMode.value || "departures",
+      limit: parseInt(trainsLimit.value) || 6
     };
 
     await saveSettings();
@@ -311,14 +324,15 @@ function selectDevice(deviceId, isNew = false) {
       width: 800,
       height: 480,
       refreshRate: 1800,
-      activePlugins: ["system", "weather", "rss", "notes", "tfl"],
+      activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains"],
       layoutMode: "grid",
       rotationIntervals: {
         weather: 30,
         system: 15,
         rss: 30,
         notes: 15,
-        tfl: 30
+        tfl: 30,
+        uk_trains: 30
       }
     };
   }
@@ -348,6 +362,7 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-interval-rss').value = rotationIntervals.rss || '';
     document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
     document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
+    document.getElementById('edit-device-interval-uk_trains').value = rotationIntervals.uk_trains || '';
 
     // Checkboxes
     document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
@@ -432,6 +447,13 @@ function renderGlobalSettings() {
   // TfL Rail
   const tfl = settings.tfl || { modes: 'tube,overground,dlr,elizabeth-line' };
   tflModes.value = tfl.modes;
+
+  // UK Train Board
+  const trains = settings.uk_trains || { crs: 'LST', filterCrs: '', mode: 'departures', limit: 6 };
+  trainsCrs.value = trains.crs;
+  trainsFilterCrs.value = trains.filterCrs;
+  trainsMode.value = trains.mode;
+  trainsLimit.value = trains.limit;
 
   renderTodoList(notes.items);
 }
