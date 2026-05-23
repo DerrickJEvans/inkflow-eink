@@ -3,8 +3,9 @@ require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { renderDeviceImage, PLUGINS } = require('./renderer');
+const { renderDeviceImage, PLUGINS, loadPlugins } = require('./renderer');
 const scheduler = require('./scheduler');
+const aiCore = require('./ai_core');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -241,6 +242,73 @@ const resolveDeepSleepInterval = (device) => {
 // ==========================================
 //              API ENDPOINTS
 // ==========================================
+
+// Get list of all loaded plugins
+app.get('/api/plugins', (req, res) => {
+  try {
+    const list = Object.keys(PLUGINS).map(key => ({
+      id: PLUGINS[key].id,
+      name: PLUGINS[key].name,
+      description: PLUGINS[key].description,
+      configFields: PLUGINS[key].configFields || []
+    }));
+    res.json(list);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to load plugins list" });
+  }
+});
+
+// AI Widget Builder endpoint
+app.post('/api/ai/build', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    console.log(`[AI Widget Builder] Request received: "${prompt}"`);
+
+    // Call Gemini to generate plugin code
+    const result = await aiCore.generatePluginCode(prompt);
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    const { pluginId, code } = result;
+
+    // Write file to plugins directory
+    const pluginFilePath = path.join(__dirname, 'plugins', `${pluginId}.js`);
+    fs.writeFileSync(pluginFilePath, code, 'utf8');
+    console.log(`[AI Widget Builder] Successfully saved generated plugin to ${pluginFilePath}`);
+
+    // Dynamic hot reload of all plugins!
+    loadPlugins();
+
+    // Verify it loaded successfully
+    if (!PLUGINS[pluginId]) {
+      return res.status(500).json({ error: "Plugin was written but failed to compile and load dynamically." });
+    }
+
+    // Invalidate the cache for all devices so they show up
+    config.devices.forEach(d => {
+      delete imageCache[d.id];
+    });
+
+    res.json({
+      success: true,
+      message: `Widget '${PLUGINS[pluginId].name}' (${pluginId}) generated and registered successfully!`,
+      pluginId: pluginId,
+      plugin: {
+        id: pluginId,
+        name: PLUGINS[pluginId].name,
+        description: PLUGINS[pluginId].description
+      }
+    });
+  } catch (err) {
+    console.error("[AI Widget Builder] Endpoint error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Get host Raspberry Pi system metrics
 app.get('/api/system-stats', async (req, res) => {

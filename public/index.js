@@ -3,6 +3,19 @@ let serverConfig = { devices: [], settings: {} };
 let activeDeviceId = null;
 let hostIpAddress = window.location.hostname || '192.168.1.100';
 let hostPort = window.location.port || '5000';
+let availablePlugins = []; // Holds all dynamic/AI plugins
+const pluginIcons = {
+  weather: '🌤️',
+  system: '⚡',
+  rss: '📰',
+  notes: '📌',
+  tfl: '🚇',
+  uk_trains: '🚊',
+  xkcd: '🖼️',
+  world_clock: '🌍',
+  ai_briefing: '🗞️',
+  ai_advisor: '🛠️'
+};
 
 // DOM Elements
 const devicesList = document.getElementById('devices-list');
@@ -20,6 +33,12 @@ const codeArduino = document.getElementById('code-arduino-url');
 const codePi = document.getElementById('code-pi-url');
 const codeTrmnl = document.getElementById('code-trmnl-url');
 const activeDevicesCount = document.getElementById('active-devices-count');
+
+// AI Widget Generator Elements
+const aiPromptInput = document.getElementById('ai-prompt-input');
+const btnBuildWidget = document.getElementById('btn-build-widget');
+const aiLoadingContainer = document.getElementById('ai-loading-container');
+const aiLoadingText = document.getElementById('ai-loading-text');
 
 // Telemetry Elements
 const cpuChart = document.getElementById('telemetry-cpu-chart');
@@ -108,28 +127,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layoutMode = "rotation";
     const ditherMode = document.getElementById('edit-device-dither').value;
     
-    // Read selected plugins
+    // Read selected plugins & their custom durations dynamically!
     const activePlugins = [];
-    document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
-      if (cb.checked) activePlugins.push(cb.value);
+    const rotationIntervals = {};
+    
+    document.querySelectorAll('#plugins-selector .plugin-row').forEach(row => {
+      const cb = row.querySelector('input[type="checkbox"]');
+      const numInput = row.querySelector('input[type="number"]');
+      if (cb && cb.checked) {
+        activePlugins.push(cb.value);
+      }
+      if (cb && numInput) {
+        rotationIntervals[cb.value] = parseInt(numInput.value) || 30;
+      }
     });
 
     if (activePlugins.length === 0) {
       alert("Please select at least 1 widget!");
       return;
     }
-
-    // Read rotation intervals
-    const rotationIntervals = {
-      weather: parseInt(document.getElementById('edit-device-interval-weather').value) || 30,
-      system: parseInt(document.getElementById('edit-device-interval-system').value) || 15,
-      rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
-      notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
-      tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30,
-      uk_trains: parseInt(document.getElementById('edit-device-interval-uk_trains').value) || 30,
-      xkcd: parseInt(document.getElementById('edit-device-interval-xkcd').value) || 30,
-      world_clock: parseInt(document.getElementById('edit-device-interval-world_clock').value) || 30
-    };
 
     // Update locally
     const devIdx = serverConfig.devices.findIndex(d => d.id === id);
@@ -232,11 +248,198 @@ document.addEventListener('DOMContentLoaded', async () => {
       await triggerManualRefresh(activeDeviceId);
     }
   });
+
+  // AI Widget Generator Click Handler
+  if (btnBuildWidget) {
+    btnBuildWidget.addEventListener('click', async () => {
+      const promptText = aiPromptInput.value.trim();
+      if (!promptText) {
+        alert("Please describe what custom widget you want Gemini to build first!");
+        return;
+      }
+
+      // Disable inputs and show loading state
+      btnBuildWidget.disabled = true;
+      aiPromptInput.disabled = true;
+      aiLoadingContainer.style.display = 'block';
+      aiLoadingText.innerText = "Gemini is writing clean SVG layout code...";
+
+      try {
+        const response = await fetch('/api/ai/build', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: promptText })
+        });
+        const reply = await response.json();
+
+        if (reply.success) {
+          showToast(`Widget built successfully!`);
+          aiPromptInput.value = ''; // clear input
+
+          // Re-fetch all plugins and re-render selector checkboxes
+          await fetchPlugins();
+          
+          // Add this new plugin to the active device's selection automatically!
+          if (activeDeviceId) {
+            const device = serverConfig.devices.find(d => d.id === activeDeviceId);
+            if (device) {
+              if (!device.activePlugins.includes(reply.pluginId)) {
+                device.activePlugins.push(reply.pluginId);
+                if (!device.rotationIntervals) device.rotationIntervals = {};
+                device.rotationIntervals[reply.pluginId] = 30;
+              }
+              renderPluginsSelector(device.activePlugins, device.rotationIntervals || {});
+              await saveSettings();
+              await triggerManualRefresh(activeDeviceId);
+            }
+          } else {
+            renderPluginsSelector([]);
+          }
+        } else {
+          showToast(reply.error || "Generation failed!", true);
+        }
+      } catch (err) {
+        console.error("AI Widget creation error:", err);
+        showToast("Server error during widget compilation!", true);
+      } finally {
+        btnBuildWidget.disabled = false;
+        aiPromptInput.disabled = false;
+        aiLoadingContainer.style.display = 'none';
+      }
+    });
+  }
 });
+
+// Fetch available plugins from server
+async function fetchPlugins() {
+  try {
+    const res = await fetch('/api/plugins');
+    availablePlugins = await res.json();
+  } catch (err) {
+    console.error("Failed to fetch available plugins:", err);
+    // Offline fallback static list
+    availablePlugins = [
+      { id: 'weather', name: 'Weather Forecast', description: 'Forecast' },
+      { id: 'system', name: 'Host System Health', description: 'System health' },
+      { id: 'rss', name: 'RSS Bulletin Feed', description: 'RSS feeds' },
+      { id: 'notes', name: 'Notices & Todos', description: 'Checklist board' },
+      { id: 'tfl', name: 'TfL Rail Status', description: 'London underground status' },
+      { id: 'uk_trains', name: 'UK Train Board', description: 'Live departures' },
+      { id: 'xkcd', name: 'XKCD Comics', description: 'Daily comics strip' },
+      { id: 'world_clock', name: 'World Clock', description: 'World clock and moon phases' },
+      { id: 'ai_briefing', name: 'Daily AI Briefing', description: 'Gemini synthesized editorial bulletin' },
+      { id: 'ai_advisor', name: 'AI Telemetry Advisor', description: 'Gemini system performance recommendations' }
+    ];
+  }
+}
+
+// Render dynamic checkboxes with inline durations inside form
+function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}) {
+  const container = document.getElementById('plugins-selector');
+  if (!container) return;
+
+  container.innerHTML = '';
+  availablePlugins.forEach(plugin => {
+    const isChecked = selectedPluginIds.includes(plugin.id);
+    const duration = rotationIntervals[plugin.id] || 30; // default to 30s
+    
+    const row = document.createElement('div');
+    row.className = 'plugin-row';
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.padding = '8px 12px';
+    row.style.borderRadius = '8px';
+    row.style.background = 'rgba(255, 255, 255, 0.03)';
+    row.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+    row.style.marginBottom = '8px';
+    row.style.transition = 'background 0.2s';
+    
+    const leftSide = document.createElement('div');
+    leftSide.style.display = 'flex';
+    leftSide.style.alignItems = 'center';
+    leftSide.style.gap = '8px';
+    
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = plugin.id;
+    cb.checked = isChecked;
+    cb.id = `cb-plugin-${plugin.id}`;
+    cb.style.margin = '0';
+    cb.style.cursor = 'pointer';
+    
+    const label = document.createElement('label');
+    label.htmlFor = `cb-plugin-${plugin.id}`;
+    label.style.cursor = 'pointer';
+    label.style.margin = '0';
+    
+    const icon = pluginIcons[plugin.id] || '🧩';
+    label.innerHTML = `<span class="checkbox-label" title="${plugin.description || ''}" style="font-weight: 500; font-size: 13.5px; cursor: pointer; color: #fff;">${icon} ${plugin.name}</span>`;
+    
+    leftSide.appendChild(cb);
+    leftSide.appendChild(label);
+    
+    const rightSide = document.createElement('div');
+    rightSide.style.display = 'flex';
+    rightSide.style.alignItems = 'center';
+    rightSide.style.gap = '6px';
+    
+    const durationLabel = document.createElement('span');
+    durationLabel.innerText = 'Show:';
+    durationLabel.style.fontSize = '11px';
+    durationLabel.style.color = 'rgba(255, 255, 255, 0.5)';
+    
+    const numInput = document.createElement('input');
+    numInput.type = 'number';
+    numInput.className = 'plugin-duration-input';
+    numInput.value = duration;
+    numInput.min = '5';
+    numInput.step = '5';
+    numInput.style.width = '55px';
+    numInput.style.padding = '4px 6px';
+    numInput.style.borderRadius = '4px';
+    numInput.style.border = '1px solid rgba(255, 255, 255, 0.15)';
+    numInput.style.background = 'rgba(0, 0, 0, 0.3)';
+    numInput.style.color = '#fff';
+    numInput.style.fontSize = '12px';
+    numInput.style.textAlign = 'center';
+    
+    const unitLabel = document.createElement('span');
+    unitLabel.innerText = 's';
+    unitLabel.style.fontSize = '11px';
+    unitLabel.style.color = 'rgba(255, 255, 255, 0.5)';
+    
+    rightSide.appendChild(durationLabel);
+    rightSide.appendChild(numInput);
+    rightSide.appendChild(unitLabel);
+    
+    row.appendChild(leftSide);
+    row.appendChild(rightSide);
+    
+    // Highlight active row subtly
+    if (isChecked) {
+      row.style.background = 'rgba(255, 255, 255, 0.07)';
+      row.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+    }
+    
+    cb.addEventListener('change', () => {
+      if (cb.checked) {
+        row.style.background = 'rgba(255, 255, 255, 0.07)';
+        row.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      } else {
+        row.style.background = 'rgba(255, 255, 255, 0.03)';
+        row.style.borderColor = 'rgba(255, 255, 255, 0.08)';
+      }
+    });
+    
+    container.appendChild(row);
+  });
+}
 
 // Fetch configs from Express server
 async function fetchSettings() {
   try {
+    await fetchPlugins();
     const res = await fetch('/api/settings');
     serverConfig = await res.json();
     
@@ -360,26 +563,8 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-height').value = device.height;
     document.getElementById('edit-device-refresh').value = device.refreshRate;
 
-    const intervalsContainer = document.getElementById('rotation-intervals-container');
-    if (intervalsContainer) {
-      intervalsContainer.style.display = 'block';
-    }
-
-    // Load rotation intervals
-    const rotationIntervals = device.rotationIntervals || {};
-    document.getElementById('edit-device-interval-weather').value = rotationIntervals.weather || '';
-    document.getElementById('edit-device-interval-system').value = rotationIntervals.system || '';
-    document.getElementById('edit-device-interval-rss').value = rotationIntervals.rss || '';
-    document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
-    document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
-    document.getElementById('edit-device-interval-uk_trains').value = rotationIntervals.uk_trains || '';
-    document.getElementById('edit-device-interval-xkcd').value = rotationIntervals.xkcd || '';
-    document.getElementById('edit-device-interval-world_clock').value = rotationIntervals.world_clock || '';
-
-    // Checkboxes
-    document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
-      cb.checked = device.activePlugins.includes(cb.value);
-    });
+    // Checkboxes and inline durations
+    renderPluginsSelector(device.activePlugins, device.rotationIntervals || {});
 
     // Load ditherMode
     document.getElementById('edit-device-dither').value = device.ditherMode || 'floyd-steinberg';

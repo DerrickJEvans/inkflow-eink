@@ -57,6 +57,26 @@
           </div>
         </div>
 
+        <!-- AI Widget Generator Card -->
+        <div class="glass-card">
+          <div class="card-header">
+            <h3>✨ AI Widget Generator</h3>
+          </div>
+          <div class="card-content">
+            <p class="card-help">Describe any custom widget you want. Google Gemini will dynamically generate, compile, and register it instantly!</p>
+            <div class="form-group mt-3">
+              <label for="ai-prompt-input">What should the widget display?</label>
+              <textarea id="ai-prompt-input" rows="3" placeholder="e.g. a random motivational quote with a dynamic border, or a cryptocurrency price tracker..." style="width:100%; box-sizing:border-box; resize:vertical; padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.25); color:#fff; font-family:inherit; font-size: 13px;"></textarea>
+            </div>
+            <button class="btn btn-primary btn-block mt-3" id="btn-build-widget">✨ Generate Widget</button>
+            
+            <div id="ai-loading-container" style="display:none; margin-top:15px; text-align:center;">
+              <div class="loading-spinner" style="margin:0 auto 10px auto;"></div>
+              <p class="text-sm" id="ai-loading-text" style="color:rgba(255,255,255,0.7); font-size:12px;">Gemini is writing SVG layouts...</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Active Device Layout Card -->
         <div class="glass-card" id="device-layout-card" style="display: none;">
           <div class="card-header">
@@ -90,80 +110,12 @@
 
 
 
-              <div class="form-group" id="rotation-intervals-container">
-                <label>Rotation Durations (seconds)</label>
-                <div class="checkbox-grid">
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🌤️ Weather</span>
-                    <input type="number" class="col-6" id="edit-device-interval-weather" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">⚡ Host System</span>
-                    <input type="number" class="col-6" id="edit-device-interval-system" min="10" step="10" placeholder="15">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">📰 RSS Bulletin</span>
-                    <input type="number" class="col-6" id="edit-device-interval-rss" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">📌 Notices</span>
-                    <input type="number" class="col-6" id="edit-device-interval-notes" min="10" step="10" placeholder="15">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🚇 TfL Rail Status</span>
-                    <input type="number" class="col-6" id="edit-device-interval-tfl" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🚊 UK Train Board</span>
-                    <input type="number" class="col-6" id="edit-device-interval-uk_trains" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🖼️ XKCD Comics</span>
-                    <input type="number" class="col-6" id="edit-device-interval-xkcd" min="10" step="10" placeholder="30">
-                  </div>
-                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
-                    <span class="text-sm col-6">🌍 World Clock</span>
-                    <input type="number" class="col-6" id="edit-device-interval-world_clock" min="10" step="10" placeholder="30">
-                  </div>
-                </div>
-                <span class="input-hint">Poll duration per widget. Client fetches next widget after this time.</span>
-              </div>
+
 
               <div class="form-group">
                 <label>Active Dashboard Widgets</label>
                 <div class="checkbox-grid" id="plugins-selector">
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="weather" checked>
-                    <span class="checkbox-label">🌤️ Weather Forecast</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="system" checked>
-                    <span class="checkbox-label">⚡ Host System Health</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="rss" checked>
-                    <span class="checkbox-label">📰 RSS Bulletin Feed</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="notes" checked>
-                    <span class="checkbox-label">📌 Notices &amp; Todos</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="tfl" checked>
-                    <span class="checkbox-label">🚇 TfL Rail Status</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="uk_trains" checked>
-                    <span class="checkbox-label">🚊 UK Train Board</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="xkcd" checked>
-                    <span class="checkbox-label">🖼️ XKCD Comics</span>
-                  </label>
-                  <label class="checkbox-container">
-                    <input type="checkbox" value="world_clock" checked>
-                    <span class="checkbox-label">🌍 World Clock</span>
-                  </label>
+                  <div class="loading-spinner"></div>
                 </div>
                 <span class="input-hint">Layout formats automatically (1, 2, 3, or 2x2 grid) based on selections.</span>
               </div>

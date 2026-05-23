@@ -3,26 +3,37 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
-// Load plugin modules
-const systemPlugin = require('./plugins/system');
-const weatherPlugin = require('./plugins/weather');
-const rssPlugin = require('./plugins/rss');
-const notesPlugin = require('./plugins/notes');
-const tflPlugin = require('./plugins/tfl');
-const ukTrainsPlugin = require('./plugins/uk_trains');
-const xkcdPlugin = require('./plugins/xkcd');
-const worldClockPlugin = require('./plugins/world_clock');
+const PLUGINS = {};
 
-const PLUGINS = {
-  system: systemPlugin,
-  weather: weatherPlugin,
-  rss: rssPlugin,
-  notes: notesPlugin,
-  tfl: tflPlugin,
-  uk_trains: ukTrainsPlugin,
-  xkcd: xkcdPlugin,
-  world_clock: worldClockPlugin
+/**
+ * Dynamically scans the plugins folder and loads all compliant modules.
+ * Clears require caches to allow hot-reloading on-the-fly!
+ */
+const loadPlugins = () => {
+  const pluginsDir = path.join(__dirname, 'plugins');
+  if (!fs.existsSync(pluginsDir)) return;
+  
+  const files = fs.readdirSync(pluginsDir);
+  files.forEach(file => {
+    if (file.endsWith('.js')) {
+      const filePath = path.join(pluginsDir, file);
+      // Clear require cache to reload fresh code
+      delete require.cache[require.resolve(filePath)];
+      try {
+        const plugin = require(filePath);
+        if (plugin.id && typeof plugin.fetchData === 'function' && typeof plugin.renderSVG === 'function') {
+          PLUGINS[plugin.id] = plugin;
+        }
+      } catch (err) {
+        console.error(`[Renderer] Failed to dynamically load plugin from file [${file}]:`, err);
+      }
+    }
+  });
+  console.log(`[Renderer] Dynamically loaded ${Object.keys(PLUGINS).length} active plugins.`);
 };
+
+// Initial sync load at startup
+loadPlugins();
 
 const CACHE_DIR = path.join(__dirname, 'cache');
 const getCachePath = (deviceId, pluginId) => {
@@ -212,5 +223,6 @@ const renderDeviceImage = async (device, settings) => {
 
 module.exports = {
   renderDeviceImage,
-  PLUGINS
+  PLUGINS,
+  loadPlugins
 };

@@ -16,3 +16,4 @@ node_modules/
 # Local dynamic config and cache directories
 config.json
 cache/
+scratch/
