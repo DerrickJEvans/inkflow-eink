@@ -10,6 +10,7 @@ const rssPlugin = require('./plugins/rss');
 const notesPlugin = require('./plugins/notes');
 const tflPlugin = require('./plugins/tfl');
 const ukTrainsPlugin = require('./plugins/uk_trains');
+const xkcdPlugin = require('./plugins/xkcd');
 
 const PLUGINS = {
   system: systemPlugin,
@@ -17,7 +18,8 @@ const PLUGINS = {
   rss: rssPlugin,
   notes: notesPlugin,
   tfl: tflPlugin,
-  uk_trains: ukTrainsPlugin
+  uk_trains: ukTrainsPlugin,
+  xkcd: xkcdPlugin
 };
 
 /**

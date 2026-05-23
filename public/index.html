@@ -124,6 +124,10 @@
                     <span class="text-sm col-6">🚊 UK Train Board</span>
                     <input type="number" class="col-6" id="edit-device-interval-uk_trains" min="10" step="10" placeholder="30">
                   </div>
+                  <div class="form-row mt-2" style="align-items: center; justify-content: space-between;">
+                    <span class="text-sm col-6">🖼️ XKCD Comics</span>
+                    <input type="number" class="col-6" id="edit-device-interval-xkcd" min="10" step="10" placeholder="30">
+                  </div>
                 </div>
                 <span class="input-hint">Poll duration per widget. Client fetches next widget after this time.</span>
               </div>
@@ -154,6 +158,10 @@
                   <label class="checkbox-container">
                     <input type="checkbox" value="uk_trains" checked>
                     <span class="checkbox-label">🚊 UK Train Board</span>
+                  </label>
+                  <label class="checkbox-container">
+                    <input type="checkbox" value="xkcd" checked>
+                    <span class="checkbox-label">🖼️ XKCD Comics</span>
                   </label>
                 </div>
                 <span class="input-hint">Layout formats automatically (1, 2, 3, or 2x2 grid) based on selections.</span>
@@ -379,6 +387,22 @@
                   <div class="form-group">
                     <label for="trains-limit">Maximum Services Shown</label>
                     <input type="number" id="trains-limit" min="1" max="10" placeholder="6">
+                  </div>
+                </div>
+              </div>
+
+              <!-- XKCD Comics settings -->
+              <div class="accordion-item">
+                <button class="accordion-trigger" data-target="options-xkcd">🖼️ XKCD Comics</button>
+                <div class="accordion-content" id="options-xkcd">
+                  <div class="form-group">
+                    <label for="xkcd-mode">Retrieval Mode</label>
+                    <select id="xkcd-mode">
+                      <option value="latest">Latest Comic Strip</option>
+                      <option value="sequential">Sequential RSS Feed Cycling</option>
+                      <option value="random">Completely Random Archive Comic</option>
+                    </select>
+                    <span class="input-hint">Latest fetches latest strip; Sequential cycles through RSS; Random pulls a random one.</span>
                   </div>
                 </div>
               </div>

@@ -43,6 +43,7 @@ const trainsCrs = document.getElementById('trains-crs');
 const trainsFilterCrs = document.getElementById('trains-filter-crs');
 const trainsMode = document.getElementById('trains-mode');
 const trainsLimit = document.getElementById('trains-limit');
+const xkcdMode = document.getElementById('xkcd-mode');
 const btnSaveGlobal = document.getElementById('btn-save-global-settings');
 
 // Initialize Dashboard
@@ -131,7 +132,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       rss: parseInt(document.getElementById('edit-device-interval-rss').value) || 30,
       notes: parseInt(document.getElementById('edit-device-interval-notes').value) || 15,
       tfl: parseInt(document.getElementById('edit-device-interval-tfl').value) || 30,
-      uk_trains: parseInt(document.getElementById('edit-device-interval-uk_trains').value) || 30
+      uk_trains: parseInt(document.getElementById('edit-device-interval-uk_trains').value) || 30,
+      xkcd: parseInt(document.getElementById('edit-device-interval-xkcd').value) || 30
     };
 
     // Update locally
@@ -214,6 +216,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       filterCrs: trainsFilterCrs.value || "",
       mode: trainsMode.value || "departures",
       limit: parseInt(trainsLimit.value) || 6
+    };
+
+    // XKCD Comics Settings
+    serverConfig.settings.xkcd = {
+      mode: xkcdMode.value || "latest"
     };
 
     await saveSettings();
@@ -324,7 +331,7 @@ function selectDevice(deviceId, isNew = false) {
       width: 800,
       height: 480,
       refreshRate: 1800,
-      activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains"],
+      activePlugins: ["system", "weather", "rss", "notes", "tfl", "uk_trains", "xkcd"],
       layoutMode: "grid",
       rotationIntervals: {
         weather: 30,
@@ -332,7 +339,8 @@ function selectDevice(deviceId, isNew = false) {
         rss: 30,
         notes: 15,
         tfl: 30,
-        uk_trains: 30
+        uk_trains: 30,
+        xkcd: 30
       }
     };
   }
@@ -363,6 +371,7 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-interval-notes').value = rotationIntervals.notes || '';
     document.getElementById('edit-device-interval-tfl').value = rotationIntervals.tfl || '';
     document.getElementById('edit-device-interval-uk_trains').value = rotationIntervals.uk_trains || '';
+    document.getElementById('edit-device-interval-xkcd').value = rotationIntervals.xkcd || '';
 
     // Checkboxes
     document.querySelectorAll('#plugins-selector input[type="checkbox"]').forEach(cb => {
@@ -454,6 +463,10 @@ function renderGlobalSettings() {
   trainsFilterCrs.value = trains.filterCrs;
   trainsMode.value = trains.mode;
   trainsLimit.value = trains.limit;
+
+  // XKCD Comics
+  const xkcd = settings.xkcd || { mode: 'latest' };
+  xkcdMode.value = xkcd.mode;
 
   renderTodoList(notes.items);
 }
