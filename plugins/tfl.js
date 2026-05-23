@@ -1,6 +1,17 @@
 // tfl.js - Transport for London Rail Status Plugin
 const https = require('https');
 
+// Helper to escape XML special characters
+const escapeXml = (unsafe) => {
+  if (!unsafe) return "";
+  return unsafe.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+};
+
 // Helper to make GET requests returning JSON
 const getJson = (url) => {
   return new Promise((resolve, reject) => {
@@ -108,8 +119,8 @@ module.exports = {
         }
         
         tubeHtml += `
-          <text x="${padding}" y="${yPos}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${line.name}</text>
-          <text x="${padding + 320}" y="${yPos}" font-family="sans-serif" ${statusStyle} text-anchor="end">${line.status}</text>
+          <text x="${padding}" y="${yPos}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${escapeXml(line.name)}</text>
+          <text x="${padding + 320}" y="${yPos}" font-family="sans-serif" ${statusStyle} text-anchor="end">${escapeXml(line.status)}</text>
           <line x1="${padding}" y1="${yPos + 8}" x2="${padding + 320}" y2="${yPos + 8}" stroke="black" stroke-width="0.5" opacity="0.15" />
         `;
       });
@@ -126,8 +137,8 @@ module.exports = {
         }
 
         otherHtml += `
-          <text x="0" y="${yPos}" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black">${line.name}</text>
-          <text x="320" y="${yPos}" font-family="sans-serif" ${statusStyle} text-anchor="end">${line.status}</text>
+          <text x="0" y="${yPos}" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black">${escapeXml(line.name)}</text>
+          <text x="320" y="${yPos}" font-family="sans-serif" ${statusStyle} text-anchor="end">${escapeXml(line.status)}</text>
           <line x1="0" y1="${yPos + 8}" x2="320" y2="${yPos + 8}" stroke="black" stroke-width="0.5" opacity="0.15" />
         `;
       });
@@ -166,9 +177,9 @@ module.exports = {
           }
           
           textRows += `
-            <text x="12" y="${rowY}" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black">${line.name.toUpperCase()}: ${line.status.toUpperCase()}</text>
-            <text x="12" y="${rowY + 16}" font-family="sans-serif" font-size="10.5" fill="black" opacity="0.75">${line1}</text>
-            ${line2 ? `<text x="12" y="${rowY + 28}" font-family="sans-serif" font-size="10.5" fill="black" opacity="0.75">${line2}</text>` : ''}
+            <text x="12" y="${rowY}" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black">${escapeXml(line.name.toUpperCase())}: ${escapeXml(line.status.toUpperCase())}</text>
+            <text x="12" y="${rowY + 16}" font-family="sans-serif" font-size="10.5" fill="black" opacity="0.75">${escapeXml(line1)}</text>
+            ${line2 ? `<text x="12" y="${rowY + 28}" font-family="sans-serif" font-size="10.5" fill="black" opacity="0.75">${escapeXml(line2)}</text>` : ''}
           `;
         });
         bulletinHtml += textRows;
@@ -203,11 +214,11 @@ module.exports = {
       if (disrupted.length > 0) {
         disrupted.slice(0, 3).forEach((line, idx) => {
           const yPos = 65 + idx * 42;
-          const reasonPreview = line.reason ? line.reason.substring(0, 48) + "..." : "Disruption reported";
+          const reasonPreview = line.reason ? escapeXml(line.reason.substring(0, 48)) + "..." : "Disruption reported";
           listHtml += `
             <!-- Disrupted Row -->
-            <text x="${compactPadding}" y="${yPos}" font-family="sans-serif" font-size="12.5" font-weight="bold" fill="black">${line.name}</text>
-            <text x="${width - compactPadding}" y="${yPos}" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" text-anchor="end">${line.status}</text>
+            <text x="${compactPadding}" y="${yPos}" font-family="sans-serif" font-size="12.5" font-weight="bold" fill="black">${escapeXml(line.name)}</text>
+            <text x="${width - compactPadding}" y="${yPos}" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" text-anchor="end">${escapeXml(line.status)}</text>
             <text x="${compactPadding}" y="${yPos + 15}" font-family="sans-serif" font-size="9.5" fill="black" opacity="0.7">${reasonPreview}</text>
             <line x1="${compactPadding}" y1="${yPos + 22}" x2="${width - compactPadding}" y2="${yPos + 22}" stroke="black" stroke-width="0.5" opacity="0.1" />
           `;
@@ -258,3 +269,4 @@ module.exports = {
     }
   }
 };
+
