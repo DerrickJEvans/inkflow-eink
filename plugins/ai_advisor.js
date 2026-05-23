@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const { generateSystemInsights } = require('../ai_core');
+const systemPlugin = require('./system');
 
 // Helper to escape XML special characters
 const escapeXml = (unsafe) => {
@@ -38,8 +39,17 @@ module.exports = {
     };
 
     // 1. Gather host system statistics
+    let sysData = getCachedData('system');
+    if (!sysData) {
+      try {
+        console.log("[AI Advisor] No system cache found for device. Fetching real-time system metrics dynamically...");
+        sysData = await systemPlugin.fetchData(settings);
+      } catch (e) {
+        console.error("[AI Advisor] Failed to fetch real-time system metrics:", e);
+      }
+    }
+
     let systemText = '';
-    const sysData = getCachedData('system');
     if (sysData) {
       systemText = `CPU Load: ${sysData.cpuUsage || 0}%, Temp: ${sysData.cpuTemp || 0}°C, RAM: ${sysData.ramUsage || 0}%, Disk: ${sysData.diskUsage || 0}%, Uptime: ${sysData.uptime || 'N/A'}`;
     } else {
@@ -47,14 +57,29 @@ module.exports = {
     }
 
     // 2. Generate expert diagnostic recommendations via Gemini
-    const insightsText = await generateSystemInsights(systemText);
-    
-    // Parse response into clean bulleted lines
-    const parsedLines = insightsText
-      .split('\n')
-      .map(line => line.replace(/^[\s-*•\d\.)]+/g, '').trim())
-      .filter(line => line.length > 0)
-      .slice(0, 4); // Limit to maximum 4 bullet points
+    let insightsText = "";
+    try {
+      insightsText = await generateSystemInsights(systemText);
+    } catch (err) {
+      console.error("[AI Advisor] Gemini API compilation failed:", err);
+    }
+
+    let parsedLines = [];
+    const prevAdvisorData = getCachedData('ai_advisor');
+    const isError = !insightsText || insightsText.includes("Unable to compile telemetry insights") || insightsText.includes("Error compiling");
+
+    if (isError && prevAdvisorData && prevAdvisorData.insights && prevAdvisorData.insights.length > 0 && !prevAdvisorData.insights[0].includes("Unable to compile")) {
+      console.log("[AI Advisor] Reusing previous cached insights due to API failure.");
+      parsedLines = prevAdvisorData.insights;
+    } else {
+      const finalInsightsText = insightsText || "Unable to compile telemetry insights. Verify network configuration.";
+      // Parse response into clean bulleted lines
+      parsedLines = finalInsightsText
+        .split('\n')
+        .map(line => line.replace(/^[\s-*•\d\.)]+/g, '').trim())
+        .filter(line => line.length > 0)
+        .slice(0, 4); // Limit to maximum 4 bullet points
+    }
 
     return {
       insights: parsedLines,

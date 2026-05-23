@@ -76,13 +76,30 @@ module.exports = {
     }
 
     // 3. Generate Briefing via Gemini API
-    const briefingText = await generateDailyBriefing(rssText, weatherText);
-    const dateStr = new Date().toLocaleDateString('en-GB', { 
+    let briefingText = "";
+    try {
+      briefingText = await generateDailyBriefing(rssText, weatherText);
+    } catch (err) {
+      console.error("[AI Briefing] Gemini API daily briefing failed:", err);
+    }
+
+    let dateStr = new Date().toLocaleDateString('en-GB', { 
       weekday: 'long', 
       day: '2-digit', 
       month: 'long', 
       year: 'numeric' 
     });
+
+    const prevBriefingData = getCachedData('ai_briefing');
+    const isError = !briefingText || briefingText.includes("Error generating AI briefing") || briefingText.includes("Error compiling");
+
+    if (isError && prevBriefingData && prevBriefingData.briefing && !prevBriefingData.briefing.includes("Error generating")) {
+      console.log("[AI Briefing] Reusing previous cached briefing due to API failure.");
+      briefingText = prevBriefingData.briefing;
+      dateStr = prevBriefingData.date || dateStr;
+    } else if (isError) {
+      briefingText = briefingText || "Error generating AI briefing. Check local network connection and API key status.";
+    }
 
     return {
       briefing: briefingText,
