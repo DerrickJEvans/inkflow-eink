@@ -195,6 +195,12 @@ An elegant editorial newspaper-style morning bulletin written in the voice of an
 ### 3. 🛠️ AI Telemetry Advisor (`plugins/ai_advisor.js`)
 A proactive diagnostic monitor that parses real-time system performance data (CPU load, temperature, RAM utilization, and disk space) and returns exactly 2-3 short, actionable system administrator recommendations inside a technical E-Ink monospace card.
 
+### 📡 Intelligent API Quota Cooldown Layer (Anti-Rate-Limiting)
+To prevent `429 Too Many Requests` rate-limiting errors under Google AI Studio's free tier limits during high-frequency background scheduler sweeps (which check widgets every 4 minutes), the Gemini integrations incorporate a robust caching cooldown layer:
+* **Daily Briefing Cooldown (`ai_briefing.js`)**: Successful editorial briefs are cached with a **1.5-hour (90 minutes) cooldown**. During background sweeps, the server serves the compiled cached bulletin rather than requesting the API again.
+* **Telemetry Insights Cooldown (`ai_advisor.js`)**: Diagnostic server tips are cached with a **45-minute cooldown**.
+* **Manual Override (Bypass)**: Clicking **🔄 Force Refresh** (or updating layout settings) inside the web control panel completely purges the cached JSON data files, bypassing the cooldown timer and triggering a fresh, real-time Gemini generation instantly.
+
 ### 🔑 Setting up the Gemini API Key
 To activate these features:
 1. Obtain a free API Key from [Google AI Studio (aistudio.google.com)](https://aistudio.google.com/).
