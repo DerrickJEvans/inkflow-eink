@@ -30,6 +30,16 @@ const btnForceRefresh = document.getElementById('btn-force-refresh');
 const btnViewPng = document.getElementById('btn-view-raw-png');
 const btnViewRaw = document.getElementById('btn-view-raw-bit');
 
+// Bezel Mockup Tabs Navigation DOM references and state tracking
+const mockupTabsContainer = document.getElementById('mockup-tabs-container');
+const mockupTabs = document.getElementById('mockup-tabs');
+const btnMockupPrev = document.getElementById('btn-mockup-prev');
+const btnMockupNext = document.getElementById('btn-mockup-next');
+
+let mockupPreviewMode = 'live'; // 'live' or 'preview'
+let mockupPreviewPluginId = null; // Currently active plugin ID in preview mode
+let mockupActivePluginIndex = 0; // Current active pill index (0 = Live Screen, 1+ = active plugins)
+
 // Dedicated AI Previewer & Hosted Widget Elements
 const aiMockupScreen = document.getElementById('ai-mockup-screen');
 const aiMockupRes = document.getElementById('ai-mockup-resolution');
@@ -175,6 +185,47 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnForceRefresh.innerText = "🔄 Force Refresh";
     }
   });
+
+  // Bezel Mockup prev/next arrow click navigators
+  if (btnMockupPrev) {
+    btnMockupPrev.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!activeDeviceId) return;
+      const device = serverConfig.devices.find(d => d.id === activeDeviceId);
+      if (!device) return;
+      
+      const activePlugins = (device.activePlugins || []).filter(pId => availablePlugins.some(ap => ap.id === pId));
+      const totalTabs = activePlugins.length + 1;
+      if (totalTabs <= 1) return;
+      
+      mockupActivePluginIndex = (mockupActivePluginIndex - 1 + totalTabs) % totalTabs;
+      triggerMockupTabClick(mockupActivePluginIndex);
+    });
+  }
+
+  if (btnMockupNext) {
+    btnMockupNext.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!activeDeviceId) return;
+      const device = serverConfig.devices.find(d => d.id === activeDeviceId);
+      if (!device) return;
+      
+      const activePlugins = (device.activePlugins || []).filter(pId => availablePlugins.some(ap => ap.id === pId));
+      const totalTabs = activePlugins.length + 1;
+      if (totalTabs <= 1) return;
+      
+      mockupActivePluginIndex = (mockupActivePluginIndex + 1) % totalTabs;
+      triggerMockupTabClick(mockupActivePluginIndex);
+    });
+  }
+
+  function triggerMockupTabClick(index) {
+    if (!mockupTabs) return;
+    const pills = mockupTabs.querySelectorAll('.mockup-tab-pill');
+    if (pills && pills[index]) {
+      pills[index].click();
+    }
+  }
 
 
 
@@ -581,6 +632,101 @@ function selectDevice(deviceId, isNew = false) {
   }
 }
 
+// Compile dynamic active widget navigation pills
+function renderMockupTabs(device) {
+  if (!mockupTabsContainer || !mockupTabs) return;
+  
+  const activePlugins = (device.activePlugins || []).filter(pId => availablePlugins.some(ap => ap.id === pId));
+  
+  if (activePlugins.length === 0) {
+    mockupTabsContainer.style.display = 'none';
+    mockupPreviewMode = 'live';
+    mockupActivePluginIndex = 0;
+    return;
+  }
+  
+  mockupTabsContainer.style.display = 'flex';
+  mockupTabs.innerHTML = '';
+  
+  // 1. Live/Combined screen tab
+  const livePill = document.createElement('div');
+  livePill.className = 'mockup-tab-pill';
+  livePill.innerText = '📺 Combined';
+  if (mockupPreviewMode === 'live') {
+    livePill.classList.add('active');
+    mockupActivePluginIndex = 0;
+  }
+  
+  livePill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    selectMockupTab(device, 0, 'live', null);
+  });
+  mockupTabs.appendChild(livePill);
+  
+  // 2. Individual widget tabs
+  activePlugins.forEach((pluginId, idx) => {
+    const plugin = availablePlugins.find(ap => ap.id === pluginId);
+    const name = plugin ? plugin.name : pluginId;
+    const icon = pluginIcons[pluginId] || '🧩';
+    
+    const pill = document.createElement('div');
+    pill.className = 'mockup-tab-pill';
+    pill.innerText = `${icon} ${name}`;
+    
+    const pillIndex = idx + 1;
+    if (mockupPreviewMode === 'preview' && mockupPreviewPluginId === pluginId) {
+      pill.classList.add('active');
+      mockupActivePluginIndex = pillIndex;
+    }
+    
+    pill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectMockupTab(device, pillIndex, 'preview', pluginId);
+    });
+    mockupTabs.appendChild(pill);
+  });
+  
+  // Clamping boundary safety
+  const totalTabs = activePlugins.length + 1;
+  if (mockupActivePluginIndex >= totalTabs) {
+    mockupActivePluginIndex = 0;
+    mockupPreviewMode = 'live';
+    livePill.classList.add('active');
+  }
+}
+
+// Select active mockup tab pill dynamically
+function selectMockupTab(device, index, mode, pluginId) {
+  mockupActivePluginIndex = index;
+  mockupPreviewMode = mode;
+  mockupPreviewPluginId = pluginId;
+  
+  const pills = mockupTabs.querySelectorAll('.mockup-tab-pill');
+  pills.forEach((p, i) => {
+    if (i === index) {
+      p.classList.add('active');
+      p.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    } else {
+      p.classList.remove('active');
+    }
+  });
+  
+  if (mode === 'live' || !pluginId) {
+    const imgUrl = `/api/display/image.png?device=${device.id}&t=${Date.now()}`;
+    mockupScreen.innerHTML = '';
+    mockupScreen.style.backgroundImage = `url('${imgUrl}')`;
+    btnViewPng.href = imgUrl;
+    btnViewRaw.href = `/api/display/raw?device=${device.id}&width=${device.width}&height=${device.height}`;
+  } else {
+    const imgUrl = `/api/display/preview-plugin.png?plugin=${pluginId}&width=${device.width}&height=${device.height}&dither=${device.ditherMode || 'floyd-steinberg'}&t=${Date.now()}`;
+    mockupScreen.innerHTML = '';
+    mockupScreen.style.backgroundImage = `url('${imgUrl}')`;
+    
+    btnViewPng.href = imgUrl;
+    btnViewRaw.href = `/api/display/preview-plugin.png?plugin=${pluginId}&width=${device.width}&height=${device.height}&dither=${device.ditherMode || 'floyd-steinberg'}&t=${Date.now()}`;
+  }
+}
+
 // Updates physical bezel screen frame
 function updateScreenMockup(deviceId) {
   const device = serverConfig.devices.find(d => d.id === deviceId);
@@ -591,14 +737,23 @@ function updateScreenMockup(deviceId) {
   // Aspect ratio adjustment dynamically
   mockupViewport.style.aspectRatio = `${device.width} / ${device.height}`;
   
-  // Set backgrounds dithered png
-  const imgUrl = `/api/display/image.png?device=${device.id}&t=${Date.now()}`;
-  mockupScreen.innerHTML = '';
-  mockupScreen.style.backgroundImage = `url('${imgUrl}')`;
+  // Render tabs dynamically for active plugins
+  renderMockupTabs(device);
 
-  // Links
-  btnViewPng.href = imgUrl;
-  btnViewRaw.href = `/api/display/raw?device=${device.id}&width=${device.width}&height=${device.height}`;
+  // Apply current active tab E-Ink view
+  if (mockupPreviewMode === 'live' || !mockupPreviewPluginId) {
+    const imgUrl = `/api/display/image.png?device=${device.id}&t=${Date.now()}`;
+    mockupScreen.innerHTML = '';
+    mockupScreen.style.backgroundImage = `url('${imgUrl}')`;
+    btnViewPng.href = imgUrl;
+    btnViewRaw.href = `/api/display/raw?device=${device.id}&width=${device.width}&height=${device.height}`;
+  } else {
+    const imgUrl = `/api/display/preview-plugin.png?plugin=${mockupPreviewPluginId}&width=${device.width}&height=${device.height}&dither=${device.ditherMode || 'floyd-steinberg'}&t=${Date.now()}`;
+    mockupScreen.innerHTML = '';
+    mockupScreen.style.backgroundImage = `url('${imgUrl}')`;
+    btnViewPng.href = imgUrl;
+    btnViewRaw.href = `/api/display/preview-plugin.png?plugin=${mockupPreviewPluginId}&width=${device.width}&height=${device.height}&dither=${device.ditherMode || 'floyd-steinberg'}&t=${Date.now()}`;
+  }
 }
 
 // Guides dynamic URLs updates

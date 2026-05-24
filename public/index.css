@@ -1369,3 +1369,85 @@ textarea:focus {
   }
 }
 
+/* ==========================================
+   InkFlow Bezel Mockup Tabs Navigation Styles
+   ========================================== */
+.mockup-tabs-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 2px 0;
+  padding: 0 4px;
+}
+
+.btn-mockup-nav {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.btn-mockup-nav:hover {
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  color: #020604;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+.btn-mockup-nav:active {
+  transform: scale(0.9);
+}
+
+.mockup-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  padding: 2px 0;
+  scrollbar-width: none; /* Hide scrollbar for standard Firefox */
+  align-items: center;
+}
+
+.mockup-tabs::-webkit-scrollbar {
+  display: none; /* Hide scrollbar for Chrome/Safari */
+}
+
+.mockup-tab-pill {
+  font-family: var(--font-header);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.mockup-tab-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.mockup-tab-pill.active {
+  background: rgba(0, 240, 255, 0.1);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+}
+
+
