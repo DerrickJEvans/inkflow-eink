@@ -1156,6 +1156,32 @@ textarea:focus {
   transform: scale(0.95);
 }
 
+.btn-delete-action {
+  font-family: var(--font-header);
+  font-weight: 600;
+  font-size: 11px;
+  padding: 6px 12px;
+  background: rgba(255, 23, 68, 0.05);
+  border: 1px solid rgba(255, 23, 68, 0.25);
+  color: #ff3d57;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 6px;
+}
+
+.btn-delete-action:hover {
+  background: #ff1744;
+  border-color: #ff1744;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 23, 68, 0.25);
+  transform: scale(1.05);
+}
+
+.btn-delete-action:active {
+  transform: scale(0.95);
+}
+
 .widget-search-wrap input:focus {
   border-color: var(--accent-cyan) !important;
   box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);

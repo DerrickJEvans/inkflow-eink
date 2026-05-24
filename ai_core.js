@@ -202,18 +202,25 @@ The plugin file must export a single object:
 module.exports = {
   id: "unique_lowercase_id", // must match filename (e.g., id: "quotes" for quotes.js)
   name: "Plugin Display Name", // readable name
-  description: "Short descriptive help text.",
+  description: "Short descriptive help text. If external web APIs are used, state the provider name here.",
   configFields: [
-    // optional inputs (type can be "text", "number", "select")
-    // e.g. { key: "category", label: "Category", type: "text", default: "inspirational" }
+    // If the widget uses any public API or service that requires an API key, token, or client credentials,
+    // you MUST define the required fields here so that the InkFlow control panel can render input forms for them.
+    // Examples:
+    // { key: "apiKey", label: "OpenWeatherMap API Key", type: "text", default: "" }
+    // { key: "stationCode", label: "Departure Station Code", type: "text", default: "LHR" }
   ],
   async fetchData(settings, device = {}) {
     // Perform any API calls (using fetch/https) or programmatic data generation.
     // Must return a flat JSON object with data fields.
-    // Make sure to add robust try-catch blocks and return descriptive offline fallbacks on error!
+    // IMPORTANT: If this widget requires an API key, check for its existence in settings:
+    // const apiKey = settings.apiKey;
+    // If missing or empty, return an object containing an error message (e.g. { error: "API Key Not Set" }) so it renders gracefully.
+    // Make sure to add robust try-catch blocks and return descriptive offline/error fallbacks on error!
     return { ... };
   },
   renderSVG(data, width, height) {
+    // If data.error is present, render an elegant, centered E-Ink error notice board explaining how to configure the key.
     // Must return a string containing valid SVG elements (paths, texts, rects, etc.).
     // DO NOT wrap in <svg> tags! Just return the inner XML elements.
     // Ensure all elements scale dynamically using the passed width and height parameters.
@@ -224,7 +231,7 @@ module.exports = {
 };
 \`\`\`
 
-Ensure the code is modern, fully completed (no placeholders), robustly handles error conditions, and fits beautifully on both 800x480 (full screen) and 400x240 (rotation/carousel cells) dimensions.
+Ensure the code is modern, fully completed (no placeholders), robustly handles error conditions, and fits beautifully on both 800x480 (full screen) and 400x240 (rotation/carousel cells) dimensions. If an external API is used, ensure it is keyless or exposes configFields for keys.
 `;
 
   try {

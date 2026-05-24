@@ -258,6 +258,92 @@ app.get('/api/plugins', (req, res) => {
   }
 });
 
+// Symmetrical Deletion and Cleanup of AI-Generated widgets
+app.delete('/api/plugins/:pluginId', (req, res) => {
+  try {
+    const { pluginId } = req.params;
+    if (!pluginId) return res.status(400).json({ error: "Plugin ID is required" });
+
+    // Protect core system plugins from deletion
+    const corePluginIds = ['weather', 'system', 'rss', 'notes', 'tfl', 'uk_trains', 'xkcd', 'world_clock', 'ai_briefing', 'ai_advisor', 'airport_board'];
+    if (corePluginIds.includes(pluginId)) {
+      return res.status(403).json({ error: "Cannot delete core system plugins." });
+    }
+
+    const pluginFilePath = path.join(__dirname, 'plugins', `${pluginId}.js`);
+    if (fs.existsSync(pluginFilePath)) {
+      fs.unlinkSync(pluginFilePath);
+      console.log(`[AI Widget Cleanup] Deleted plugin file: ${pluginFilePath}`);
+    } else {
+      return res.status(404).json({ error: "Widget plugin file not found on disk." });
+    }
+
+    // Hot-reload plugins to sync and prune memory dictionary PLUGINS
+    loadPlugins();
+
+    let configUpdated = false;
+
+    // Remove plugin from all devices' activePlugins rotation lists and rotation intervals
+    if (config.devices && Array.isArray(config.devices)) {
+      config.devices.forEach(device => {
+        if (device.activePlugins && Array.isArray(device.activePlugins)) {
+          const originalLength = device.activePlugins.length;
+          device.activePlugins = device.activePlugins.filter(id => id !== pluginId);
+          if (device.activePlugins.length === 0) {
+            device.activePlugins = ["system"]; // fallback
+          }
+          if (device.activePlugins.length !== originalLength) {
+            configUpdated = true;
+            // Align rotation sequence index if needed
+            if (device.currentPluginIndex >= device.activePlugins.length) {
+              device.currentPluginIndex = 0;
+            }
+          }
+        }
+        if (device.rotationIntervals && device.rotationIntervals[pluginId]) {
+          delete device.rotationIntervals[pluginId];
+          configUpdated = true;
+        }
+      });
+    }
+
+    // Clean up settings for this plugin
+    if (config.settings && config.settings[pluginId]) {
+      delete config.settings[pluginId];
+      configUpdated = true;
+    }
+
+    if (configUpdated) {
+      saveConfig();
+    }
+
+    // Clean up all JSON data cache files associated with this plugin
+    try {
+      if (fs.existsSync(CACHE_DIR)) {
+        const files = fs.readdirSync(CACHE_DIR);
+        files.forEach(file => {
+          if (file.endsWith(`_${pluginId}.json`)) {
+            fs.unlinkSync(path.join(CACHE_DIR, file));
+            console.log(`[AI Widget Cleanup] Purged JSON cache file: ${file}`);
+          }
+        });
+      }
+    } catch (cacheErr) {
+      console.error(`[AI Widget Cleanup] Error purging caches for plugin ${pluginId}:`, cacheErr);
+    }
+
+    // Invalidate screen imageCache in memory for all devices
+    config.devices.forEach(d => {
+      delete imageCache[d.id];
+    });
+
+    res.json({ success: true, message: `Dynamic widget '${pluginId}' deleted successfully and rotation sequences cleaned up.` });
+  } catch (err) {
+    console.error(`[AI Widget Cleanup] Error during deletion of plugin ${pluginId}:`, err);
+    res.status(500).json({ error: `Deletion failed: ${err.message}` });
+  }
+});
+
 // AI Widget Builder endpoint
 app.post('/api/ai/build', async (req, res) => {
   try {

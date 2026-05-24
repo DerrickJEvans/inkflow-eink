@@ -14,6 +14,16 @@ const loadPlugins = () => {
   if (!fs.existsSync(pluginsDir)) return;
   
   const files = fs.readdirSync(pluginsDir);
+  
+  // Symmetrical cleanup: clear memory keys for files that no longer exist on disk
+  const filePluginIds = files.filter(f => f.endsWith('.js')).map(f => f.slice(0, -3));
+  Object.keys(PLUGINS).forEach(key => {
+    if (!filePluginIds.includes(key)) {
+      delete PLUGINS[key];
+      console.log(`[Renderer] Symmetrically unloaded deleted plugin from memory: ${key}`);
+    }
+  });
+
   files.forEach(file => {
     if (file.endsWith('.js')) {
       const filePath = path.join(pluginsDir, file);

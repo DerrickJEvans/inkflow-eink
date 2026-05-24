@@ -772,6 +772,34 @@ const widgetConfigTemplates = {
   `
 };
 
+// Compile custom settings forms dynamically for AI generated widgets with configFields
+function generateDynamicConfigForm(configFields, settings) {
+  let html = `<div class="inline-config-form dynamic-config-form">`;
+  configFields.forEach(field => {
+    const value = settings[field.key] !== undefined ? settings[field.key] : (field.default !== undefined ? field.default : '');
+    html += `<div class="form-group">
+      <label>${field.label || field.key}</label>`;
+    
+    if (field.type === 'select' && Array.isArray(field.options)) {
+      html += `<select class="inline-dyn-cfg" data-key="${field.key}">`;
+      field.options.forEach(opt => {
+        const isSel = opt === value ? 'selected' : '';
+        html += `<option value="${opt}" ${isSel}>${opt}</option>`;
+      });
+      html += `</select>`;
+    } else if (field.type === 'number') {
+      html += `<input type="number" class="inline-dyn-cfg" data-key="${field.key}" value="${value}">`;
+    } else {
+      const isApiKey = field.key.toLowerCase().includes('key') || field.key.toLowerCase().includes('token') || field.key.toLowerCase().includes('password');
+      const inputType = isApiKey ? 'password' : 'text';
+      html += `<input type="${inputType}" class="inline-dyn-cfg" data-key="${field.key}" value="${value}" placeholder="Enter ${field.label || field.key}">`;
+    }
+    html += `</div>`;
+  });
+  html += `</div>`;
+  return html;
+}
+
 // Toast indicator animation
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
@@ -941,7 +969,10 @@ function renderHostedWidgetsList(filterText = '') {
       <p class="hosted-widget-desc">${plugin.description || 'Custom compiled E-Ink widget.'}</p>
       <div class="hosted-widget-meta">
         <span class="hosted-widget-badge ${badgeClass}">${badgeText}</span>
-        <button class="btn-preview-action" data-plugin-id="${plugin.id}">🔬 Preview</button>
+        <div class="hosted-widget-actions">
+          <button class="btn-preview-action" data-plugin-id="${plugin.id}">🔬 Preview</button>
+          ${!isCore ? `<button class="btn-delete-action" data-plugin-id="${plugin.id}" title="Delete this AI generated widget">🗑️ Delete</button>` : ''}
+        </div>
       </div>
     `;
 
@@ -951,11 +982,59 @@ function renderHostedWidgetsList(filterText = '') {
       updateAiPreviewMockup(plugin.id);
     });
 
-    // Check if there is a config form template defined for this plugin
-    const hasConfig = typeof widgetConfigTemplates[plugin.id] === 'function';
+    // Click on delete button calls delete API
+    if (!isCore) {
+      const btnDelete = card.querySelector('.btn-delete-action');
+      if (btnDelete) {
+        btnDelete.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const confirmed = confirm(`Are you sure you want to delete the dynamic AI widget '${plugin.name}' (${plugin.id})? This will permanently remove its file, settings, cache, and rotation sequences!`);
+          if (!confirmed) return;
+
+          btnDelete.disabled = true;
+          btnDelete.innerText = "Deleting...";
+          try {
+            const res = await fetch(`/api/plugins/${plugin.id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (res.ok) {
+              showToast(data.message || "Widget deleted successfully.");
+              if (activePreviewPluginId === plugin.id) {
+                activePreviewPluginId = null;
+                const mockupImg = document.getElementById('mockup-img');
+                if (mockupImg) mockupImg.src = '';
+                const mockupDitheredImg = document.getElementById('mockup-dithered-img');
+                if (mockupDitheredImg) mockupDitheredImg.style.display = 'none';
+              }
+              await fetchPlugins();
+              await fetchSettings();
+              renderHostedWidgetsList();
+              if (typeof populateDeviceOptions === 'function') {
+                populateDeviceOptions();
+              }
+            } else {
+              showToast(data.error || "Failed to delete widget.", true);
+            }
+          } catch (err) {
+            console.error("Delete widget error:", err);
+            showToast("Network error. Failed to delete widget.", true);
+          } finally {
+            btnDelete.disabled = false;
+            btnDelete.innerText = "🗑️ Delete";
+          }
+        });
+      }
+    }
+
+    // Check if there is a config form template defined for this plugin or custom config fields
+    const hasConfig = typeof widgetConfigTemplates[plugin.id] === 'function' || (plugin.configFields && plugin.configFields.length > 0);
     if (hasConfig) {
       const settings = serverConfig.settings[plugin.id] || {};
-      const inlineHTML = widgetConfigTemplates[plugin.id](settings);
+      let inlineHTML = '';
+      if (typeof widgetConfigTemplates[plugin.id] === 'function') {
+        inlineHTML = widgetConfigTemplates[plugin.id](settings);
+      } else {
+        inlineHTML = generateDynamicConfigForm(plugin.configFields, settings);
+      }
       
       const configWrapper = document.createElement('div');
       configWrapper.className = 'hosted-widget-config-container';
@@ -1128,6 +1207,22 @@ function renderHostedWidgetsList(filterText = '') {
             longitude: parseFloat(configWrapper.querySelector('.inline-cfg-wc-lon').value) || -0.1278,
             mapStyle: configWrapper.querySelector('.inline-cfg-wc-style').value
           };
+        } else {
+          // Dynamic settings harvester for AI-generated or custom widgets with configFields
+          const dynInputs = configWrapper.querySelectorAll('.inline-dyn-cfg');
+          if (dynInputs.length > 0) {
+            if (!serverConfig.settings[plugin.id]) {
+              serverConfig.settings[plugin.id] = {};
+            }
+            dynInputs.forEach(input => {
+              const key = input.dataset.key;
+              let val = input.value;
+              if (input.type === 'number') {
+                val = parseFloat(val) || 0;
+              }
+              serverConfig.settings[plugin.id][key] = val;
+            });
+          }
         }
 
         btnSave.disabled = true;
