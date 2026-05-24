@@ -1,59 +1,71 @@
 // ai_core.js - Google Gemini, Groq, and Ollama AI Core Integration for InkFlow
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const apiKey = process.env.GEMINI_API_KEY;
-const groqKey = process.env.GROQ_API_KEY;
-const ollamaEnabled = process.env.OLLAMA_ENABLED === 'true' || process.env.OLLAMA_HOST;
-
+let apiKey = null;
+let groqKey = null;
+let ollamaEnabled = false;
 let genAI = null;
-if (apiKey && apiKey !== 'your_gemini_api_key_here') {
-  try {
-    genAI = new GoogleGenerativeAI(apiKey);
-  } catch (err) {
-    console.error("❌ Failed to initialize Google Generative AI client:", err.message);
-  }
-}
-
-// 1. Resolve Widget Builder Engine (Specific to complex SVG/code generation)
 let widgetBuilderEngine = "none";
-const configBuilderProvider = process.env.WIDGET_BUILDER_AI_PROVIDER;
-
-if (configBuilderProvider && ["gemini", "groq", "ollama", "none"].includes(configBuilderProvider.toLowerCase())) {
-  widgetBuilderEngine = configBuilderProvider.toLowerCase();
-} else {
-  // Autodetect fallback
-  if (apiKey && apiKey !== 'your_gemini_api_key_here') {
-    widgetBuilderEngine = "gemini"; // Gemini Pro is the primary coding choice!
-  } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
-    widgetBuilderEngine = "groq";
-  } else if (ollamaEnabled) {
-    widgetBuilderEngine = "ollama";
-  }
-}
-
-// 2. Resolve Dynamic Widgets Engine (Specific to Daily Briefing, Telemetry Insights)
 let dynamicWidgetsEngine = "none";
-const configWidgetsProvider = process.env.DYNAMIC_WIDGETS_AI_PROVIDER;
 
-if (configWidgetsProvider && ["gemini", "groq", "ollama", "none"].includes(configWidgetsProvider.toLowerCase())) {
-  dynamicWidgetsEngine = configWidgetsProvider.toLowerCase();
-} else {
-  // Autodetect fallback
+function initAiCore() {
+  apiKey = process.env.GEMINI_API_KEY;
+  groqKey = process.env.GROQ_API_KEY;
+  ollamaEnabled = process.env.OLLAMA_ENABLED === 'true' || !!process.env.OLLAMA_HOST;
+
+  genAI = null;
   if (apiKey && apiKey !== 'your_gemini_api_key_here') {
-    dynamicWidgetsEngine = "gemini";
-  } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
-    dynamicWidgetsEngine = "groq";
-  } else if (ollamaEnabled) {
-    dynamicWidgetsEngine = "ollama";
+    try {
+      genAI = new GoogleGenerativeAI(apiKey);
+    } catch (err) {
+      console.error("❌ Failed to initialize Google Generative AI client:", err.message);
+    }
+  }
+
+  // 1. Resolve Widget Builder Engine (Specific to complex SVG/code generation)
+  widgetBuilderEngine = "none";
+  const configBuilderProvider = process.env.WIDGET_BUILDER_AI_PROVIDER;
+
+  if (configBuilderProvider && ["gemini", "groq", "ollama", "none"].includes(configBuilderProvider.toLowerCase())) {
+    widgetBuilderEngine = configBuilderProvider.toLowerCase();
+  } else {
+    // Autodetect fallback
+    if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+      widgetBuilderEngine = "gemini"; // Gemini Pro is the primary coding choice!
+    } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
+      widgetBuilderEngine = "groq";
+    } else if (ollamaEnabled) {
+      widgetBuilderEngine = "ollama";
+    }
+  }
+
+  // 2. Resolve Dynamic Widgets Engine (Specific to Daily Briefing, Telemetry Insights)
+  dynamicWidgetsEngine = "none";
+  const configWidgetsProvider = process.env.DYNAMIC_WIDGETS_AI_PROVIDER;
+
+  if (configWidgetsProvider && ["gemini", "groq", "ollama", "none"].includes(configWidgetsProvider.toLowerCase())) {
+    dynamicWidgetsEngine = configWidgetsProvider.toLowerCase();
+  } else {
+    // Autodetect fallback
+    if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+      dynamicWidgetsEngine = "gemini";
+    } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
+      dynamicWidgetsEngine = "groq";
+    } else if (ollamaEnabled) {
+      dynamicWidgetsEngine = "ollama";
+    }
+  }
+
+  console.log(`   ⚙️  [AI Core] Widget Builder engine: [${widgetBuilderEngine.toUpperCase()}]`);
+  console.log(`   ⚙️  [AI Core] Dynamic Runtime widgets engine: [${dynamicWidgetsEngine.toUpperCase()}]`);
+
+  if (widgetBuilderEngine === "none" && dynamicWidgetsEngine === "none") {
+    console.warn("⚠️  [AI Core] Warning: No active AI providers are configured. Running in offline fallback mode.");
   }
 }
 
-console.log(`   ⚙️  [AI Core] Widget Builder engine: [${widgetBuilderEngine.toUpperCase()}]`);
-console.log(`   ⚙️  [AI Core] Dynamic Runtime widgets engine: [${dynamicWidgetsEngine.toUpperCase()}]`);
-
-if (widgetBuilderEngine === "none" && dynamicWidgetsEngine === "none") {
-  console.warn("⚠️  [AI Core] Warning: No active AI providers are configured. Running in offline fallback mode.");
-}
+// Initial initialization
+initAiCore();
 
 /**
  * Strips markdown code blocks (e.g. ```javascript ... ```) from LLM's responses
@@ -378,5 +390,17 @@ module.exports = {
   getDynamicWidgetsEngine: () => dynamicWidgetsEngine,
   generatePluginCode,
   generateDailyBriefing,
-  generateSystemInsights
+  generateSystemInsights,
+  reloadAiConfig: () => {
+    try {
+      const dotenv = require('dotenv');
+      const path = require('path');
+      dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+      initAiCore();
+      return true;
+    } catch (e) {
+      console.error("[AI Core] Error reloading .env:", e);
+      return false;
+    }
+  }
 };

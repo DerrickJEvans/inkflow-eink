@@ -45,6 +45,10 @@
         <span class="tab-icon">✨</span>
         <span class="tab-title">AI Studio &amp; Global Configs</span>
       </button>
+      <button class="main-tab-btn" data-main-tab="main-tab-ai-admin">
+        <span class="tab-icon">🧠</span>
+        <span class="tab-title">AI &amp; Ollama Admin</span>
+      </button>
     </div>
 
     <!-- Tab 1: Device Console Container -->
@@ -293,6 +297,130 @@
                 <!-- Dynamically populated -->
                 <div class="loading-spinner"></div>
               </div>
+            </div>
+          </div>
+
+        </section>
+      </div>
+    </div>
+
+    <!-- Tab 3: AI & Ollama Admin Workspace Pane -->
+    <div id="main-tab-ai-admin" class="main-tab-view">
+      <div class="dashboard-grid">
+        
+        <!-- LEFT COLUMN: AI API Keys & Provider Config -->
+        <section class="grid-col flex-col">
+          <div class="glass-card">
+            <div class="card-header">
+              <h3>🧠 AI Engine Configuration</h3>
+            </div>
+            <div class="card-content">
+              <p class="card-help">Select which AI models route to which cognitive system features. Keys are securely stored and hot-reloaded dynamically on the fly.</p>
+              
+              <form id="ai-env-form" style="margin-top: 15px;">
+                <div class="form-group mb-3">
+                  <label for="ai-env-builder-provider">✨ Widget Builder Provider</label>
+                  <select id="ai-env-builder-provider" required>
+                    <option value="gemini">Google Gemini (Recommended — gemini-2.5-pro)</option>
+                    <option value="groq">Groq Cloud (Ultra-Fast Llama)</option>
+                    <option value="ollama">Ollama (Offline Local Offline)</option>
+                    <option value="none">Disabled (No AI Coding)</option>
+                  </select>
+                  <span class="input-hint">Routes the complex code SVG generation tasks. Gemini Pro is highly recommended.</span>
+                </div>
+
+                <div class="form-group mb-3">
+                  <label for="ai-env-widgets-provider">📰 Dynamic Summary Provider</label>
+                  <select id="ai-env-widgets-provider" required>
+                    <option value="gemini">Google Gemini (Low-Latency gemini-2.5-flash-lite)</option>
+                    <option value="groq">Groq Cloud (Llama 3)</option>
+                    <option value="ollama">Ollama (Offline Local Offline)</option>
+                    <option value="none">Disabled (No Daily Briefings)</option>
+                  </select>
+                  <span class="input-hint">Routes runtime summaries (Daily AI Briefing, Diagnostics Telemetry).</span>
+                </div>
+
+                <div class="form-group mb-3">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <label for="ai-env-gemini-key" style="margin-bottom:0;">Google Gemini API Key</label>
+                    <a href="https://aistudio.google.com/" target="_blank" style="font-size:10px; color:var(--accent-cyan); text-decoration:none;" onclick="event.stopPropagation();">🔑 Get Gemini Key</a>
+                  </div>
+                  <input type="password" id="ai-env-gemini-key" placeholder="Enter Gemini API Key (starts with AIzaSy...)">
+                </div>
+
+                <div class="form-group mb-3">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <label for="ai-env-groq-key" style="margin-bottom:0;">Groq API Key</label>
+                    <a href="https://console.groq.com/" target="_blank" style="font-size:10px; color:var(--accent-cyan); text-decoration:none;" onclick="event.stopPropagation();">🔑 Get Groq Key</a>
+                  </div>
+                  <input type="password" id="ai-env-groq-key" placeholder="Enter Groq API Key (starts with gsk_...)">
+                </div>
+
+                <div class="form-group mb-3">
+                  <label for="ai-env-ollama-host">🦙 Ollama Connection Host</label>
+                  <input type="text" id="ai-env-ollama-host" placeholder="http://localhost:11434" required>
+                  <span class="input-hint">Local or network address of your running Ollama daemon instance.</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block mt-4" id="btn-save-ai-env">💾 Save &amp; Hot-Reload Configurations</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT COLUMN: Ollama System Status & Local Model Downloader -->
+        <section class="grid-col flex-col">
+          
+          <!-- Ollama Console Status Card -->
+          <div class="glass-card w-100">
+            <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <h3>🦙 Ollama Local Manager</h3>
+              <span id="ollama-status-indicator" class="ollama-status-badge offline">OFFLINE</span>
+            </div>
+            <div class="card-content">
+              <p class="card-help">Verify status and pull local offline models directly to your server. A running Ollama service is required.</p>
+              
+              <div id="ollama-online-panel" style="display:none; margin-top: 15px;">
+                <div class="form-group">
+                  <label>Installed Local Models</label>
+                  <div class="horizontal-widgets-container" id="ollama-models-list" style="max-height: 180px; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 8px; padding: 8px; border: 1px solid rgba(255,255,255,0.15);">
+                    <!-- Dynamically populated -->
+                  </div>
+                </div>
+
+                <div class="form-group mt-4">
+                  <label for="ollama-pull-select">Pull / Download New Model</label>
+                  <div style="display:flex; gap:10px; margin-top:5px;">
+                    <select id="ollama-pull-select" style="flex: 1;">
+                      <option value="gemma2:2b">Gemma 2 2B (Lightweight &amp; Crisp — 1.6GB)</option>
+                      <option value="llama3.2:1b">Llama 3.2 1B (Ultra-Fast — 1.3GB)</option>
+                      <option value="gemma:2b">Original Gemma 2B (1.7GB)</option>
+                      <option value="llama3:8b">Llama 3 8B (Heavy-Duty reasoning — 4.7GB)</option>
+                      <option value="custom">-- Custom / Other Model --</option>
+                    </select>
+                    <input type="text" id="ollama-pull-custom" placeholder="e.g. qwen2.5:1.5b" style="display:none; flex: 1; margin:0;">
+                    <button class="btn btn-primary" id="btn-ollama-pull" style="margin: 0; min-width: 110px;">📥 Pull Model</button>
+                  </div>
+                </div>
+
+                <!-- Pull progress display block -->
+                <div id="ollama-pull-progress-wrap" style="display:none; margin-top: 20px; background: rgba(0,230,118,0.05); padding: 12px; border-radius: 8px; border: 1px solid rgba(0,230,118,0.15);">
+                  <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:5px;">
+                    <span id="ollama-pull-status" style="color:var(--accent-cyan); font-weight:500;">downloading gemma2:2b...</span>
+                    <span id="ollama-pull-percent" style="font-weight:bold; color:#00e676;">43%</span>
+                  </div>
+                  <div class="progress-track" style="width:100%; height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;">
+                    <div id="ollama-pull-progress-bar" class="progress-fill" style="width: 43%; height:100%; background:var(--accent-cyan); transition:width 0.2s ease;"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="ollama-offline-panel" style="margin-top: 15px; text-align:center; padding:25px 15px; background:rgba(255,23,68,0.05); border-radius:8px; border:1px solid rgba(255,23,68,0.15);">
+                <span style="font-size:24px;">⚠️</span>
+                <h4 style="margin:10px 0 5px 0; color:#ff1744;">Ollama Daemon Offline</h4>
+                <p class="card-help" style="margin-bottom:0;" id="ollama-offline-reason">The local Ollama server at http://localhost:11434 could not be reached. Ensure Ollama is running on your host machine.</p>
+              </div>
+
             </div>
           </div>
 

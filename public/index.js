@@ -75,6 +75,7 @@ const telemetryUptime = document.getElementById('telemetry-uptime');
 document.addEventListener('DOMContentLoaded', async () => {
   setupTabs();
   setupMainTabs();
+  setupAiAdminTabListeners();
 
   // Widget Search catalog filter listener
   if (widgetSearch) {
@@ -1104,14 +1105,20 @@ function setupMainTabs() {
       const targetId = btn.dataset.mainTab;
       document.getElementById(targetId).classList.add('active');
       
-      // Auto refresh previews when switching
+      // Auto refresh previews or load AI configs when switching
       if (targetId === 'main-tab-widgets') {
         renderHostedWidgetsList(widgetSearch ? widgetSearch.value : '');
         updateAiPreviewMockup(activePreviewPluginId);
+        stopOllamaPolling();
+      } else if (targetId === 'main-tab-ai-admin') {
+        fetchAiEnvConfig();
+        fetchOllamaStatus();
+        startOllamaPolling();
       } else {
         if (activeDeviceId) {
           updateScreenMockup(activeDeviceId);
         }
+        stopOllamaPolling();
       }
     });
   });
@@ -1504,4 +1511,273 @@ function renderHostedWidgetsList(filterText = '') {
 
     hostedWidgetsGrid.appendChild(card);
   });
+}
+
+// =========================================================================
+// 🧠 Tab 3: AI & Ollama Admin Client-Side Controllers & Polling Loops
+// =========================================================================
+
+let ollamaStatusInterval = null;
+let ollamaPullInterval = null;
+
+// Fetch AI Environment configurations from server
+async function fetchAiEnvConfig() {
+  try {
+    const res = await fetch('/api/ai/env');
+    if (!res.ok) throw new Error("Server error");
+    const data = await res.json();
+    
+    document.getElementById('ai-env-builder-provider').value = data.widgetBuilderProvider;
+    document.getElementById('ai-env-widgets-provider').value = data.dynamicWidgetsProvider;
+    
+    const geminiInput = document.getElementById('ai-env-gemini-key');
+    if (geminiInput) {
+      geminiInput.value = data.geminiKey || '';
+      geminiInput.placeholder = data.hasGeminiKey ? '••••••••••••••• (Key Configured)' : 'Enter Gemini API Key (starts with AIzaSy...)';
+    }
+    
+    const groqInput = document.getElementById('ai-env-groq-key');
+    if (groqInput) {
+      groqInput.value = data.groqKey || '';
+      groqInput.placeholder = data.hasGroqKey ? '••••••••••••••• (Key Configured)' : 'Enter Groq API Key (starts with gsk_...)';
+    }
+    
+    document.getElementById('ai-env-ollama-host').value = data.ollamaHost;
+  } catch (err) {
+    console.error("Failed to load AI Env Config:", err);
+    showToast("Failed to fetch AI configuration settings", true);
+  }
+}
+
+// Fetch Ollama Online status and tags list
+async function fetchOllamaStatus() {
+  try {
+    const res = await fetch('/api/ai/ollama/status');
+    if (!res.ok) throw new Error("Offline");
+    const data = await res.json();
+    
+    const statusBadge = document.getElementById('ollama-status-indicator');
+    const onlinePanel = document.getElementById('ollama-online-panel');
+    const offlinePanel = document.getElementById('ollama-offline-panel');
+    
+    if (data.online) {
+      statusBadge.innerText = 'ONLINE';
+      statusBadge.className = 'ollama-status-badge online';
+      
+      onlinePanel.style.display = 'block';
+      offlinePanel.style.display = 'none';
+      
+      // Render downloaded models list
+      const modelsList = document.getElementById('ollama-models-list');
+      if (modelsList) {
+        let html = '';
+        data.models.forEach(m => {
+          html += `
+            <div class="model-item">
+              <span class="model-name">${m.name}</span>
+              <span class="model-meta">${m.size} • ${m.parameter_size}</span>
+            </div>
+          `;
+        });
+        
+        if (data.models.length === 0) {
+          html = '<p class="card-help text-center mt-2">No local models downloaded yet. Use the tool below to pull models.</p>';
+        }
+        
+        modelsList.innerHTML = html;
+      }
+    } else {
+      statusBadge.innerText = 'OFFLINE';
+      statusBadge.className = 'ollama-status-badge offline';
+      
+      onlinePanel.style.display = 'none';
+      offlinePanel.style.display = 'block';
+      
+      const reasonEl = document.getElementById('ollama-offline-reason');
+      if (reasonEl) {
+        reasonEl.innerText = data.error || `The local Ollama server at ${data.host} could not be reached.`;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to fetch Ollama status:", err);
+  }
+}
+
+// Start polling Ollama status reactively
+function startOllamaPolling() {
+  stopOllamaPolling(); // clear any running
+  
+  // Instantly trigger check
+  fetchOllamaStatus();
+  checkOllamaPullStatus();
+  
+  // Status check every 10 seconds
+  ollamaStatusInterval = setInterval(fetchOllamaStatus, 10000);
+}
+
+// Stop polling loops
+function stopOllamaPolling() {
+  if (ollamaStatusInterval) {
+    clearInterval(ollamaStatusInterval);
+    ollamaStatusInterval = null;
+  }
+  if (ollamaPullInterval) {
+    clearInterval(ollamaPullInterval);
+    ollamaPullInterval = null;
+  }
+}
+
+// Check background model pulling progress
+async function checkOllamaPullStatus() {
+  try {
+    const res = await fetch('/api/ai/ollama/pull-status');
+    if (!res.ok) return;
+    const state = await res.json();
+    
+    const progressWrap = document.getElementById('ollama-pull-progress-wrap');
+    if (!progressWrap) return;
+    
+    if (state.active && state.status !== 'completed' && state.status !== 'failed') {
+      progressWrap.style.display = 'block';
+      document.getElementById('ollama-pull-status').innerText = `${state.status} '${state.model}'...`;
+      document.getElementById('ollama-pull-percent').innerText = `${state.percent}%`;
+      document.getElementById('ollama-pull-progress-bar').style.width = `${state.percent}%`;
+      
+      // Start aggressive polling if not already running
+      if (!ollamaPullInterval) {
+        ollamaPullInterval = setInterval(checkOllamaPullStatus, 1000);
+      }
+    } else {
+      // If completed or failed
+      if (state.active) {
+        if (state.status === 'completed') {
+          showToast(`Successfully pulled and registered model '${state.model}'!`);
+          fetchOllamaStatus(); // reload downloaded list
+        } else if (state.status === 'failed') {
+          showToast(`Ollama pull failed: ${state.error || 'Unknown error'}`, true);
+        }
+        
+        // Reset state by querying clear
+        progressWrap.style.display = 'none';
+        if (ollamaPullInterval) {
+          clearInterval(ollamaPullInterval);
+          ollamaPullInterval = null;
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Error checking Ollama pull progress:", err);
+  }
+}
+
+// Initialize AI & Ollama DOM event listeners
+function setupAiAdminTabListeners() {
+  // Bind AI Env Form Submit
+  const envForm = document.getElementById('ai-env-form');
+  if (envForm) {
+    envForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('btn-save-ai-env');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerText = "💾 Saving & Hot-Reloading...";
+      }
+      
+      try {
+        const payload = {
+          widgetBuilderProvider: document.getElementById('ai-env-builder-provider').value,
+          dynamicWidgetsProvider: document.getElementById('ai-env-widgets-provider').value,
+          geminiKey: document.getElementById('ai-env-gemini-key').value,
+          groqKey: document.getElementById('ai-env-groq-key').value,
+          ollamaHost: document.getElementById('ai-env-ollama-host').value
+        };
+        
+        const res = await fetch('/api/ai/env', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          showToast("AI Configurations hot-reloaded successfully!");
+          
+          // Re-fetch global settings to align UI help states!
+          await fetchSettings();
+        } else {
+          showToast(data.error || "Failed to update configurations", true);
+        }
+      } catch (err) {
+        console.error("Failed saving env configurations:", err);
+        showToast("Server connection error while saving configurations", true);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerText = "💾 Save & Hot-Reload Configurations";
+        }
+      }
+    });
+  }
+  
+  // Bind Model selector toggle custom model input
+  const pullSelect = document.getElementById('ollama-pull-select');
+  const pullCustom = document.getElementById('ollama-pull-custom');
+  if (pullSelect && pullCustom) {
+    pullSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'custom') {
+        pullCustom.style.display = 'block';
+        pullCustom.required = true;
+      } else {
+        pullCustom.style.display = 'none';
+        pullCustom.required = false;
+      }
+    });
+  }
+  
+  // Bind Pull Model Button
+  const btnPull = document.getElementById('btn-ollama-pull');
+  if (btnPull) {
+    btnPull.addEventListener('click', async () => {
+      const selectVal = pullSelect.value;
+      const customVal = pullCustom.value.trim();
+      
+      let modelName = selectVal;
+      if (selectVal === 'custom') {
+        if (!customVal) {
+          alert("Please enter a custom Ollama model name to pull!");
+          return;
+        }
+        modelName = customVal;
+      }
+      
+      btnPull.disabled = true;
+      btnPull.innerText = "📥 Connecting...";
+      
+      try {
+        const res = await fetch('/api/ai/ollama/pull', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: modelName })
+        });
+        
+        const reply = await res.json();
+        if (reply.success) {
+          showToast(`Started downloading model '${modelName}'...`);
+          document.getElementById('ollama-pull-progress-wrap').style.display = 'block';
+          
+          // Instantly start polling pull status
+          checkOllamaPullStatus();
+        } else {
+          showToast(reply.error || "Ollama pull request rejected", true);
+        }
+      } catch (err) {
+        console.error("Failed pulling model:", err);
+        showToast("Error connecting to server pull daemon", true);
+      } finally {
+        btnPull.disabled = false;
+        btnPull.innerText = "📥 Pull Model";
+      }
+    });
+  }
 }

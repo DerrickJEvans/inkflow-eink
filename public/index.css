@@ -1450,4 +1450,89 @@ textarea:focus {
   box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
 }
 
+/* ==========================================
+   🧠 Tab 3: AI & Ollama Admin CSS Styles
+   ========================================== */
+
+.ollama-status-badge {
+  font-family: var(--font-header);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ollama-status-badge.online {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--success-green);
+  border: 1px solid rgba(0, 230, 118, 0.25);
+  box-shadow: 0 0 10px rgba(0, 230, 118, 0.15);
+}
+
+.ollama-status-badge.offline {
+  background: rgba(255, 23, 68, 0.1);
+  color: var(--danger-red);
+  border: 1px solid rgba(255, 23, 68, 0.25);
+  box-shadow: 0 0 10px rgba(255, 23, 68, 0.15);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(255, 23, 68, 0.4); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(255, 23, 68, 0); }
+  100% { transform: scale(0.98); box-shadow: 0 0 0 0 rgba(255, 23, 68, 0); }
+}
+
+.model-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.model-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+.model-item .model-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.model-item .model-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-cyan), #00e676);
+  box-shadow: 0 0 10px var(--accent-cyan);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 

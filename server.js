@@ -455,6 +455,228 @@ app.get('/api/system-stats', async (req, res) => {
   }
 });
 
+let ollamaPullState = {
+  active: false,
+  model: null,
+  status: 'idle',
+  percent: 0,
+  error: null
+};
+
+// GET AI Configuration and Environment Variables (Masked)
+app.get('/api/ai/env', (req, res) => {
+  try {
+    const dotenv = require('dotenv');
+    let envVars = {};
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      envVars = dotenv.parse(fs.readFileSync(envPath));
+    }
+
+    const geminiKey = envVars.GEMINI_API_KEY || '';
+    const groqKey = envVars.GROQ_API_KEY || '';
+
+    // Simple helper to mask credentials
+    const maskKey = (key) => {
+      if (!key) return '';
+      if (key.length <= 10) return '••••••••';
+      return `${key.substring(0, 6)}••••••••${key.substring(key.length - 4)}`;
+    };
+
+    res.json({
+      geminiKey: maskKey(geminiKey),
+      hasGeminiKey: !!geminiKey,
+      groqKey: maskKey(groqKey),
+      hasGroqKey: !!groqKey,
+      widgetBuilderProvider: envVars.WIDGET_BUILDER_AI_PROVIDER || 'gemini',
+      dynamicWidgetsProvider: envVars.DYNAMIC_WIDGETS_AI_PROVIDER || 'gemini',
+      ollamaHost: envVars.OLLAMA_HOST || 'http://localhost:11434'
+    });
+  } catch (err) {
+    console.error("[AI Env Config] Error getting env variables:", err);
+    res.status(500).json({ error: "Failed to read environment configurations" });
+  }
+});
+
+// POST AI Configuration and Environment Variables
+app.post('/api/ai/env', (req, res) => {
+  try {
+    const { geminiKey, groqKey, widgetBuilderProvider, dynamicWidgetsProvider, ollamaHost } = req.body;
+    const dotenv = require('dotenv');
+    const envPath = path.join(__dirname, '.env');
+    
+    let currentEnv = {};
+    if (fs.existsSync(envPath)) {
+      currentEnv = dotenv.parse(fs.readFileSync(envPath));
+    }
+
+    // Capture and validate incoming credentials
+    let finalGeminiKey = geminiKey;
+    if (geminiKey.includes('•••')) {
+      finalGeminiKey = currentEnv.GEMINI_API_KEY || ''; // preserve existing
+    }
+    
+    let finalGroqKey = groqKey;
+    if (groqKey.includes('•••')) {
+      finalGroqKey = currentEnv.GROQ_API_KEY || ''; // preserve existing
+    }
+
+    // Merge changes
+    const updatedEnv = {
+      ...currentEnv,
+      GEMINI_API_KEY: finalGeminiKey,
+      GROQ_API_KEY: finalGroqKey,
+      WIDGET_BUILDER_AI_PROVIDER: widgetBuilderProvider || 'gemini',
+      DYNAMIC_WIDGETS_AI_PROVIDER: dynamicWidgetsProvider || 'gemini',
+      OLLAMA_HOST: ollamaHost || 'http://localhost:11434'
+    };
+
+    // Construct .env file string
+    let envContent = '';
+    for (const [key, val] of Object.entries(updatedEnv)) {
+      envContent += `${key}=${val}\n`;
+    }
+
+    fs.writeFileSync(envPath, envContent, 'utf8');
+    console.log("[AI Env Config] Environmental variables updated. Initiating memory hot-reload...");
+
+    // Trigger AI Config reload dynamically in server memory!
+    const reloadSuccess = aiCore.reloadAiConfig();
+
+    if (reloadSuccess) {
+      res.json({ success: true, message: "AI Engine configurations updated and hot-reloaded successfully!" });
+    } else {
+      res.status(500).json({ error: "Configuration saved to disk, but failed to hot-reload in-memory generative clients." });
+    }
+  } catch (err) {
+    console.error("[AI Env Config] Error writing env variables:", err);
+    res.status(500).json({ error: `Save failed: ${err.message}` });
+  }
+});
+
+// GET Local Ollama Status & Downloaded Models
+app.get('/api/ai/ollama/status', async (req, res) => {
+  try {
+    const ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    
+    // Asynchronously ping Ollama tags API
+    const response = await fetch(`${ollamaHost}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    if (!response.ok) {
+      throw new Error(`Ollama returned HTTP status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const models = (data.models || []).map(m => {
+      // Human-readable size converter (GB)
+      const sizeGB = m.size ? `${(m.size / (1024 * 1024 * 1024)).toFixed(2)} GB` : 'Unknown size';
+      return {
+        name: m.name,
+        size: sizeGB,
+        parameter_size: m.details ? m.details.parameter_size : 'Unknown',
+        quantization_level: m.details ? m.details.quantization_level : 'Unknown'
+      };
+    });
+    
+    res.json({
+      online: true,
+      host: ollamaHost,
+      models: models
+    });
+  } catch (err) {
+    res.json({
+      online: false,
+      host: process.env.OLLAMA_HOST || 'http://localhost:11434',
+      error: `Local Ollama instance unreachable: ${err.message}`
+    });
+  }
+});
+
+// POST Pull New Local Ollama Model (Background stream reader)
+app.post('/api/ai/ollama/pull', async (req, res) => {
+  try {
+    const { model } = req.body;
+    if (!model) {
+      return res.status(400).json({ error: "Model name is required" });
+    }
+    
+    const ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    
+    // Check if a download is already in progress
+    if (ollamaPullState.active && ollamaPullState.status !== 'completed' && ollamaPullState.status !== 'failed') {
+      return res.status(400).json({ error: `Model pull in progress: actively downloading ${ollamaPullState.model}` });
+    }
+    
+    // Spawn background task asynchronously to pull model and parse progress
+    ollamaPullState = {
+      active: true,
+      model: model,
+      status: 'connecting',
+      percent: 0,
+      error: null
+    };
+    
+    // Asynchronous background trigger
+    (async () => {
+      try {
+        console.log(`[Ollama Admin] Triggering background pull for: "${model}"`);
+        const response = await fetch(`${ollamaHost}/api/pull`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: model, stream: true })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP pull request failed with code ${response.status}`);
+        }
+        
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            try {
+              const parsed = JSON.parse(line);
+              if (parsed.error) {
+                throw new Error(parsed.error);
+              }
+              ollamaPullState.status = parsed.status || 'downloading';
+              if (parsed.total && parsed.completed) {
+                ollamaPullState.percent = Math.round((parsed.completed / parsed.total) * 100);
+              }
+            } catch (errLine) {
+              // Ignore line parsing error for broken chunks
+            }
+          }
+        }
+        
+        ollamaPullState.status = 'completed';
+        ollamaPullState.percent = 100;
+        console.log(`[Ollama Admin] Background pull successfully completed for: "${model}"`);
+      } catch (errPull) {
+        console.error(`[Ollama Admin] Background pull failed for: "${model}":`, errPull.message);
+        ollamaPullState.status = 'failed';
+        ollamaPullState.error = errPull.message;
+      }
+    })();
+    
+    res.json({ success: true, message: `Model download for '${model}' started asynchronously in the background.` });
+  } catch (err) {
+    console.error("[Ollama Admin] Pull endpoint error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET Active Ollama Pull Status (Polling endpoint)
+app.get('/api/ai/ollama/pull-status', (req, res) => {
+  res.json(ollamaPullState);
+});
+
 // Get global settings and devices
 app.get('/api/settings', (req, res) => {
   res.json({
