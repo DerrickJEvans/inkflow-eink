@@ -361,7 +361,10 @@ journalctl -u trmnl-client.service -f -n 50
 
 ## 🐳 Simplified Deployment & Orchestration
 
-To simplify provisioning and deploying new server and client displays, we have pre-packaged automated orchestration files:
+To simplify provisioning and deploying new server and client displays, we have pre-packaged automated orchestration files. 
+
+> [!NOTE]
+> You can choose **either** a native bare-metal host deployment (Option 2) **or** a containerized sandboxed deployment (Option 1). They are separate paths—choose the one that best fits your server environment!
 
 ### 1. Multi-Container Dockerized Server & Local AI Deployment
 You can deploy a new InkFlow E-Ink Server **and** a local, fully dedicated Ollama instance anywhere with a single command—no manual model downloading, Node.js installations, or compilation required!
