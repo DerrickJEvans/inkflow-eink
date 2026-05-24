@@ -1519,6 +1519,7 @@ function renderHostedWidgetsList(filterText = '') {
 
 let ollamaStatusInterval = null;
 let ollamaPullInterval = null;
+let savedOllamaModel = 'llama3.2:1b';
 
 // Fetch AI Environment configurations from server
 async function fetchAiEnvConfig() {
@@ -1543,7 +1544,13 @@ async function fetchAiEnvConfig() {
     }
     
     document.getElementById('ai-env-ollama-host').value = data.ollamaHost;
-    document.getElementById('ai-env-ollama-model').value = data.ollamaModel || 'llama3.2:1b';
+    
+    savedOllamaModel = data.ollamaModel || 'llama3.2:1b';
+    const modelSelect = document.getElementById('ai-env-ollama-model');
+    if (modelSelect) {
+      modelSelect.innerHTML = `<option value="${savedOllamaModel}">${savedOllamaModel}</option>`;
+      modelSelect.value = savedOllamaModel;
+    }
   } catch (err) {
     console.error("Failed to load AI Env Config:", err);
     showToast("Failed to fetch AI configuration settings", true);
@@ -1567,6 +1574,29 @@ async function fetchOllamaStatus() {
       
       onlinePanel.style.display = 'block';
       offlinePanel.style.display = 'none';
+      
+      // Dynamically compile active local model select options
+      const modelSelect = document.getElementById('ai-env-ollama-model');
+      if (modelSelect) {
+        const currentValue = modelSelect.value || savedOllamaModel;
+        
+        let optionsHtml = '';
+        data.models.forEach(m => {
+          optionsHtml += `<option value="${m.name}">${m.name} (${m.size})</option>`;
+        });
+        
+        // Safety check to make sure the currently selected model is in the options list
+        if (currentValue && !data.models.some(m => m.name === currentValue)) {
+          optionsHtml = `<option value="${currentValue}">${currentValue} (Active / Not Installed)</option>` + optionsHtml;
+        }
+        
+        if (data.models.length === 0 && !currentValue) {
+          optionsHtml = `<option value="llama3.2:1b">No models installed. Pull a model first!</option>`;
+        }
+        
+        modelSelect.innerHTML = optionsHtml;
+        modelSelect.value = currentValue;
+      }
       
       // Render downloaded models list
       const modelsList = document.getElementById('ollama-models-list');

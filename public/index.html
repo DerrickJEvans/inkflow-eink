@@ -364,8 +364,10 @@
 
                 <div class="form-group mb-3">
                   <label for="ai-env-ollama-model">🦙 Active Ollama Local Model</label>
-                  <input type="text" id="ai-env-ollama-model" placeholder="e.g. llama3.2:1b" required>
-                  <span class="input-hint">The specific local model tag to use for local operations (e.g., llama3.2:1b, gemma2:2b).</span>
+                  <select id="ai-env-ollama-model" required>
+                    <option value="llama3.2:1b">llama3.2:1b (Default)</option>
+                  </select>
+                  <span class="input-hint">Select from installed local models. Dynamically compiled from your active Ollama instance.</span>
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-block mt-4" id="btn-save-ai-env">💾 Save &amp; Hot-Reload Configurations</button>
