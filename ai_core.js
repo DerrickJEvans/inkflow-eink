@@ -206,8 +206,9 @@ module.exports = {
   configFields: [
     // If the widget uses any public API or service that requires an API key, token, or client credentials,
     // you MUST define the required fields here so that the InkFlow control panel can render input forms for them.
+    // ALWAYS supply 'helpUrl' for API key fields so the user is directed exactly to where they register for the key.
     // Examples:
-    // { key: "apiKey", label: "OpenWeatherMap API Key", type: "text", default: "" }
+    // { key: "apiKey", label: "OpenWeatherMap API Key", type: "text", default: "", helpUrl: "https://openweathermap.org/api" }
     // { key: "stationCode", label: "Departure Station Code", type: "text", default: "LHR" }
   ],
   async fetchData(settings, device = {}) {

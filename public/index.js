@@ -935,7 +935,10 @@ function generateDynamicConfigForm(configFields, settings) {
   configFields.forEach(field => {
     const value = settings[field.key] !== undefined ? settings[field.key] : (field.default !== undefined ? field.default : '');
     html += `<div class="form-group">
-      <label>${field.label || field.key}</label>`;
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+        <label style="margin-bottom:0;">${field.label || field.key}</label>
+        ${field.helpUrl ? `<a href="${field.helpUrl}" target="_blank" style="font-size:10px; color:var(--accent-cyan); text-decoration:none;" onclick="event.stopPropagation();">🔑 Get Key</a>` : ''}
+      </div>`;
     
     if (field.type === 'select' && Array.isArray(field.options)) {
       html += `<select class="inline-dyn-cfg" data-key="${field.key}">`;
