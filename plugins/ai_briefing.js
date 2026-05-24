@@ -57,6 +57,22 @@ module.exports = {
       return null;
     };
 
+    const prevBriefingData = getCachedData('ai_briefing');
+    const cooldownMs = 1.5 * 60 * 60 * 1000; // 1.5 hours cooldown in milliseconds
+    const isPrevSuccessful = prevBriefingData && 
+                            prevBriefingData.briefing && 
+                            !prevBriefingData.briefing.startsWith("Error generating") && 
+                            !prevBriefingData.briefing.startsWith("ERROR:") &&
+                            prevBriefingData.statusLabel === "LIVE";
+    const hasValidCache = isPrevSuccessful && 
+                          prevBriefingData.timestamp && 
+                          (Date.now() - prevBriefingData.timestamp < cooldownMs);
+
+    if (hasValidCache) {
+      console.log(`[AI Briefing] Cooldown active (${Math.round((cooldownMs - (Date.now() - prevBriefingData.timestamp)) / 60000)}m remaining). Serving cached daily briefing to preserve API quota.`);
+      return prevBriefingData;
+    }
+
     // 1. Gather news headlines
     let rssText = '';
     const rssData = getCachedData('rss');
@@ -90,7 +106,6 @@ module.exports = {
       year: 'numeric' 
     });
 
-    const prevBriefingData = getCachedData('ai_briefing');
     const isError = !briefingText || briefingText.includes("Error generating AI briefing") || briefingText.includes("Error compiling") || briefingText.startsWith("ERROR:");
 
     let sourceLabel = "SYNTHESIZED BY GOOGLE GEMINI AI";
@@ -126,7 +141,8 @@ module.exports = {
       briefing: briefingText,
       date: dateStr,
       sourceLabel: sourceLabel,
-      statusLabel: statusLabel
+      statusLabel: statusLabel,
+      timestamp: Date.now()
     };
   },
 

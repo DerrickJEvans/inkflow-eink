@@ -38,6 +38,24 @@ module.exports = {
       return null;
     };
 
+    const prevAdvisorData = getCachedData('ai_advisor');
+    const cooldownMs = 45 * 60 * 1000; // 45 minutes cooldown in milliseconds
+    const isPrevSuccessful = prevAdvisorData && 
+                            prevAdvisorData.insights && 
+                            prevAdvisorData.insights.length > 0 &&
+                            !prevAdvisorData.insights[0].includes("Unable to compile") && 
+                            !prevAdvisorData.insights[0].includes("rate limit") && 
+                            !prevAdvisorData.insights[0].includes("high demand") &&
+                            prevAdvisorData.statusLabel === "ACTIVE ANALYST";
+    const hasValidCache = isPrevSuccessful && 
+                          prevAdvisorData.timestamp && 
+                          (Date.now() - prevAdvisorData.timestamp < cooldownMs);
+
+    if (hasValidCache) {
+      console.log(`[AI Advisor] Cooldown active (${Math.round((cooldownMs - (Date.now() - prevAdvisorData.timestamp)) / 60000)}m remaining). Serving cached telemetry insights to preserve API quota.`);
+      return prevAdvisorData;
+    }
+
     // 1. Gather host system statistics
     let sysData = getCachedData('system');
     if (!sysData) {
@@ -65,7 +83,6 @@ module.exports = {
     }
 
     let parsedLines = [];
-    const prevAdvisorData = getCachedData('ai_advisor');
     const isError = !insightsText || insightsText.includes("Unable to compile telemetry insights") || insightsText.includes("Error compiling") || insightsText.startsWith("ERROR:");
 
     let statusLabel = "ACTIVE ANALYST";
@@ -104,7 +121,8 @@ module.exports = {
       stats: {
         cpuTemp: sysData ? sysData.cpuTemp || 45 : 74,
         cpuLoad: sysData ? sysData.cpuUsage || 12 : 68.2
-      }
+      },
+      timestamp: Date.now()
     };
   },
 
