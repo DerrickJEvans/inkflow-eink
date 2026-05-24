@@ -934,10 +934,30 @@ function generateDynamicConfigForm(configFields, settings) {
   let html = `<div class="inline-config-form dynamic-config-form">`;
   configFields.forEach(field => {
     const value = settings[field.key] !== undefined ? settings[field.key] : (field.default !== undefined ? field.default : '');
+    
+    // Dynamically resolve help link label based on key and custom field configuration
+    let helpLabelText = 'ℹ️ Learn More';
+    if (field.helpLabel) {
+      helpLabelText = field.helpLabel;
+    } else {
+      const lowerKey = (field.key || '').toLowerCase();
+      const lowerLabel = (field.label || '').toLowerCase();
+      if (lowerKey.includes('key') || lowerKey.includes('token') || lowerKey.includes('pass') || lowerKey.includes('secret') || lowerKey.includes('cred') || lowerKey.includes('auth') ||
+          lowerLabel.includes('key') || lowerLabel.includes('token') || lowerLabel.includes('pass') || lowerLabel.includes('secret') || lowerLabel.includes('cred') || lowerLabel.includes('auth')) {
+        helpLabelText = '🔑 Get Key';
+      } else if (lowerKey.includes('lat') || lowerKey.includes('lon') || lowerKey.includes('coord') || lowerKey.includes('loc') || lowerKey.includes('map') ||
+                 lowerLabel.includes('lat') || lowerLabel.includes('lon') || lowerLabel.includes('coord') || lowerLabel.includes('loc') || lowerLabel.includes('map')) {
+        helpLabelText = '📍 Find Coordinates';
+      } else if (lowerKey.includes('city') || lowerKey.includes('station') || lowerKey.includes('airport') ||
+                 lowerLabel.includes('city') || lowerLabel.includes('station') || lowerLabel.includes('airport')) {
+        helpLabelText = '🌐 Search';
+      }
+    }
+
     html += `<div class="form-group">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
         <label style="margin-bottom:0;">${field.label || field.key}</label>
-        ${field.helpUrl ? `<a href="${field.helpUrl}" target="_blank" style="font-size:10px; color:var(--accent-cyan); text-decoration:none;" onclick="event.stopPropagation();">🔑 Get Key</a>` : ''}
+        ${field.helpUrl ? `<a href="${field.helpUrl}" target="_blank" style="font-size:10px; color:var(--accent-cyan); text-decoration:none;" onclick="event.stopPropagation();">${helpLabelText}</a>` : ''}
       </div>`;
     
     if (field.type === 'select' && Array.isArray(field.options)) {

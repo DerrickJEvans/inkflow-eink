@@ -235,10 +235,13 @@ module.exports = {
   description: "Short descriptive help text. If external web APIs are used, state the provider name here.",
   configFields: [
     // If the widget uses any public API or service that requires an API key, token, or client credentials,
-    // you MUST define the required fields here so that the InkFlow control panel can render input forms for them.
-    // ALWAYS supply 'helpUrl' for API key fields so the user is directed exactly to where they register for the key.
+    // or requires location coordinate parameters (latitude, longitude) or custom text fields,
+    // define the required fields here so that the InkFlow control panel can render input forms for them.
+    // ALWAYS supply 'helpUrl' for API key fields or external resources so the user is directed exactly to where they register or get info.
+    // You can customize the help hyperlink label by specifying a custom 'helpLabel' (e.g., "🔑 Get Key", "📍 Find Coordinates", "🌐 Search").
     // Examples:
-    // { key: "apiKey", label: "OpenWeatherMap API Key", type: "text", default: "", helpUrl: "https://openweathermap.org/api" }
+    // { key: "apiKey", label: "OpenWeatherMap API Key", type: "text", default: "", helpUrl: "https://openweathermap.org/api", helpLabel: "🔑 Get Key" }
+    // { key: "latitude", label: "Latitude", type: "number", default: 50.822, helpUrl: "https://www.latlong.net", helpLabel: "📍 Find Coordinates" }
     // { key: "stationCode", label: "Departure Station Code", type: "text", default: "LHR" }
   ],
   async fetchData(settings, device = {}) {
