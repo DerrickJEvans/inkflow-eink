@@ -363,17 +363,26 @@ journalctl -u trmnl-client.service -f -n 50
 
 To simplify provisioning and deploying new server and client displays, we have pre-packaged automated orchestration files:
 
-### 1. One-Click Dockerized Server Deployment (Single Command)
-You can deploy a new InkFlow E-Ink Server anywhere without manually installing Node.js, compiling dependency packages (like `sharp`), or managing packages.
+### 1. Multi-Container Dockerized Server & Local AI Deployment
+You can deploy a new InkFlow E-Ink Server **and** a local, fully dedicated Ollama instance anywhere with a single command—no manual model downloading, Node.js installations, or compilation required!
 
 * Ensure **Docker** and **Docker Compose** are installed on the host.
 * Run this command in your server's root folder:
   ```bash
   docker compose up -d --build
   ```
-* This builds a lightweight production image, isolates server configs (`config.json`), saves caches in volume folders (`cache/`), and binds statically to port `5000`.
+* **What it does automatically:**
+  1. Spins up the main **InkFlow server container** on port `5000`.
+  2. Spawns an **interconnected Ollama container** in an isolated virtual bridge network.
+  3. Binds and preserves your E-Ink caches (`cache/`), configurations (`config.json`), `.env` secrets, and LLM model files (`ollama-data` volume) persistently on the host.
+  4. Allows the server to query local models by simply pointing `OLLAMA_HOST` in `.env` to `http://ollama:11434`.
 
-### 2. One-Line Client Bootstrapper (`client/setup_client.sh`)
+### 2. Auto-Provisioning Server Installer & Safe Updater
+If running a native Linux installation on your Raspberry Pi 5 server, the system handles Option B (Ollama) setup dynamically:
+* **Fresh Installs (`install.sh`)**: Running `sudo ./install.sh` automatically installs Node dependencies, checks if Ollama is on the host, installs/enables it as a systemd service, pulls `llama3.2:1b`, and configures the default `.env` template.
+* **Current Server Upgrades (`update.sh`)**: Running `./update.sh` on your active server automatically cleans local Git states, pulls new code, installs new npm dependencies, installs/enables Ollama on the host via `sudo`, pulls the `llama3.2:1b` model, appends the local `.env` keys, and restarts the backend daemons cleanly.
+
+### 3. One-Line Client Bootstrapper (`client/setup_client.sh`)
 Provisioning new Raspberry Pi Zero 2 W clients has been consolidated into a single piped command. 
 * Flash a clean Raspberry Pi OS Lite image. SSH into your client.
 * Run this command on the client (replacing `<server-ip>` with your actual server IP or local mDNS hostname):
