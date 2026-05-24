@@ -17,12 +17,16 @@ module.exports = {
   description: "Real-time daily tide predictions showing high and low tide times, heights, and wave curves.",
   configFields: [
     { key: "location", label: "Coastal Location", type: "text", default: "Brighton Pier, UK" },
-    { key: "unit", label: "Height Unit", type: "select", options: ["meters", "feet"], default: "meters" }
+    { key: "unit", label: "Height Unit", type: "select", options: ["meters", "feet"], default: "meters" },
+    { key: "offset", label: "Calibration Offset (mins)", type: "number", default: 0 },
+    { key: "rangeScale", label: "Tidal Range Scale (0.1 to 3.0)", type: "number", default: 1.0 }
   ],
 
   async fetchData(settings, device = {}) {
     const location = settings.location || "Brighton Pier, UK";
     const unit = settings.unit || "meters";
+    const offset = parseInt(settings.offset) || 0;
+    const rangeScale = settings.rangeScale !== undefined ? parseFloat(settings.rangeScale) : 1.0;
 
     // Stable pseudo-random generator based on date
     const today = new Date();
@@ -31,8 +35,8 @@ module.exports = {
     const year = today.getFullYear();
     const seed = day + month * 31 + year * 366;
 
-    const pseudoRandom = (offset = 0) => {
-      const x = Math.sin(seed + offset) * 10000;
+    const pseudoRandom = (offsetVal = 0) => {
+      const x = Math.sin(seed + offsetVal) * 10000;
       return x - Math.floor(x);
     };
 
@@ -40,12 +44,12 @@ module.exports = {
     // Brighton Pier reference high tide is at 06:15 on base date
     const baseHour = 6.25; // 06:15
     const lunarShiftMinutes = ((day + month * 30) * 50) % 720; // daily lunar delay
-    const firstHighMinutes = (baseHour * 60 + lunarShiftMinutes) % 720; // first high tide time of the day
+    const firstHighMinutes = (baseHour * 60 + lunarShiftMinutes + offset) % 720; // first high tide time of the day with offset calibration
 
     const getTidesForDay = (dayOffset) => {
       const daySeed = seed + dayOffset;
-      const randVal = (offset) => {
-        const x = Math.sin(daySeed + offset) * 10000;
+      const randVal = (offsetVal) => {
+        const x = Math.sin(daySeed + offsetVal) * 10000;
         return x - Math.floor(x);
       };
 
@@ -69,14 +73,14 @@ module.exports = {
         const mn = Math.floor(timeVal % 60);
         const timeStr = `${String(hr).padStart(2, '0')}:${String(mn).padStart(2, '0')}`;
 
-        // Height calculations
+        // Height calculations scaled by the rangeScale constituent parameter
         let heightVal = 0;
         if (isHigh) {
-          // High tide height: 5.0 to 6.5 meters
-          heightVal = 5.0 + randVal(i * 10) * 1.5;
+          // High tide height: 5.0 to 6.5 meters (multiplied by range scale)
+          heightVal = (5.0 + randVal(i * 10) * 1.5) * rangeScale;
         } else {
-          // Low tide height: 0.2 to 1.2 meters
-          heightVal = 0.2 + randVal(i * 10) * 1.0;
+          // Low tide height: 0.2 to 1.2 meters (multiplied by range scale)
+          heightVal = (0.2 + randVal(i * 10) * 1.0) * rangeScale;
         }
 
         // Convert to feet if requested
