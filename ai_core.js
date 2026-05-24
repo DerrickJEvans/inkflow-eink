@@ -1,30 +1,37 @@
-// ai_core.js - Google Gemini AI Core Integration for InkFlow
+// ai_core.js - Google Gemini, Groq, and Ollama AI Core Integration for InkFlow
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const apiKey = process.env.GEMINI_API_KEY;
-let aiActive = false;
+const groqKey = process.env.GROQ_API_KEY;
+const ollamaEnabled = process.env.OLLAMA_ENABLED === 'true' || process.env.OLLAMA_HOST;
+
+let aiEngine = "none";
 let genAI = null;
 
-if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+if (groqKey && groqKey !== 'your_groq_api_key_here') {
+  aiEngine = "groq";
+  console.log("   ✨ InkFlow Groq AI Service Initialized successfully! ✨");
+} else if (ollamaEnabled) {
+  aiEngine = "ollama";
+  console.log("   ✨ InkFlow Local Ollama AI Service Initialized successfully! ✨");
+} else if (apiKey && apiKey !== 'your_gemini_api_key_here') {
   try {
     genAI = new GoogleGenerativeAI(apiKey);
-    aiActive = true;
+    aiEngine = "gemini";
     console.log("   ✨ InkFlow Gemini AI Service Initialized successfully! ✨");
   } catch (err) {
     console.error("❌ Failed to initialize Google Generative AI:", err.message);
   }
 } else {
-  console.warn("⚠️  [AI Core] Warning: GEMINI_API_KEY not configured in .env. Running in offline fallback mode.");
+  console.warn("⚠️  [AI Core] Warning: No AI provider (Gemini, Groq, Ollama) configured in .env. Running in offline fallback mode.");
 }
 
 /**
- * Strips markdown code blocks (e.g. ```javascript ... ```) from Gemini's responses
+ * Strips markdown code blocks (e.g. ```javascript ... ```) from LLM's responses
  */
 const cleanGeneratedCode = (rawText) => {
   let cleaned = rawText.trim();
-  // Remove markdown starting backticks
   cleaned = cleaned.replace(/^```(javascript|js|json)?\n/i, '');
-  // Remove markdown ending backticks
   cleaned = cleaned.replace(/\n```$/, '');
   return cleaned.trim();
 };
@@ -35,9 +42,74 @@ const cleanGeneratedCode = (rawText) => {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Robust content generator with fallback models and retry capability
+ * Groq completions fetcher (standard OpenAI compatibility)
  */
-const generateContentWithFallback = async (prompt, systemInstruction = null) => {
+const generateWithGroq = async (prompt, systemInstruction = null) => {
+  const modelName = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+  console.log(`[AI Core] Requesting Groq API using model: ${modelName}...`);
+  
+  const messages = [];
+  if (systemInstruction) {
+    messages.push({ role: "system", content: systemInstruction });
+  }
+  messages.push({ role: "user", content: prompt });
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${groqKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: messages,
+      temperature: 0.2
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Groq API returned ${response.status}: ${await response.text()}`);
+  }
+
+  const result = await response.json();
+  return result.choices[0].message.content;
+};
+
+/**
+ * Ollama local REST client
+ */
+const generateWithOllama = async (prompt, systemInstruction = null) => {
+  const ollamaHost = process.env.OLLAMA_HOST || "http://localhost:11434";
+  const modelName = process.env.OLLAMA_MODEL || "llama3.2:1b";
+  console.log(`[AI Core] Requesting Local Ollama instance (${ollamaHost}) using model: ${modelName}...`);
+
+  const response = await fetch(`${ollamaHost}/api/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: modelName,
+      prompt: systemInstruction ? `System instructions: ${systemInstruction}\nUser request: ${prompt}` : prompt,
+      stream: false,
+      options: {
+        temperature: 0.2
+      }
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama local request failed: ${response.status} ${await response.text()}`);
+  }
+
+  const result = await response.json();
+  return result.response;
+};
+
+/**
+ * Google Gemini API generator with fallback models and retry capability
+ */
+const generateWithGemini = async (prompt, systemInstruction = null) => {
   const primaryModelName = "gemini-2.5-flash-lite";
   const fallbackModelName = "gemini-2.5-flash";
 
@@ -47,7 +119,8 @@ const generateContentWithFallback = async (prompt, systemInstruction = null) => 
       modelOptions.systemInstruction = systemInstruction;
     }
     const model = genAI.getGenerativeModel(modelOptions);
-    return await model.generateContent(prompt);
+    const result = await model.generateContent(prompt);
+    return result.response.text();
   };
 
   const attemptWithRetry = async (modelName, maxRetries = 1) => {
@@ -68,7 +141,7 @@ const generateContentWithFallback = async (prompt, systemInstruction = null) => 
         
         if (isTemporary && attempt <= maxRetries) {
           const delay = attempt * 1500;
-          console.warn(`[AI Core] Model ${modelName} failed with temporary error (attempt ${attempt}/${maxRetries + 1}): ${err.message}. Retrying in ${delay}ms...`);
+          console.warn(`[AI Core] Model ${modelName} failed (attempt ${attempt}/${maxRetries + 1}): ${err.message}. Retrying in ${delay}ms...`);
           await sleep(delay);
         } else {
           throw err;
@@ -86,19 +159,35 @@ const generateContentWithFallback = async (prompt, systemInstruction = null) => 
       return await attemptWithRetry(fallbackModelName, 1);
     } catch (fallbackErr) {
       console.error(`[AI Core] Fallback model ${fallbackModelName} also failed:`, fallbackErr);
-      throw err; // throw the original error if fallback also fails
+      throw err;
     }
   }
+};
+
+/**
+ * Main router function
+ */
+const generateContentWithFallback = async (prompt, systemInstruction = null) => {
+  if (aiEngine === "groq") {
+    return await generateWithGroq(prompt, systemInstruction);
+  }
+  if (aiEngine === "ollama") {
+    return await generateWithOllama(prompt, systemInstruction);
+  }
+  if (aiEngine === "gemini") {
+    return await generateWithGemini(prompt, systemInstruction);
+  }
+  throw new Error("No active AI provider (Gemini, Groq, Ollama) configured in .env.");
 };
 
 /**
  * Outcome A: Generates fully compliant, hot-reloadable JavaScript plugin code based on user prompt
  */
 const generatePluginCode = async (userPrompt) => {
-  if (!aiActive || !genAI) {
+  if (aiEngine === "none") {
     return {
       success: false,
-      error: "Gemini API Key is not configured. Please add GEMINI_API_KEY to your .env file."
+      error: "No AI provider is configured. Please configure GEMINI_API_KEY, GROQ_API_KEY, or OLLAMA_ENABLED in your .env file."
     };
   }
 
@@ -130,7 +219,7 @@ module.exports = {
     // Ensure all elements scale dynamically using the passed width and height parameters.
     // Use crisp sans-serif or monospace fonts, high-contrast black/white fills, and E-Ink safe borders.
     // Use a single line of title/header text and then render your data fields.
-    return \`...\`;
+    return \`...\`
   }
 };
 \`\`\`
@@ -139,11 +228,10 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
 `;
 
   try {
-    const result = await generateContentWithFallback(
+    const rawText = await generateContentWithFallback(
       `Generate a custom InkFlow widget based on this request: ${userPrompt}`,
       systemInstruction
     );
-    const rawText = result.response.text();
     const cleanCode = cleanGeneratedCode(rawText);
 
     // Basic syntax validation check
@@ -164,7 +252,7 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
     console.error("[AI Core] Error generating plugin:", err);
     return {
       success: false,
-      error: `Gemini generation failed: ${err.message}`
+      error: `Widget generation failed: ${err.message}`
     };
   }
 };
@@ -173,8 +261,8 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
  * Outcome B: Generates an elegant daily morning briefing by summarizing news and weather inputs
  */
 const generateDailyBriefing = async (rssHeadlines, weatherInfo) => {
-  if (!aiActive || !genAI) {
-    return "InkFlow Gemini AI is currently running in offline fallback mode. Please configure your GEMINI_API_KEY inside the .env file to generate your custom synthesized daily editorial briefing here!";
+  if (aiEngine === "none") {
+    return "InkFlow AI is currently running in offline fallback mode. Please configure your GEMINI_API_KEY, GROQ_API_KEY, or OLLAMA_ENABLED inside the .env file to generate your custom synthesized daily editorial briefing here!";
   }
 
   const prompt = `
@@ -193,15 +281,15 @@ Write a premium morning brief synthesizing these elements:
 `;
 
   try {
-    const result = await generateContentWithFallback(prompt);
-    return result.response.text().trim();
+    const rawText = await generateContentWithFallback(prompt);
+    return rawText.trim();
   } catch (err) {
     console.error("[AI Core] Briefing generation failed:", err);
     if (err.status === 429 || (err.message && err.message.includes("429"))) {
-      return "ERROR: Gemini API rate limit exceeded. Please verify your Google AI Studio quota limits.";
+      return "ERROR: API rate limit exceeded. Please verify your provider account limits or switch to Groq/Ollama.";
     }
     if (err.status === 503 || (err.message && err.message.includes("503"))) {
-      return "ERROR: Gemini service is currently experiencing high demand. Retrying on next refresh.";
+      return "ERROR: API service is currently experiencing high demand. Retrying on next refresh.";
     }
     return "ERROR: Error generating AI briefing. Check local network connection and API key status.";
   }
@@ -211,8 +299,8 @@ Write a premium morning brief synthesizing these elements:
  * Outcome C: Analyzes server hardware statistics and returns expert sys-admin tips
  */
 const generateSystemInsights = async (systemStatsText) => {
-  if (!aiActive || !genAI) {
-    return "InkFlow Advisor is currently offline. Configure your GEMINI_API_KEY to receive real-time AI system recommendations, diagnostics, and proactive server tuning alerts on your dashboard!";
+  if (aiEngine === "none") {
+    return "InkFlow Advisor is currently offline. Configure your GEMINI_API_KEY, GROQ_API_KEY, or OLLAMA_ENABLED to receive real-time AI system recommendations, diagnostics, and proactive server tuning alerts on your dashboard!";
   }
 
   const prompt = `
@@ -227,22 +315,22 @@ Write your Sys-Admin recommendations:
 `;
 
   try {
-    const result = await generateContentWithFallback(prompt);
-    return result.response.text().trim();
+    const rawText = await generateContentWithFallback(prompt);
+    return rawText.trim();
   } catch (err) {
     console.error("[AI Core] Telemetry insights failed:", err);
     if (err.status === 429 || (err.message && err.message.includes("429"))) {
-      return "ERROR: Gemini API rate limit exceeded. Please verify your Google AI Studio quota limits.";
+      return "ERROR: API rate limit exceeded. Please verify your provider account limits or switch to Groq/Ollama.";
     }
     if (err.status === 503 || (err.message && err.message.includes("503"))) {
-      return "ERROR: Gemini service is currently experiencing high demand. Retrying on next refresh.";
+      return "ERROR: API service is currently experiencing high demand. Retrying on next refresh.";
     }
     return "ERROR: Unable to compile telemetry insights. Verify network configuration.";
   }
 };
 
 module.exports = {
-  aiActive: () => aiActive,
+  aiActive: () => aiEngine !== "none",
   generatePluginCode,
   generateDailyBriefing,
   generateSystemInsights
