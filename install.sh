@@ -48,6 +48,40 @@ echo -e "${CYAN}[3/5] Installing project Node.js dependencies...${NC}"
 # Run npm install as the standard user, not root, to preserve file ownership permissions
 sudo -u "$SUDO_USER_NAME" -i bash -c "cd ${PROJECT_DIR} && npm install"
 
+# 3.5. Install and configure Ollama for Option B Local AI
+echo -e "${CYAN}[3.5/5] Provisioning local Ollama AI engine (Option B)...${NC}"
+if ! command -v ollama &> /dev/null; then
+  echo -e "${YELLOW}Ollama not detected. Running official Ollama automated installer...${NC}"
+  curl -fsSL https://ollama.com/install.sh | sh
+else
+  echo -e "${GREEN}[✓] Ollama is already installed.${NC}"
+fi
+
+echo -e "${CYAN}Ensuring Ollama daemon service is active and enabled...${NC}"
+systemctl daemon-reload || true
+systemctl enable ollama || true
+systemctl start ollama || true
+
+echo -e "${CYAN}Pulling lightweight Llama 3.2 1B local model (be patient, ~1.2GB download)...${NC}"
+ollama pull llama3.2:1b || true
+echo -e "${GREEN}[✓] Local model llama3.2:1b is ready.${NC}"
+
+# Configure .env file automatically
+ENV_FILE="${PROJECT_DIR}/.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo -e "PORT=5000\nHOST=0.0.0.0" > "$ENV_FILE"
+  chown "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$ENV_FILE"
+fi
+
+if ! grep -q "OLLAMA_ENABLED" "$ENV_FILE"; then
+  echo -e "\n# Ollama Local Offline AI Engine (Option B)" >> "$ENV_FILE"
+  echo "OLLAMA_ENABLED=true" >> "$ENV_FILE"
+  echo "OLLAMA_HOST=http://localhost:11434" >> "$ENV_FILE"
+  echo "OLLAMA_MODEL=llama3.2:1b" >> "$ENV_FILE"
+  echo -e "${GREEN}✅ Configured local Ollama engine parameters inside .env file.${NC}"
+fi
+
+
 # 4. Set up systemd service to run server persistently on startup
 echo -e "${CYAN}[4/5] Configuring systemd background daemon service...${NC}"
 SERVICE_FILE="/etc/systemd/system/trmnl-pi.service"

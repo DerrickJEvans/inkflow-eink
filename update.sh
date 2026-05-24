@@ -90,6 +90,39 @@ else
     echo -e "${YELLOW}⚠️ npm install warning. Verify package dependencies manually if problems arise.${NC}"
 fi
 
+# 5.7 Update and configure Ollama for Option B Local AI
+echo -e "\n${BLUE}🤖 Aligning Local Ollama AI Engine (Option B)...${NC}"
+if ! command -v ollama &> /dev/null; then
+    echo -e "${YELLOW}Ollama not detected on host. Installing natively (requires sudo authentication)...${NC}"
+    curl -fsSL https://ollama.com/install.sh | sudo sh
+else
+    echo -e "${GREEN}✅ Ollama is already installed natively.${NC}"
+fi
+
+echo -e "Ensuring local Ollama daemon service is active and enabled..."
+sudo systemctl daemon-reload || true
+sudo systemctl enable ollama || true
+sudo systemctl start ollama || true
+
+echo -e "Downloading lightweight Llama 3.2 1B local model (safely skips if already present)..."
+ollama pull llama3.2:1b || true
+echo -e "${GREEN}✅ Local model llama3.2:1b aligned.${NC}"
+
+# Align .env file
+ENV_FILE=".env"
+if [ ! -f "$ENV_FILE" ]; then
+    echo -e "PORT=5000\nHOST=0.0.0.0" > "$ENV_FILE"
+fi
+
+if ! grep -q "OLLAMA_ENABLED" "$ENV_FILE"; then
+    echo -e "\n# Ollama Local Offline AI Engine (Option B)" >> "$ENV_FILE"
+    echo "OLLAMA_ENABLED=true" >> "$ENV_FILE"
+    echo "OLLAMA_HOST=http://localhost:11434" >> "$ENV_FILE"
+    echo "OLLAMA_MODEL=llama3.2:1b" >> "$ENV_FILE"
+    echo -e "${GREEN}✅ Added local Ollama configurations inside .env file.${NC}"
+fi
+
+
 # 6. Restart backend daemon service if active
 echo -e "\n${BLUE}🔄 Restarting backend services...${NC}"
 if systemctl is-active --quiet trmnl-pi 2>/dev/null || systemctl is-enabled --quiet trmnl-pi 2>/dev/null; then
