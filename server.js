@@ -6,6 +6,7 @@ const path = require('path');
 const { renderDeviceImage, PLUGINS, loadPlugins } = require('./renderer');
 const scheduler = require('./scheduler');
 const aiCore = require('./ai_core');
+const dns = require('dns');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -89,6 +90,54 @@ scheduler.start(config, saveConfig);
 
 // Memory cache for compiled screen data
 const imageCache = {};
+
+/**
+ * Records device connection network details and resolves local mDNS hostname asynchronously
+ */
+const recordDeviceConnection = (device, req) => {
+  try {
+    let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (!ip) return;
+    
+    // Clean IPv4 mapped to IPv6 addresses
+    if (ip.startsWith('::ffff:')) {
+      ip = ip.substring(7);
+    }
+    if (ip === '::1') ip = '127.0.0.1';
+    
+    let changed = false;
+    if (device.lastIp !== ip) {
+      device.lastIp = ip;
+      changed = true;
+    }
+    
+    const nowStr = new Date().toISOString();
+    if (device.lastSeen !== nowStr) {
+      device.lastSeen = nowStr;
+      changed = true;
+    }
+    
+    if (changed) {
+      saveConfig();
+    }
+    
+    // Asynchronously perform reverse lookup to resolve local mDNS or domain names
+    if (ip && ip !== '127.0.0.1') {
+      dns.reverse(ip, (err, hostnames) => {
+        if (!err && hostnames && hostnames.length > 0) {
+          const resolvedHost = hostnames[0];
+          if (device.lastHostname !== resolvedHost) {
+            device.lastHostname = resolvedHost;
+            saveConfig();
+            console.log(`[Network Diagnostics] Resolved hostname for device ${device.id}: ${resolvedHost}`);
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[Network Diagnostics] Error recording device connection:", err);
+  }
+};
 
 /**
  * Gets or creates a device config based on ID
@@ -461,6 +510,7 @@ app.get('/api/display/image.png', async (req, res) => {
     const force = req.query.force === 'true';
     
     const device = getOrCreateDevice(deviceId, req.query);
+    recordDeviceConnection(device, req);
     const data = await fetchDeviceDisplayData(device, force);
     
     const cached = imageCache[deviceId];
@@ -529,6 +579,7 @@ app.get('/api/display/raw', async (req, res) => {
     const force = req.query.force === 'true';
 
     const device = getOrCreateDevice(deviceId, req.query);
+    recordDeviceConnection(device, req);
     const data = await fetchDeviceDisplayData(device, force);
 
     const cached = imageCache[deviceId];
@@ -553,6 +604,7 @@ app.get('/api/display', async (req, res) => {
     // But since this is a private network, we fall back to auto-registration
     const mac = req.headers['id'] || req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
     const device = getOrCreateDevice(mac, req.query);
+    recordDeviceConnection(device, req);
     
     // Trigger render to keep files up to date
     await fetchDeviceDisplayData(device);

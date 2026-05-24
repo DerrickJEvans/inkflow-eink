@@ -590,10 +590,17 @@ function renderDevicesList() {
   serverConfig.devices.forEach(dev => {
     const item = document.createElement('div');
     item.className = `device-item ${dev.id === activeDeviceId ? 'active' : ''}`;
+    
+    let metaText = `${dev.width}x${dev.height}px • Interval: ${dev.refreshRate}s`;
+    if (dev.lastIp) {
+      const hostDisplay = dev.lastHostname ? dev.lastHostname : dev.lastIp;
+      metaText += ` • Seen: ${hostDisplay}`;
+    }
+    
     item.innerHTML = `
       <div class="device-info">
         <span class="name">${dev.name}</span>
-        <span class="meta">${dev.width}x${dev.height}px • Interval: ${dev.refreshRate}s</span>
+        <span class="meta">${metaText}</span>
       </div>
       <span class="device-badge">${dev.id}</span>
     `;
@@ -648,6 +655,16 @@ function selectDevice(deviceId, isNew = false) {
     document.getElementById('edit-device-width').value = device.width;
     document.getElementById('edit-device-height').value = device.height;
     document.getElementById('edit-device-refresh').value = device.refreshRate;
+
+    // Load network stats if connected
+    const netEl = document.getElementById('edit-device-network');
+    if (netEl) {
+      if (device.lastIp) {
+        netEl.value = device.lastHostname ? `${device.lastHostname} (${device.lastIp})` : device.lastIp;
+      } else {
+        netEl.value = 'Never connected';
+      }
+    }
 
     // Checkboxes and inline durations
     renderPluginsSelector(device.activePlugins, device.rotationIntervals || {});
