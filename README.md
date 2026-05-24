@@ -182,12 +182,12 @@ Run this command in Windows Command Prompt (CMD) or PowerShell:
 
 ---
 
-## 🧠 Google Gemini AI Integration
+## 🧠 Multi-Provider AI Integration (Gemini, Groq, & Local Ollama)
 
-InkFlow E-Ink Server has been upgraded to support a **deep, modular integration with Google Gemini AI** (powered by the fast and highly capable `gemini-2.5-flash` model). This adds three dynamic, cognitive features to your low-power display:
+InkFlow E-Ink Server has been upgraded to support a **deep, modular integration with Google Gemini, Groq (Llama), and Local Ollama AI engines**. This adds three dynamic, cognitive features to your low-power display:
 
 ### 1. ✨ AI Widget Builder (Natural Language Generator)
-Describe any custom widget you want in the control panel (e.g. *"Build a widget that displays random developer jokes with a cool pixel border"* or *"A cryptocurrency ticker displaying BTC and ETH"*), and Gemini will automatically generate, compile, and register a compliant JavaScript plugin in real-time **without restarting the server!**
+Describe any custom widget you want in the control panel (e.g. *"Build a widget that displays random developer jokes with a cool pixel border"* or *"A cryptocurrency ticker displaying BTC and ETH"*), and your active AI engine will automatically generate, compile, and register a compliant JavaScript plugin in real-time **without restarting the server!**
 
 ### 2. 🗞️ Daily AI Briefing (`plugins/ai_briefing.js`)
 An elegant editorial newspaper-style morning bulletin written in the voice of an elite print editor, synthesizing your weather parameters and RSS news items into a concise, engaging narrative. Renders using broadsheet serif typography and dynamic SVG line-wrapping.
@@ -196,23 +196,41 @@ An elegant editorial newspaper-style morning bulletin written in the voice of an
 A proactive diagnostic monitor that parses real-time system performance data (CPU load, temperature, RAM utilization, and disk space) and returns exactly 2-3 short, actionable system administrator recommendations inside a technical E-Ink monospace card.
 
 ### 📡 Intelligent API Quota Cooldown Layer (Anti-Rate-Limiting)
-To prevent `429 Too Many Requests` rate-limiting errors under Google AI Studio's free tier limits during high-frequency background scheduler sweeps (which check widgets every 4 minutes), the Gemini integrations incorporate a robust caching cooldown layer:
+To prevent `429 Too Many Requests` rate-limiting errors under free API tier limits during high-frequency background scheduler sweeps (which check widgets every 4 minutes), the AI integrations incorporate a robust caching cooldown layer:
 * **Daily Briefing Cooldown (`ai_briefing.js`)**: Successful editorial briefs are cached with a **1.5-hour (90 minutes) cooldown**. During background sweeps, the server serves the compiled cached bulletin rather than requesting the API again.
 * **Telemetry Insights Cooldown (`ai_advisor.js`)**: Diagnostic server tips are cached with a **45-minute cooldown**.
-* **Manual Override (Bypass)**: Clicking **🔄 Force Refresh** (or updating layout settings) inside the web control panel completely purges the cached JSON data files, bypassing the cooldown timer and triggering a fresh, real-time Gemini generation instantly.
+* **Manual Override (Bypass)**: Clicking **🔄 Force Refresh** (or updating layout settings) inside the web control panel completely purges the cached JSON data files, bypassing the cooldown timer and triggering a fresh, real-time generation instantly.
 
-### 🔑 Setting up the Gemini API Key
-To activate these features:
+### 🔑 Setting up the AI Providers in `.env`
+To activate these cognitive features, configure **one** of the following providers inside a `.env` file in your server's root folder:
+
+#### Option A: Google Gemini API (Cloud)
 1. Obtain a free API Key from [Google AI Studio (aistudio.google.com)](https://aistudio.google.com/).
-2. Create a `.env` file in your server's root folder:
+2. Add it to your `.env` file:
    ```env
    GEMINI_API_KEY=AIzaSyYourActualKeyHere
    ```
-3. Run the update script to pull new code, install dependencies (`npm install`), and reload services:
+
+#### Option B: Local Ollama LLM (100% Free & Infinite Limits)
+1. Install Ollama natively on your host: `curl -fsSL https://ollama.com/install.sh | sh`
+2. Download your preferred lightweight model (e.g. `llama3.2:1b` or `qwen2.5:1.5b` which run at high speeds on Raspberry Pi 5):
    ```bash
-   ./update.sh
+   ollama run llama3.2:1b
    ```
-   *(Note: The `update.sh` script now automatically runs `npm install --no-audit --no-fund` to make sure all dependencies like `@google/generative-ai` are completely installed).*
+3. Enable it in your `.env` file:
+   ```env
+   OLLAMA_ENABLED=true
+   OLLAMA_HOST=http://localhost:11434
+   OLLAMA_MODEL=llama3.2:1b
+   ```
+
+#### Option C: Groq Developer Tier (Generous Quotas & High Speed)
+1. Create a free developer account at [console.groq.com](https://console.groq.com/) and create an API key.
+2. Add it to your `.env` file:
+   ```env
+   GROQ_API_KEY=gsk_YourActualKeyHere
+   GROQ_MODEL=llama-3.1-8b-instant
+   ```
 
 ---
 
