@@ -374,6 +374,8 @@ Write your Sys-Admin recommendations:
 
 module.exports = {
   aiActive: () => widgetBuilderEngine !== "none" || dynamicWidgetsEngine !== "none",
+  getWidgetBuilderEngine: () => widgetBuilderEngine,
+  getDynamicWidgetsEngine: () => dynamicWidgetsEngine,
   generatePluginCode,
   generateDailyBriefing,
   generateSystemInsights

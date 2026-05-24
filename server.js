@@ -408,7 +408,13 @@ app.get('/api/system-stats', async (req, res) => {
 
 // Get global settings and devices
 app.get('/api/settings', (req, res) => {
-  res.json(config);
+  res.json({
+    ...config,
+    aiEngines: {
+      widgetBuilder: aiCore.getWidgetBuilderEngine(),
+      dynamicWidgets: aiCore.getDynamicWidgetsEngine()
+    }
+  });
 });
 
 // Update global settings and devices

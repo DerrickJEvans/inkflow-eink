@@ -229,12 +229,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
+  // Helper to determine which AI engine is active for widget building
+  function getActiveBuilderName() {
+    if (serverConfig && serverConfig.aiEngines && serverConfig.aiEngines.widgetBuilder) {
+      const provider = serverConfig.aiEngines.widgetBuilder.toLowerCase();
+      if (provider === 'gemini') return 'Google Gemini';
+      if (provider === 'groq') return 'Groq Llama';
+      if (provider === 'ollama') return 'Ollama (Local)';
+      if (provider === 'none') return 'Offline Fallback';
+      return provider.charAt(0).toUpperCase() + provider.slice(1);
+    }
+    return 'Google Gemini';
+  }
+
+  // Update instructions and text based on active AI engine
+  function updateAiGeneratorHelpText() {
+    const engineName = getActiveBuilderName();
+    const helpEl = document.getElementById('ai-generator-help-text');
+    if (helpEl) {
+      helpEl.innerHTML = `Describe any custom widget you want. <strong>${engineName}</strong> will dynamically generate, compile, and register it instantly!`;
+    }
+    const loadingEl = document.getElementById('ai-loading-text');
+    if (loadingEl) {
+      loadingEl.innerText = `${engineName} is writing SVG layouts...`;
+    }
+  }
+
   // AI Widget Generator Click Handler
   if (btnBuildWidget) {
     btnBuildWidget.addEventListener('click', async () => {
       const promptText = aiPromptInput.value.trim();
+      const engineName = getActiveBuilderName();
       if (!promptText) {
-        alert("Please describe what custom widget you want Gemini to build first!");
+        alert(`Please describe what custom widget you want ${engineName} to build first!`);
         return;
       }
 
@@ -242,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnBuildWidget.disabled = true;
       aiPromptInput.disabled = true;
       aiLoadingContainer.style.display = 'block';
-      aiLoadingText.innerText = "Gemini is writing clean SVG layout code...";
+      aiLoadingText.innerText = `${engineName} is writing clean SVG layout code...`;
 
       try {
         const response = await fetch('/api/ai/build', {
@@ -500,6 +527,7 @@ async function fetchSettings() {
     const res = await fetch('/api/settings');
     serverConfig = await res.json();
     
+    updateAiGeneratorHelpText();
     renderDevicesList();
     renderHostedWidgetsList();
     updateAiPreviewMockup(activePreviewPluginId);
