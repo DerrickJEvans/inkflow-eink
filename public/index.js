@@ -1543,6 +1543,7 @@ async function fetchAiEnvConfig() {
     }
     
     document.getElementById('ai-env-ollama-host').value = data.ollamaHost;
+    document.getElementById('ai-env-ollama-model').value = data.ollamaModel || 'llama3.2:1b';
   } catch (err) {
     console.error("Failed to load AI Env Config:", err);
     showToast("Failed to fetch AI configuration settings", true);
@@ -1690,7 +1691,8 @@ function setupAiAdminTabListeners() {
           dynamicWidgetsProvider: document.getElementById('ai-env-widgets-provider').value,
           geminiKey: document.getElementById('ai-env-gemini-key').value,
           groqKey: document.getElementById('ai-env-groq-key').value,
-          ollamaHost: document.getElementById('ai-env-ollama-host').value
+          ollamaHost: document.getElementById('ai-env-ollama-host').value,
+          ollamaModel: document.getElementById('ai-env-ollama-model').value
         };
         
         const res = await fetch('/api/ai/env', {

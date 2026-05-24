@@ -490,7 +490,8 @@ app.get('/api/ai/env', (req, res) => {
       hasGroqKey: !!groqKey,
       widgetBuilderProvider: envVars.WIDGET_BUILDER_AI_PROVIDER || 'gemini',
       dynamicWidgetsProvider: envVars.DYNAMIC_WIDGETS_AI_PROVIDER || 'gemini',
-      ollamaHost: envVars.OLLAMA_HOST || 'http://localhost:11434'
+      ollamaHost: envVars.OLLAMA_HOST || 'http://localhost:11434',
+      ollamaModel: envVars.OLLAMA_MODEL || 'llama3.2:1b'
     });
   } catch (err) {
     console.error("[AI Env Config] Error getting env variables:", err);
@@ -501,7 +502,7 @@ app.get('/api/ai/env', (req, res) => {
 // POST AI Configuration and Environment Variables
 app.post('/api/ai/env', (req, res) => {
   try {
-    const { geminiKey, groqKey, widgetBuilderProvider, dynamicWidgetsProvider, ollamaHost } = req.body;
+    const { geminiKey, groqKey, widgetBuilderProvider, dynamicWidgetsProvider, ollamaHost, ollamaModel } = req.body;
     const dotenv = require('dotenv');
     const envPath = path.join(__dirname, '.env');
     
@@ -528,7 +529,8 @@ app.post('/api/ai/env', (req, res) => {
       GROQ_API_KEY: finalGroqKey,
       WIDGET_BUILDER_AI_PROVIDER: widgetBuilderProvider || 'gemini',
       DYNAMIC_WIDGETS_AI_PROVIDER: dynamicWidgetsProvider || 'gemini',
-      OLLAMA_HOST: ollamaHost || 'http://localhost:11434'
+      OLLAMA_HOST: ollamaHost || 'http://localhost:11434',
+      OLLAMA_MODEL: ollamaModel || 'llama3.2:1b'
     };
 
     // Construct .env file string
