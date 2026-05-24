@@ -41,7 +41,7 @@ graph TD
 * **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like ESP32) to sleep at **~10µA current draw** and run on batteries for months.
 
 ### 3. 🎨 Premium Glassmorphic Web Control Center
-* **Dual-Tab Interface**: Separates day-to-day display configuration (**Device Console**) from plugin development and testing (**AI Studio & Global Configs**).
+* **Three-Tab Interface**: Separates day-to-day E-Ink management (**Device Console**), custom plugin coding (**AI Studio**), and system keys/local hardware settings (**AI & Ollama Admin**).
 * **Restructured Device Console**:
   * **Pi Host Metrics Banner**: Real-time server telemetry dashboard (CPU circle chart, temperature, RAM gauges) is docked in a horizontal bar spanning full-width across the top of the console.
   * **Multi-Column Alignment**: Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
@@ -255,6 +255,22 @@ WIDGET_BUILDER_AI_PROVIDER=gemini
 OLLAMA_ENABLED=true
 DYNAMIC_WIDGETS_AI_PROVIDER=ollama
 ```
+
+### 🎛️ Dedicated AI & Ollama Admin Control Panel (Tab 3)
+InkFlow includes a state-of-the-art **🧠 AI & Ollama Admin** administration portal built as a sleek, responsive two-column glassmorphic grid:
+
+1. **Left Column: 🦙 Ollama Local Manager (Unified Card)**:
+   * **🌐 Host Configuration**: Dynamic connection host address input (`OLLAMA_HOST`) allowing seamless targeting of WSL, Docker, or native daemon IP addresses.
+   * **🧠 Active Local Model Selection**: Dropdown menu compiled dynamically from your active Ollama instance, listing installed model names and parameter file sizes.
+   * **● Real-time Status Badge**: Glowing emerald `ONLINE` or pulsing crimson `OFFLINE` connectivity tracker.
+   * **📥 Model Pull Console**: Asynchronous downloader that streams model pull operations directly. A glowing progress bar and real-time percentage indicators track progress in the dashboard without locking browser threads.
+   * **Installed Local Models**: A dedicated scrolling dashboard list displaying all downloaded model details.
+
+2. **Right Column: Stacked Engine Routing & Cloud API Managers**:
+   * **⚙️ AI Engine Feature Routing**: Dropdown selection controls mapping Widget Builder and Dynamic Summarization features independently to active providers.
+   * **♊ Gemini API Manager**: Secure masked input (`GEMINI_API_KEY`) with quick links to retrieve free AI Studio tokens.
+   * **🍊 GROQ API Manager**: Secure masked input (`GROQ_API_KEY`) with developer console credentials integration.
+   * **💾 Symmetrical Save & Hot-Reload**: A single action button at the bottom of the right column. Submitting updates writes changes securely to the `.env` file on disk and triggers `aiCore.reloadAiConfig()` to re-instantiate active engines in server memory. **The server dynamically scales in real time without needing a manual command-line process reboot!**
 
 ---
 
