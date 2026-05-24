@@ -1,0 +1,117 @@
+#!/bin/bash
+# setup_client.sh - One-click client provisioning and systemd setup for Pi Zero 2 W
+# Run on the Pi Zero client: curl -sSL http://<server-ip>:5000/setup_client.sh | sudo bash
+
+set -e
+
+# Ensure running as root
+if [ "$EUID" -ne 0 ]; then
+  echo "❌ Error: Please run this script as root (using sudo)."
+  exit 1
+fi
+
+echo "===================================================="
+echo "  📟 InkFlow E-Ink Client Automated Installer  📟"
+echo "===================================================="
+
+# 1. Update package list and install system dependencies
+echo "📦 Installing system dependencies (SPI, Git, PIL, NumPy)..."
+apt-get update
+apt-get install -y python3-pip python3-pil python3-numpy python3-spidev git
+
+# 2. Enable SPI interface in Pi config
+echo "🔌 Enabling hardware SPI interface..."
+CONFIG_FILE="/boot/firmware/config.txt"
+if [ ! -f "$CONFIG_FILE" ]; then
+  CONFIG_FILE="/boot/config.txt"
+fi
+
+if grep -q "^dtparam=spi=on" "$CONFIG_FILE"; then
+  echo "✅ SPI is already enabled in $CONFIG_FILE"
+else
+  echo "dtparam=spi=on" >> "$CONFIG_FILE"
+  echo "✅ Enabled SPI in $CONFIG_FILE. Note: Reboot might be required to apply."
+fi
+
+# 3. Handle high-performance Waveshare python driver installation (Sparse Checkout)
+echo "🧬 Installing Waveshare hardware driver (sparse clone to preserve Pi Zero RAM)..."
+WORK_DIR=$(pwd)
+TEMP_DIR="/tmp/waveshare_sparse"
+rm -rf "$TEMP_DIR"
+mkdir -p "$TEMP_DIR"
+cd "$TEMP_DIR"
+
+git clone --filter=blob:none --sparse https://github.com/waveshare/e-Paper.git
+cd e-Paper
+git sparse-checkout set RaspberryPi_JetsonNano/python
+cd RaspberryPi_JetsonNano/python
+pip3 install . --break-system-packages --no-cache-dir
+
+cd "$WORK_DIR"
+rm -rf "$TEMP_DIR"
+echo "✅ Waveshare hardware driver installed successfully!"
+
+# 4. Prompt for server address configuration
+echo "----------------------------------------------------"
+read -p "📡 Enter the InkFlow server address (e.g. inkflow.local or 192.168.1.100): " SERVER_HOST
+
+if [ -z "$SERVER_HOST" ]; then
+  SERVER_HOST="inkflow.local"
+fi
+
+# Write configurations to config.py
+CONFIG_PY="config.py"
+if [ -f "$CONFIG_PY" ]; then
+  sed -i "s/hostIpAddress = .*/hostIpAddress = '${SERVER_HOST}'/" "$CONFIG_PY"
+  echo "✅ Updated config.py with server address: ${SERVER_HOST}"
+else
+  cat <<EOF > "$CONFIG_PY"
+# config.py - Client Settings
+hostIpAddress = '${SERVER_HOST}'
+hostPort = '5000'
+deviceId = 'pi_zero_4in26'
+width = 800
+height = 480
+driver = 'epd4in26'
+INVERT_COLORS = False
+EOF
+  echo "✅ Created config.py with server address: ${SERVER_HOST}"
+fi
+
+# 5. Create and register the Systemd persistent background service
+echo "⚙️ Creating Systemd background service daemon..."
+CLIENT_DIR=$(pwd)
+USER_NAME=$(logname || echo "derrickjevans1")
+
+SERVICE_FILE="/etc/systemd/system/trmnl-client.service"
+cat <<EOF > "$SERVICE_FILE"
+[Unit]
+Description=TRMNL E-Ink Display Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$USER_NAME
+WorkingDirectory=$CLIENT_DIR
+ExecStart=/usr/bin/python3 $CLIENT_DIR/client.py
+Restart=always
+RestartSec=15
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=trmnl-client
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Reload and enable the service
+systemctl daemon-reload
+systemctl enable trmnl-client.service
+systemctl restart trmnl-client.service
+
+echo "===================================================="
+echo "  🎉 Installation Complete! 🎉"
+echo "  Status: trmnl-client service started successfully."
+echo "  Run 'journalctl -u trmnl-client.service -f' to see live logs."
+echo "===================================================="

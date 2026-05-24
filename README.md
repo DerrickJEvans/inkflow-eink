@@ -341,6 +341,36 @@ journalctl -u trmnl-client.service -f -n 50
 
 ---
 
+## 🐳 Simplified Deployment & Orchestration
+
+To simplify provisioning and deploying new server and client displays, we have pre-packaged automated orchestration files:
+
+### 1. One-Click Dockerized Server Deployment (Single Command)
+You can deploy a new InkFlow E-Ink Server anywhere without manually installing Node.js, compiling dependency packages (like `sharp`), or managing packages.
+
+* Ensure **Docker** and **Docker Compose** are installed on the host.
+* Run this command in your server's root folder:
+  ```bash
+  docker compose up -d --build
+  ```
+* This builds a lightweight production image, isolates server configs (`config.json`), saves caches in volume folders (`cache/`), and binds statically to port `5000`.
+
+### 2. One-Line Client Bootstrapper (`client/setup_client.sh`)
+Provisioning new Raspberry Pi Zero 2 W clients has been consolidated into a single piped command. 
+* Flash a clean Raspberry Pi OS Lite image. SSH into your client.
+* Run this command on the client (replacing `<server-ip>` with your actual server IP or local mDNS hostname):
+  ```bash
+  curl -sSL http://<server-ip>:5000/setup_client.sh | sudo bash
+  ```
+* **What it does automatically:**
+  1. Installs all prerequisite system packages (SPI drivers, python3-pip, Git, PIL, NumPy).
+  2. Enables hardware SPI interfaces in `/boot/config.txt` or `/boot/firmware/config.txt`.
+  3. Orchestrates a memory-safe partial Git checkout of the Waveshare Python libraries to prevent 512MB RAM client crashes.
+  4. Prompts you for the target server's address and updates `config.py`.
+  5. Registers, enables, and boots up a persistent `trmnl-client.service` daemon background service.
+
+---
+
 ## 🛡️ License
 
 This project is released under the [MIT License](LICENSE) (MIT). Feel free to use, fork, modify, and integrate it into your custom low-power dashboard environments!

@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  inkflow-server:
+    build: .
+    container_name: inkflow-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./config.json:/app/config.json
+      - ./cache:/app/cache
+      - .env:/app/.env
+    environment:
+      - NODE_ENV=production
