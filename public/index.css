@@ -1535,4 +1535,19 @@ textarea:focus {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* AI Admin Redesigned Grid */
+.ai-admin-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .ai-admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
 
