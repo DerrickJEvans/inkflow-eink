@@ -22,20 +22,36 @@ graph TD
 ### 1. Symmetrical Carousel (Rotation) Mode
 * Seamlessly cycles through all of your active widgets at full-screen resolution. Displays one widget per refresh cycle, ensuring maximum legibility, large premium typography, and 0% text truncation!
 * Core plugins included:
-  * **System Stats**: CPU load, memory utilization, disk usage, uptime, and temperature.
-  * **Weather**: Full forecast with min/max temp, precipitation, and wind speeds using coordinates.
-  * **RSS Feed**: Aggregates and displays formatted news items (default: Hacker News).
-  * **Family Notice Board**: Serves custom notes, lists, or announcements.
-  * **Daily AI Briefing**: Synthesizes RSS headlines and weather forecasts using Google Gemini into an elegant newspaper editorial bulletin.
-  * **AI Telemetry Advisor**: Diagnoses CPU loads, temperature spikes, and memory diagnostics to print proactive system administrator advice.
-  * **AI Widget Builder**: Generates and compiles new compliant widgets on-the-fly from a simple natural language prompt directly in the control panel.
+  * **System Stats**: Monitors Raspberry Pi system health (CPU load, memory, disk utilization, uptime, temperature).
+  * **Weather Forecast**: Open-Meteo local weather forecasts with daily high/low temperatures, precipitation, and wind.
+  * **RSS Feed**: Aggregates headlines from major presets (Tech, UK, World, HN, NYT) or a custom XML RSS feed url.
+  * **Family Notice Board**: A fully interactive notice board with checklists and chores customizable inline.
+  * **TfL Rail Status**: Live London Underground, Overground, DLR, and Elizabeth Line disruption tracker.
+  * **UK Train Board**: Real-time mainline station departures and arrivals styled after authentic LED station boards.
+  * **XKCD Comics**: Scaled comic strips fetched from the daily archive.
+  * **World Sun & Moon Clock**: Day/night solar and lunar maps overlaying daylight terminator curves onto dot-matrix/solid projections.
+  * **Daily AI Briefing**: Synthesizes custom RSS feeds and weather coordinates using Google Gemini into an elegant broadsheet.
+  * **AI Telemetry Advisor**: Analyzes system logs and load averages, outputting technical administrator recommendations.
+  * **AI Widget Builder**: Hot-loads natural language descriptions into verified Javascript display plugins on-the-fly.
+  * **Feynman Quotes**: Displays inspiring daily quotes from physicist Richard Feynman.
 
 ### 2. High-Performance E-Ink Processing
 * **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
 * **1-Bit Raw Bit-Packing**: Packs dithered pixels (8 pixels per byte, MSB-first) into a tight binary buffer suitable for lightweight transmission.
 * **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like ESP32) to sleep at **~10µA current draw** and run on batteries for months.
 
-### 3. Headless OS Raw Image Builder
+### 3. 🎨 Premium Glassmorphic Web Control Center
+* **Dual-Tab Interface**: Separates day-to-day display configuration (**Device Console**) from plugin development and testing (**AI Studio & Global Configs**).
+* **Restructured Device Console**:
+  * **Pi Host Metrics Banner**: Real-time server telemetry dashboard (CPU circle chart, temperature, RAM gauges) is docked in a horizontal bar spanning full-width across the top of the console.
+  * **Multi-Column Alignment**: Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
+  * **Spacious bottom settings drawer**: Form controls and the drag-and-drop rotation sequence timeline expand horizontally, giving you maximum width to reorder and calibrate display rotation cycles.
+* **AI Studio & Embedded Configurations**:
+  * **In-Tile Forms**: Obsolete sidebar accordions are removed; each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations.
+  * **Event Propagation Safety Blocks**: Text inputs, checkboxes, and notice additions intercept mousedown events to prevent catalog re-selections or preview restarts while typing.
+  * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
+
+### 4. Headless OS Raw Image Builder
 * **`build_custom_image.sh`**: A shell tool that downloads Raspberry Pi OS Bookworm Lite, mounts the ext4 root filesystem headlessly using FUSE (`fuse2fs`), injects your custom server configurations, and configures a self-cleaning first-boot provisioning service.
 * **No Loop Devices**: Builds raw images completely in user-space without using root loopback loop devices (`losetup`), making it fast, robust, and safe.
 
@@ -46,7 +62,8 @@ graph TD
 * [**`server.js`**](file:///home/derrickjevans1/trmnl-pi-server/server.js): Express web application serving API endpoints and administering configuration states.
 * [**`renderer.js`**](file:///home/derrickjevans1/trmnl-pi-server/renderer.js): Core graphic engine (plugin coordinator, SVG parser, Sharp rasterizer, ditherer, and raw byte packetizer).
 * [**`plugins/`**](file:///home/derrickjevans1/trmnl-pi-server/plugins): Javascript widgets performing web fetches and compiling custom e-ink SVG code.
-  * [`system.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/system.js), [`weather.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/weather.js), [`rss.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/rss.js), [`notes.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/notes.js).
+  * Core: [`system.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/system.js), [`weather.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/weather.js), [`rss.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/rss.js), [`notes.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/notes.js), [`tfl.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/tfl.js), [`uk_trains.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/uk_trains.js), [`xkcd.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/xkcd.js), [`world_clock.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/world_clock.js), [`feynman_quote.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/feynman_quote.js).
+  * Gemini AI: [`ai_briefing.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/ai_briefing.js), [`ai_advisor.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/ai_advisor.js).
 * [**`public/`**](file:///home/derrickjevans1/trmnl-pi-server/public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
 * [**`client/`**](file:///home/derrickjevans1/trmnl-pi-server/client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
 * [**`arduino/`**](file:///home/derrickjevans1/trmnl-pi-server/arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
