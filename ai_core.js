@@ -5,25 +5,54 @@ const apiKey = process.env.GEMINI_API_KEY;
 const groqKey = process.env.GROQ_API_KEY;
 const ollamaEnabled = process.env.OLLAMA_ENABLED === 'true' || process.env.OLLAMA_HOST;
 
-let aiEngine = "none";
 let genAI = null;
-
-if (groqKey && groqKey !== 'your_groq_api_key_here') {
-  aiEngine = "groq";
-  console.log("   ✨ InkFlow Groq AI Service Initialized successfully! ✨");
-} else if (ollamaEnabled) {
-  aiEngine = "ollama";
-  console.log("   ✨ InkFlow Local Ollama AI Service Initialized successfully! ✨");
-} else if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+if (apiKey && apiKey !== 'your_gemini_api_key_here') {
   try {
     genAI = new GoogleGenerativeAI(apiKey);
-    aiEngine = "gemini";
-    console.log("   ✨ InkFlow Gemini AI Service Initialized successfully! ✨");
   } catch (err) {
-    console.error("❌ Failed to initialize Google Generative AI:", err.message);
+    console.error("❌ Failed to initialize Google Generative AI client:", err.message);
   }
+}
+
+// 1. Resolve Widget Builder Engine (Specific to complex SVG/code generation)
+let widgetBuilderEngine = "none";
+const configBuilderProvider = process.env.WIDGET_BUILDER_AI_PROVIDER;
+
+if (configBuilderProvider && ["gemini", "groq", "ollama", "none"].includes(configBuilderProvider.toLowerCase())) {
+  widgetBuilderEngine = configBuilderProvider.toLowerCase();
 } else {
-  console.warn("⚠️  [AI Core] Warning: No AI provider (Gemini, Groq, Ollama) configured in .env. Running in offline fallback mode.");
+  // Autodetect fallback
+  if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+    widgetBuilderEngine = "gemini"; // Gemini Pro is the primary coding choice!
+  } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
+    widgetBuilderEngine = "groq";
+  } else if (ollamaEnabled) {
+    widgetBuilderEngine = "ollama";
+  }
+}
+
+// 2. Resolve Dynamic Widgets Engine (Specific to Daily Briefing, Telemetry Insights)
+let dynamicWidgetsEngine = "none";
+const configWidgetsProvider = process.env.DYNAMIC_WIDGETS_AI_PROVIDER;
+
+if (configWidgetsProvider && ["gemini", "groq", "ollama", "none"].includes(configWidgetsProvider.toLowerCase())) {
+  dynamicWidgetsEngine = configWidgetsProvider.toLowerCase();
+} else {
+  // Autodetect fallback
+  if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+    dynamicWidgetsEngine = "gemini";
+  } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
+    dynamicWidgetsEngine = "groq";
+  } else if (ollamaEnabled) {
+    dynamicWidgetsEngine = "ollama";
+  }
+}
+
+console.log(`   ⚙️  [AI Core] Widget Builder engine: [${widgetBuilderEngine.toUpperCase()}]`);
+console.log(`   ⚙️  [AI Core] Dynamic Runtime widgets engine: [${dynamicWidgetsEngine.toUpperCase()}]`);
+
+if (widgetBuilderEngine === "none" && dynamicWidgetsEngine === "none") {
+  console.warn("⚠️  [AI Core] Warning: No active AI providers are configured. Running in offline fallback mode.");
 }
 
 /**
@@ -109,8 +138,9 @@ const generateWithOllama = async (prompt, systemInstruction = null) => {
 /**
  * Google Gemini API generator with fallback models and retry capability
  */
-const generateWithGemini = async (prompt, systemInstruction = null) => {
-  const primaryModelName = "gemini-2.5-flash-lite";
+const generateWithGemini = async (prompt, systemInstruction = null, context = "general") => {
+  // Use gemini-2.5-pro for high-fidelity code widget building, and gemini-2.5-flash-lite for lightweight daily text summaries!
+  const primaryModelName = context === "widget" ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
   const fallbackModelName = "gemini-2.5-flash";
 
   const attemptCall = async (modelName) => {
@@ -154,7 +184,7 @@ const generateWithGemini = async (prompt, systemInstruction = null) => {
     console.log(`[AI Core] Requesting Gemini using primary model: ${primaryModelName}...`);
     return await attemptWithRetry(primaryModelName, 1);
   } catch (err) {
-    console.warn(`[AI Core] Primary model ${primaryModelName} exhausted. Falling back to ${fallbackModelName}. Reason: ${err.message}`);
+    console.warn(`[AI Core] Primary model ${primaryModelName} failed or rate-limited. Falling back to ${fallbackModelName}. Reason: ${err.message}`);
     try {
       return await attemptWithRetry(fallbackModelName, 1);
     } catch (fallbackErr) {
@@ -165,29 +195,29 @@ const generateWithGemini = async (prompt, systemInstruction = null) => {
 };
 
 /**
- * Main router function
+ * Main router function routing requests dynamically to target engines
  */
-const generateContentWithFallback = async (prompt, systemInstruction = null) => {
-  if (aiEngine === "groq") {
+const generateContentWithEngine = async (engine, prompt, systemInstruction = null, context = "general") => {
+  if (engine === "groq") {
     return await generateWithGroq(prompt, systemInstruction);
   }
-  if (aiEngine === "ollama") {
+  if (engine === "ollama") {
     return await generateWithOllama(prompt, systemInstruction);
   }
-  if (aiEngine === "gemini") {
-    return await generateWithGemini(prompt, systemInstruction);
+  if (engine === "gemini") {
+    return await generateWithGemini(prompt, systemInstruction, context);
   }
-  throw new Error("No active AI provider (Gemini, Groq, Ollama) configured in .env.");
+  throw new Error(`AI engine '${engine}' is not configured or available.`);
 };
 
 /**
  * Outcome A: Generates fully compliant, hot-reloadable JavaScript plugin code based on user prompt
  */
 const generatePluginCode = async (userPrompt) => {
-  if (aiEngine === "none") {
+  if (widgetBuilderEngine === "none") {
     return {
       success: false,
-      error: "No AI provider is configured. Please configure GEMINI_API_KEY, GROQ_API_KEY, or OLLAMA_ENABLED in your .env file."
+      error: "No AI provider is configured for Widget Builder. Please configure GEMINI_API_KEY, GROQ_API_KEY, or WIDGET_BUILDER_AI_PROVIDER in your .env file."
     };
   }
 
@@ -236,9 +266,11 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
 `;
 
   try {
-    const rawText = await generateContentWithFallback(
+    const rawText = await generateContentWithEngine(
+      widgetBuilderEngine,
       `Generate a custom InkFlow widget based on this request: ${userPrompt}`,
-      systemInstruction
+      systemInstruction,
+      "widget"
     );
     const cleanCode = cleanGeneratedCode(rawText);
 
@@ -269,8 +301,8 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
  * Outcome B: Generates an elegant daily morning briefing by summarizing news and weather inputs
  */
 const generateDailyBriefing = async (rssHeadlines, weatherInfo) => {
-  if (aiEngine === "none") {
-    return "InkFlow AI is currently running in offline fallback mode. Please configure your GEMINI_API_KEY, GROQ_API_KEY, or OLLAMA_ENABLED inside the .env file to generate your custom synthesized daily editorial briefing here!";
+  if (dynamicWidgetsEngine === "none") {
+    return "InkFlow AI is currently running in offline fallback mode. Please configure your GEMINI_API_KEY, GROQ_API_KEY, or DYNAMIC_WIDGETS_AI_PROVIDER inside the .env file to generate your custom synthesized daily editorial briefing here!";
   }
 
   const prompt = `
@@ -289,7 +321,7 @@ Write a premium morning brief synthesizing these elements:
 `;
 
   try {
-    const rawText = await generateContentWithFallback(prompt);
+    const rawText = await generateContentWithEngine(dynamicWidgetsEngine, prompt, null, "general");
     return rawText.trim();
   } catch (err) {
     console.error("[AI Core] Briefing generation failed:", err);
@@ -307,8 +339,8 @@ Write a premium morning brief synthesizing these elements:
  * Outcome C: Analyzes server hardware statistics and returns expert sys-admin tips
  */
 const generateSystemInsights = async (systemStatsText) => {
-  if (aiEngine === "none") {
-    return "InkFlow Advisor is currently offline. Configure your GEMINI_API_KEY, GROQ_API_KEY, or OLLAMA_ENABLED to receive real-time AI system recommendations, diagnostics, and proactive server tuning alerts on your dashboard!";
+  if (dynamicWidgetsEngine === "none") {
+    return "InkFlow Advisor is currently offline. Configure your GEMINI_API_KEY, GROQ_API_KEY, or DYNAMIC_WIDGETS_AI_PROVIDER to receive real-time AI system recommendations, diagnostics, and proactive server tuning alerts on your dashboard!";
   }
 
   const prompt = `
@@ -323,7 +355,7 @@ Write your Sys-Admin recommendations:
 `;
 
   try {
-    const rawText = await generateContentWithFallback(prompt);
+    const rawText = await generateContentWithEngine(dynamicWidgetsEngine, prompt, null, "general");
     return rawText.trim();
   } catch (err) {
     console.error("[AI Core] Telemetry insights failed:", err);
@@ -338,7 +370,7 @@ Write your Sys-Admin recommendations:
 };
 
 module.exports = {
-  aiActive: () => aiEngine !== "none",
+  aiActive: () => widgetBuilderEngine !== "none" || dynamicWidgetsEngine !== "none",
   generatePluginCode,
   generateDailyBriefing,
   generateSystemInsights
