@@ -235,6 +235,27 @@ To activate these cognitive features, configure **one** of the following provide
    GROQ_MODEL=llama-3.1-8b-instant
    ```
 
+#### 🎛️ Independent Dual-Engine Routing (Hybrid Mode)
+InkFlow supports **independent AI engine routing** for different application roles. This allows you to utilize an elite cloud-hosted model (like Gemini Pro) specifically for the **✨ AI Widget Builder** (which requires high-powered code reasoning), while running daily text widgets (like the Daily Briefing or Telemetry Insights) completely free and locally using Ollama:
+
+* **`WIDGET_BUILDER_AI_PROVIDER`**: Configures the AI engine specifically for code and SVG generation (values: `gemini`, `groq`, `ollama`, or `none`).
+  * *Note: When running on Gemini, the Widget Builder dynamically scales up to **`gemini-2.5-pro`** to ensure high-fidelity code and pristine SVG layouts.*
+* **`DYNAMIC_WIDGETS_AI_PROVIDER`**: Configures the AI engine for runtime summaries and briefings (values: `gemini`, `groq`, `ollama`, or `none`).
+  * *Note: When running on Gemini, dynamic widgets consume the low-latency **`gemini-2.5-flash-lite`** to conserve free-tier API quotas.*
+
+*If these variables are omitted, the server automatically defaults to the first fully configured API key/flag on your host.*
+
+Example hybrid-engine `.env` configuration:
+```env
+# Cloud Gemini Pro for elite, complex E-Ink coding tasks
+GEMINI_API_KEY=AIzaSyYourActualKeyHere
+WIDGET_BUILDER_AI_PROVIDER=gemini
+
+# Local Ollama for infinite, free daily briefings on your Pi 5
+OLLAMA_ENABLED=true
+DYNAMIC_WIDGETS_AI_PROVIDER=ollama
+```
+
 ---
 
 ## 📟 Connecting Screens & Clients
