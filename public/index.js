@@ -119,6 +119,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // Initialize Auto-Cleanup Settings Listeners
+  const cleanupEnabled = document.getElementById('cleanup-enabled');
+  const cleanupDays = document.getElementById('cleanup-days');
+  const cleanupDetails = document.getElementById('cleanup-details');
+
+  if (cleanupEnabled && cleanupDays && cleanupDetails) {
+    const handleCleanupChange = async () => {
+      if (!serverConfig.settings) serverConfig.settings = {};
+      serverConfig.settings.deviceCleanup = {
+        enabled: cleanupEnabled.checked,
+        maxOfflineDays: parseInt(cleanupDays.value) || 7
+      };
+      cleanupDetails.style.display = cleanupEnabled.checked ? 'flex' : 'none';
+      await saveSettings();
+    };
+
+    cleanupEnabled.addEventListener('change', handleCleanupChange);
+    cleanupDays.addEventListener('change', handleCleanupChange);
+  }
+
+  // Delete device manual trigger
+  const btnDeleteDevice = document.getElementById('btn-delete-device');
+  if (btnDeleteDevice) {
+    btnDeleteDevice.addEventListener('click', async () => {
+      const id = document.getElementById('edit-device-id').value;
+      if (!id) return;
+      
+      if (id === 'default_screen') {
+        showToast("The default screen device is protected and cannot be deleted.", true);
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to permanently remove device '${id}'? This will purge its cache and remove it from the dashboard console.`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/display/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: id })
+        });
+        const reply = await res.json();
+        if (reply.success) {
+          showToast(`Device '${id}' successfully removed!`);
+          
+          // Clear active device selection and refresh settings
+          activeDeviceId = null;
+          document.getElementById('device-layout-card').style.display = 'none';
+          await fetchSettings();
+        } else {
+          showToast(reply.error || "Failed to delete device", true);
+        }
+      } catch (err) {
+        console.error("Error deleting device:", err);
+        showToast("Server connection error while deleting device", true);
+      }
+    });
+  }
+
   // Device Layout Settings Form Submit
   editDeviceForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -535,6 +595,17 @@ async function fetchSettings() {
     renderHostedWidgetsList();
     updateAiPreviewMockup(activePreviewPluginId);
     
+    // Populate auto-cleanup UI from server settings
+    const cleanupEnabled = document.getElementById('cleanup-enabled');
+    const cleanupDays = document.getElementById('cleanup-days');
+    const cleanupDetails = document.getElementById('cleanup-details');
+    if (cleanupEnabled && cleanupDays && cleanupDetails) {
+      const settings = (serverConfig.settings && serverConfig.settings.deviceCleanup) || { enabled: false, maxOfflineDays: 7 };
+      cleanupEnabled.checked = settings.enabled;
+      cleanupDays.value = settings.maxOfflineDays || 7;
+      cleanupDetails.style.display = settings.enabled ? 'flex' : 'none';
+    }
+    
     if (serverConfig.devices.length > 0 && !activeDeviceId) {
       selectDevice(serverConfig.devices[0].id);
     }
@@ -580,6 +651,29 @@ async function triggerManualRefresh(deviceId) {
   }
 }
 
+// Helper to format ISO timestamps into elegant human-readable relative strings
+function formatRelativeTime(isoStr) {
+  if (!isoStr) return '';
+  try {
+    const past = new Date(isoStr);
+    const now = new Date();
+    const diffMs = now - past;
+    const diffSec = Math.floor(diffMs / 1000);
+    
+    if (diffSec < 5) return 'just now';
+    if (diffSec < 60) return `${diffSec}s ago`;
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDays = Math.floor(diffHr / 24);
+    if (diffDays === 1) return 'yesterday';
+    return `${diffDays}d ago`;
+  } catch (e) {
+    return '';
+  }
+}
+
 // Renders Devices list in Column 1
 function renderDevicesList() {
   devicesList.innerHTML = '';
@@ -598,6 +692,9 @@ function renderDevicesList() {
     if (dev.lastIp) {
       const hostDisplay = dev.lastHostname ? dev.lastHostname : dev.lastIp;
       metaText += ` • Seen: ${hostDisplay}`;
+      if (dev.lastSeen) {
+        metaText += ` (${formatRelativeTime(dev.lastSeen)})`;
+      }
     }
     
     item.innerHTML = `

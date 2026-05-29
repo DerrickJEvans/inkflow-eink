@@ -98,7 +98,24 @@
               <button class="btn btn-sm btn-icon" id="btn-add-device" title="Add Device">+</button>
             </div>
             <div class="card-content">
-              <p class="card-help">Devices on your home network are auto-discovered when they poll the server.</p>
+              <p class="card-help" style="margin-bottom: 12px;">Devices on your home network are auto-discovered when they poll the server.</p>
+              
+              <!-- Auto-Cleanup configuration small inline box -->
+              <div class="cleanup-config-box" style="margin-bottom: 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; font-size: 11px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--text-primary);">
+                  <span>🧹 Auto-Cleanup Offline Screens</span>
+                  <label class="switch">
+                    <input type="checkbox" id="cleanup-enabled">
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+                <div id="cleanup-details" style="display: none; margin-top: 8px; align-items: center; gap: 8px; color: var(--text-secondary);">
+                  <span>Remove screens offline for more than:</span>
+                  <input type="number" id="cleanup-days" min="1" max="90" value="7" style="width: 45px; padding: 2px 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: var(--text-primary); text-align: center; font-size: 11px; margin: 0;">
+                  <span>days</span>
+                </div>
+              </div>
+
               <div class="devices-list" id="devices-list">
                 <!-- Dynamically populated -->
                 <div class="loading-spinner"></div>
@@ -189,7 +206,10 @@
                 <span class="input-hint">Layout formats automatically based on selection. Drag cards or use arrow buttons to reorder sequence!</span>
               </div>
 
-              <button type="submit" class="btn btn-primary btn-save-layout">Save Layout</button>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+                <button type="submit" class="btn btn-primary btn-save-layout" style="margin: 0; padding: 12px 28px;">💾 Save Layout</button>
+                <button type="button" class="btn btn-delete-action" id="btn-delete-device" style="margin: 0; padding: 10px 20px; font-size: 12px;">🗑️ Delete Device</button>
+              </div>
             </form>
           </div>
         </div>

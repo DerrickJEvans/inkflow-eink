@@ -936,6 +936,74 @@ app.post('/api/display/refresh', async (req, res) => {
   }
 });
 
+// Delete device manual trigger
+app.post('/api/display/delete', (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "Device ID required" });
+
+    if (deviceId === 'default_screen') {
+      return res.status(400).json({ error: "The default screen is protected and cannot be deleted" });
+    }
+
+    const idx = config.devices.findIndex(d => d.id === deviceId);
+    if (idx === -1) return res.status(404).json({ error: "Device not found" });
+
+    config.devices.splice(idx, 1);
+    delete imageCache[deviceId];
+    saveConfig();
+    console.log(`[Device Management] Deleted device: ${deviceId}`);
+    res.json({ success: true, message: `Device '${deviceId}' deleted successfully` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * Automatically prunes devices that have not been seen for a configured threshold of days
+ */
+const cleanupStaleDevices = () => {
+  try {
+    const cleanupSettings = (config.settings && config.settings.deviceCleanup) || { enabled: false, maxOfflineDays: 7 };
+    if (!cleanupSettings.enabled) return;
+
+    const maxDays = parseInt(cleanupSettings.maxOfflineDays) || 7;
+    const thresholdMs = maxDays * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    
+    const initialCount = config.devices.length;
+    
+    // Filter out devices where lastSeen is older than threshold
+    // Keep 'default_screen' as a safety safeguard!
+    config.devices = config.devices.filter(device => {
+      if (device.id === 'default_screen') return true;
+      if (!device.lastSeen) return true; // keep if never seen yet
+      
+      const lastSeenMs = new Date(device.lastSeen).getTime();
+      const offlineDuration = now - lastSeenMs;
+      
+      const shouldKeep = offlineDuration < thresholdMs;
+      if (!shouldKeep) {
+        delete imageCache[device.id];
+        console.log(`[Auto-Cleanup] Pruned stale device: ${device.id} (Offline for ${Math.round(offlineDuration / (3600 * 1000 * 24))} days)`);
+      }
+      return shouldKeep;
+    });
+
+    if (config.devices.length !== initialCount) {
+      saveConfig();
+    }
+  } catch (err) {
+    console.error("[Auto-Cleanup] Error pruning stale devices:", err);
+  }
+};
+
+// Run stale device cleanup checks on startup
+cleanupStaleDevices();
+
+// Run stale device cleanup checks every 12 hours
+setInterval(cleanupStaleDevices, 12 * 60 * 60 * 1000);
+
 // Start Server
 app.listen(PORT, HOST, () => {
   console.log(`====================================================`);
