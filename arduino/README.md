@@ -1,18 +1,30 @@
-# Arduino ESP32 Client — Waveshare E-Paper HAT Wiring Guide
+# E-Ink Dashboard Arduino C++ Clients
 
-This subfolder houses the highly optimized C++ Arduino client (`arduino_client.ino`) which enables an **ESP32** microcontroller coupled with a **Waveshare E-Paper screen or HAT** (connected via SPI) to act as a low-power wireless dashboard receiver.
+This subfolder houses highly optimized **Arduino C++ clients** designed to turn cheap wireless microcontrollers connected to Waveshare E-Paper displays into low-power wireless status consoles:
+
+### 1. ⚡ Option A: ESP32 Client (`arduino_client/`)
+* **Features**: Uses the GxEPD2 library for highly compatible, paged graphics rendering.
+* **Power Optimization**: Leverages the ESP32's native deep sleep mode to run on battery power for months!
+* **Memory usage**: Buffers pixels in RAM, then pushes them to GxEPD2.
+
+### 2. 🎛️ Option B: Arduino UNO R4 WiFi Client (`arduino_r4_client/`)
+* **Features**: Uses a custom **Zero-Buffer Direct SPI Streaming** pipeline that bypasses library buffering. 
+* **RAM Optimization**: Streams incoming raw image bytes directly from the network socket (`client.read()`) to the screen controller (`epd.SendData()`) over SPI. Avoids RAM buffer allocations entirely, allowing the 32 KB SRAM UNO R4 to drive large 800x480 displays!
+* **Hardware Controls**: Integrates custom Dip switches and voltage configurations on the Waveshare E-Paper Shield (B).
 
 ---
 
 ## 🛠️ Required Arduino Libraries
 
-Open the Arduino IDE, go to **Tools** -> **Manage Libraries...**, and install the following two libraries:
-1. **`GxEPD2`** by Jean-Marc Zingg (The standard library for Waveshare e-Paper SPI displays, supporting paged rendering to conserve RAM).
-2. **`Adafruit GFX Library`** by Adafruit (Required core graphics dependency).
+For the **ESP32 Client**, open the Arduino IDE, go to **Tools** -> **Manage Libraries...**, and install:
+1. **`GxEPD2`** by Jean-Marc Zingg
+2. **`Adafruit GFX Library`** by Adafruit
+
+For the **Arduino UNO R4 WiFi Client**, no extra libraries are required. Simply make sure you have the official `WiFiS3` board package installed in the Arduino IDE Board Manager!
 
 ---
 
-## 🔌 Hardware SPI Wiring Diagram
+## 🔌 Option A: ESP32 Hardware SPI Wiring Diagram
 
 Connect your ESP32 board to the Waveshare E-Paper Display (or ESP32 driver board HAT) according to the following wiring map:
 
@@ -65,3 +77,31 @@ The sketch is built using ESP32's hardware **Deep Sleep** protocol:
 - Drives SPI lines to paint the e-ink screen.
 - Powers down the screen's SPI controller and puts the ESP32 into a deep sleep state where it draws practically **zero current (~10µA)**.
 - This allows your custom e-ink dashboard to run on a single Lithium battery for **months**!
+
+---
+
+## 🎛️ Option B: Arduino UNO R4 WiFi & Waveshare Shield Setup
+
+The **Arduino UNO R4 WiFi Client** (`arduino_r4_client/`) is specifically designed for a low-RAM, direct-streaming setup. It streams E-Ink images directly from the TCP socket buffer to the display over SPI, avoiding memory allocations entirely.
+
+### 🔌 Physical Board & Switch Configurations
+To use this sketch successfully on the **Waveshare E-Paper Shield (B)** mounted on an **Arduino UNO R4 WiFi**, you must configure the physical board switches exactly as follows:
+
+| Physical Switch / Slider | Target Position | Purpose / Description |
+|:---|:---|:---|
+| **D11 / D12 / D13 DIP Switches** | **OFF** | Completely disconnects these pins to protect Arduino R4 WiFi SPI lines |
+| **SPI Config Slider** | **ICSP** | Routes SPI hardware lines (MOSI/MISO/SCK) through the 6-pin ICSP header |
+| **VCC Voltage Slider** | **5V** | Powers the shield logic converters cleanly at 5V |
+| **Interface (0 / 1)** | **0** | Selects **4-Wire SPI** communication interface mode |
+| **Display Type (A / B)** | **A** | Provides the cleanest signal path for your specific display panel |
+
+### 🚀 Setup & Flashing Instructions
+1. Mount the **Waveshare E-Paper Shield (B)** firmly onto the Arduino UNO R4 WiFi board header.
+2. Open `arduino_r4_client.ino` inside the Arduino IDE.
+3. In the top **Configuration Settings** block, update:
+   - `ssid` and `password` with your home WiFi router credentials.
+   - `serverIp` with the local IP address of your Raspberry Pi (e.g. `192.168.1.122`).
+   - `deviceId` with the screen identifier configured on the server dashboard (defaults to `Arduino_4inch`).
+4. Select **Arduino UNO R4 WiFi** in the Arduino IDE **Tools** -> **Board** menu.
+5. Click **Upload** to compile and flash the direct zero-buffer streaming code!
+6. Open the **Serial Monitor** at **`115200 baud`** to observe raw HTTP packet counts, real-time stream state transitions, auto-padding safety sequences, and hardware drawing cycles.
