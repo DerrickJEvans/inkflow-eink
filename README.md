@@ -59,16 +59,16 @@ graph TD
 
 ## 📁 Repository Structure
 
-* [**`server.js`**](file:///home/derrickjevans1/trmnl-pi-server/server.js): Express web application serving API endpoints and administering configuration states.
-* [**`renderer.js`**](file:///home/derrickjevans1/trmnl-pi-server/renderer.js): Core graphic engine (plugin coordinator, SVG parser, Sharp rasterizer, ditherer, and raw byte packetizer).
-* [**`plugins/`**](file:///home/derrickjevans1/trmnl-pi-server/plugins): Javascript widgets performing web fetches and compiling custom e-ink SVG code.
-  * Core: [`system.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/system.js), [`weather.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/weather.js), [`rss.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/rss.js), [`notes.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/notes.js), [`tfl.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/tfl.js), [`uk_trains.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/uk_trains.js), [`xkcd.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/xkcd.js), [`world_clock.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/world_clock.js), [`feynman_quote.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/feynman_quote.js), [`airport_board.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/airport_board.js), [`tide_timetable.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/tide_timetable.js).
-  * Gemini AI: [`ai_briefing.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/ai_briefing.js), [`ai_advisor.js`](file:///home/derrickjevans1/trmnl-pi-server/plugins/ai_advisor.js).
-* [**`public/`**](file:///home/derrickjevans1/trmnl-pi-server/public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
-* [**`client/`**](file:///home/derrickjevans1/trmnl-pi-server/client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
-* [**`arduino/`**](file:///home/derrickjevans1/trmnl-pi-server/arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
-* [**`build_custom_image.sh`**](file:///home/derrickjevans1/trmnl-pi-server/build_custom_image.sh): Native image packaging script using `fuse2fs`.
-* [**`install.sh`**](file:///home/derrickjevans1/trmnl-pi-server/install.sh): One-click Linux server automated service setup and daemon registration.
+* [**`server.js`**](server.js): Express web application serving API endpoints and administering configuration states.
+* [**`renderer.js`**](renderer.js): Core graphic engine (plugin coordinator, SVG parser, Sharp rasterizer, ditherer, and raw byte packetizer).
+* [**`plugins/`**](plugins): Javascript widgets performing web fetches and compiling custom e-ink SVG code.
+  * Core: [`system.js`](plugins/system.js), [`weather.js`](plugins/weather.js), [`rss.js`](plugins/rss.js), [`notes.js`](plugins/notes.js), [`tfl.js`](plugins/tfl.js), [`uk_trains.js`](plugins/uk_trains.js), [`xkcd.js`](plugins/xkcd.js), [`world_clock.js`](plugins/world_clock.js), [`feynman_quote.js`](plugins/feynman_quote.js), [`airport_board.js`](plugins/airport_board.js), [`tide_timetable.js`](plugins/tide_timetable.js).
+  * Gemini AI: [`ai_briefing.js`](plugins/ai_briefing.js), [`ai_advisor.js`](plugins/ai_advisor.js).
+* [**`public/`**](public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
+* [**`client/`**](client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
+* [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
+* [**`build_custom_image.sh`**](build_custom_image.sh): Native image packaging script using `fuse2fs`.
+* [**`install.sh`**](install.sh): One-click Linux server automated service setup and daemon registration.
 
 ---
 
@@ -102,37 +102,37 @@ graph TD
 This is the **most robust and reliable method** for setting up your Raspberry Pi 5. It uses the official uncorrupted Raspberry Pi OS Lite, flashes it via the Imager, and copies your exact local workspace files directly over your home Wi-Fi using built-in Windows OpenSSH (`scp`).
 
 #### 1. Flash a Fresh Official OS
-* Open **Raspberry Pi Imager** normally on Windows.
-* **Choose Device**: Select **Raspberry Pi 5**.
+* Open **Raspberry Pi Imager** normally on your PC.
+* **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
 * **Choose OS**: Navigate to **Raspberry Pi OS (other)** -> Select **Raspberry Pi OS Lite (64-bit)** (clean, official headless OS).
 * **Choose Storage**: Select your SD card.
 * Click **Next** -> Click **EDIT SETTINGS**:
-  * **General**: Set Username to `derrickjevans1`, set a password, and configure your **Wi-Fi** SSID and Password.
+  * **General**: Set your choice of **Username** and **Password**, and configure your **Wi-Fi** SSID and Password.
   * **Services**: Check **Enable SSH** (using password authentication).
-* Click **Save** and write the image to your SD card. Insert the card into your Pi 5 and power it up.
+* Click **Save** and write the image to your SD card. Insert the card into your Pi and power it up.
 
-#### 2. Pack & Copy Files from Windows (via PowerShell)
-Open **PowerShell** on your Windows PC and run these commands to compress your workspace (excluding massive Windows `node_modules` and images) and copy it directly to the Pi:
-```powershell
+#### 2. Pack & Copy Files (via PowerShell/Terminal)
+Open a terminal (e.g. **PowerShell** on Windows or Terminal on macOS/Linux) and run these commands to compress your workspace (excluding massive development dependencies) and copy it directly to the Pi:
+```bash
 # cd into your workspace folder
-cd "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server"
+cd "/path/to/your/trmnl-pi-server"
 
 # Pack workspace into a lightweight archive in the parent directory
-tar -czf ..\trmnl-pi-server.tar.gz --exclude="node_modules" --exclude="*.img" --exclude="*.xz" .
+tar -czf ../trmnl-pi-server.tar.gz --exclude="node_modules" --exclude="*.img" --exclude="*.xz" .
 
-# Transfer the archive to the Pi (replace <IP-ADDRESS> with your Pi's IP address)
-scp ..\trmnl-pi-server.tar.gz derrickjevans1@<IP-ADDRESS>:/home/derrickjevans1/
+# Transfer the archive to the Pi (replace <USERNAME> and <IP-ADDRESS> with your credentials)
+scp ../trmnl-pi-server.tar.gz <USERNAME>@<IP-ADDRESS>:~/
 
 # Delete the temporary local archive
-Remove-Item ..\trmnl-pi-server.tar.gz
+rm ../trmnl-pi-server.tar.gz
 ```
 *(Tip: If `ssh` blocks the connection with a "host identification has changed" warning because you flashed a new OS, clear it with `ssh-keygen -R <IP-ADDRESS>` first).*
 
 #### 3. Extract and Install Natively on the Pi
-Connect to your Pi 5 via SSH and run the native installer to compile everything natively for the Pi's arm64 architecture:
+Connect to your Pi via SSH and run the native installer to compile everything natively for the Pi's arm64 architecture:
 ```bash
-# SSH into the Pi
-ssh derrickjevans1@<IP-ADDRESS>
+# SSH into the Pi (use your custom username)
+ssh <USERNAME>@<IP-ADDRESS>
 
 # Extract the package
 mkdir -p ~/trmnl-pi-server
@@ -154,31 +154,34 @@ If you want to build a raw custom `.img` file that can be flashed straight to an
 #### 1. Run the Image Builder (inside WSL Ubuntu)
 To ensure high-performance native partition loopback mounting, run the builder in WSL's local home folder:
 ```bash
-# Sync files to WSL
-wsl mkdir -p ~/trmnl-pi-server
-wsl rsync -a --exclude="node_modules" --exclude="*.img" --exclude="*.xz" /mnt/c/Users/derri/.gemini/antigravity/scratch/trmnl-pi-server/ ~/trmnl-pi-server/
+# Sync files to WSL (replace <WSL-USERNAME> and <PATH-TO-WORKSPACE> with actual paths)
+wsl mkdir -p /home/<WSL-USERNAME>/trmnl-pi-server
+wsl rsync -a --exclude="node_modules" --exclude="*.img" --exclude="*.xz" /mnt/c/<PATH-TO-WORKSPACE>/ /home/<WSL-USERNAME>/trmnl-pi-server/
 
 # Normalize line endings and run as root to mount loop offsets natively
-wsl -u root -d Ubuntu -e bash -c "sed -i 's/\r$//' /home/derrick/trmnl-pi-server/*.sh"
-wsl -u root -d Ubuntu -e bash -c "cd /home/derrick/trmnl-pi-server && ./build_custom_image.sh"
+wsl -u root -d Ubuntu -e bash -c "sed -i 's/\r$//' /home/<WSL-USERNAME>/trmnl-pi-server/*.sh"
+wsl -u root -d Ubuntu -e bash -c "cd /home/<WSL-USERNAME>/trmnl-pi-server && ./build_custom_image.sh"
 
 # Copy the finished image (2.7 GB) back to Windows and clean up WSL
-wsl cp /home/derrick/trmnl-pi-server/trmnl-pi-server-headless.img /mnt/c/Users/derri/.gemini/antigravity/scratch/trmnl-pi-server/
-wsl rm -rf /home/derrick/trmnl-pi-server
+wsl cp /home/<WSL-USERNAME>/trmnl-pi-server/trmnl-pi-server-headless.img /mnt/c/<PATH-TO-WORKSPACE>/
+wsl rm -rf /home/<WSL-USERNAME>/trmnl-pi-server
 ```
 
 #### 2. Flash via Imager with OS Customizations Enabled
 To unlock Raspberry Pi Imager's hidden **OS Customization (Edit Settings)** menu for a custom `.img` file, you must launch the Imager pointing to the custom local repository JSON file we created (`trmnl-imager-repo.json`):
 
-Run this command in Windows Command Prompt (CMD) or PowerShell:
+> [!NOTE]
+> Before running the Imager command, open `trmnl-imager-repo.json` in your editor and replace `<PATH_TO_YOUR_WORKSPACE>` with the absolute Windows path to your workspace directory!
+
+Run this command in Windows Command Prompt (CMD) or PowerShell (replace `<PATH-TO-YOUR-WORKSPACE>` with the actual path):
 ```cmd
-"C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server\trmnl-imager-repo.json"
+"C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "<PATH-TO-YOUR-WORKSPACE>\trmnl-imager-repo.json"
 ```
-* **Choose Device**: Select **Raspberry Pi 5**.
+* **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
 * **Choose OS**: Select **TRMNL Pi Server OS** -> **TRMNL Pi Headless Server**.
 * **Choose Storage**: Select your SD card.
-* Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings** to configure your Wi-Fi, SSH, and set your username to `derrickjevans1`.
-* Flash, insert the card into your Pi 5, power it up, and wait 3 minutes for native first-boot provisioning!
+* Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings** to configure your Wi-Fi, SSH, and set your choice of standard username and password.
+* Flash, insert the card into your Pi, power it up, and wait 3 minutes for native first-boot provisioning!
 
 ---
 
@@ -277,7 +280,7 @@ InkFlow includes a state-of-the-art **🧠 AI & Ollama Admin** administration po
 ## 📟 Connecting Screens & Clients
 
 ### 1. Arduino C++ (ESP32 + Waveshare E-Paper)
-Navigate to the [`arduino/`](file:///home/derrickjevans1/trmnl-pi-server/arduino) directory, open `arduino_client.ino` in the Arduino IDE, install `GxEPD2` and `Adafruit GFX`, adjust your WiFi configurations, select your exact driver chip, and upload!
+Navigate to the [`arduino/`](arduino) directory, open `arduino_client.ino` in the Arduino IDE, install `GxEPD2` and `Adafruit GFX`, adjust your WiFi configurations, select your exact driver chip, and upload!
 
 ### 2. Python Client (Raspberry Pi Zero 2 W + Waveshare 4.26" 800x480 Display)
 Designed to run on a headless Raspberry Pi Zero 2 W equipped with a **Waveshare E-Paper Driver HAT Rev 2.3** and a **4.26" e-Paper Display (800x480)**.
@@ -326,11 +329,11 @@ sudo pip3 install . --break-system-packages
 ```
 
 #### 4. Transfer & Configure the Client Code
-From your Windows PC's PowerShell, copy the `client` directory using SCP:
-```powershell
-scp -r "C:\Users\derri\.gemini\antigravity\scratch\trmnl-pi-server\client" derrickjevans1@<pi-zero-ip>:/home/derrickjevans1/
+From your computer's terminal, copy the `client` directory to the Pi using SCP (replace `<USERNAME>` and `<PI-ZERO-IP>` with your standard Pi credentials, and `<PATH-TO-WORKSPACE>` with your actual local path):
+```bash
+scp -r "<PATH-TO-WORKSPACE>/client" <USERNAME>@<PI-ZERO-IP>:~/
 ```
-*(On the Pi Zero 2 W, `client/config.py` is pre-configured with the driver `epd4in26`, resolution `800x480`, target server IP `192.168.1.122` on port `5000`, and `INVERT_COLORS = False` to ensure correct black-on-white rendering).*
+*(On the Pi Zero, `client/config.py` is pre-configured with your display selection, friendly device name, target server IP on port `5000`, and `INVERT_COLORS = False` to ensure correct black-on-white rendering).*
 
 ##### 🎨 E-Ink Color Inversion Toggle (Standard vs. Dark Mode)
 Different e-ink screens interpret colors differently. If your screen renders **white text on a black background** (inverted) and you want standard **black text on a white background** (or vice versa):
@@ -360,11 +363,16 @@ To keep the client running indefinitely in the background and survive reboots, c
 3. **Auto-Recovery:** If the Pi Zero loses Wi-Fi connection, or the client crashes for any reason, Systemd will automatically wait 15 seconds (`RestartSec=15`) and restart the script in a clean loop.
 
 To set up the service:
+
+> [!TIP]
+> Alternatively, you can just run the automated setup script (`./setup_client.sh`) from within the `client/` folder on the Pi, which will automatically detect your username and absolute paths, compile dependencies, and register the systemd service for you perfectly!
+
+To configure the systemd service manually:
 ```bash
 # Create systemd service definition
 sudo nano /etc/systemd/system/trmnl-client.service
 ```
-Paste this configuration:
+Paste this configuration (replace `<YOUR-USERNAME>` with your actual Pi username, e.g. `pi`):
 ```ini
 [Unit]
 Description=TRMNL E-Ink Display Client
@@ -373,9 +381,9 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=derrickjevans1
-WorkingDirectory=/home/derrickjevans1/client
-ExecStart=/usr/bin/python3 /home/derrickjevans1/client/client.py
+User=<YOUR-USERNAME>
+WorkingDirectory=/home/<YOUR-USERNAME>/client
+ExecStart=/usr/bin/python3 /home/<YOUR-USERNAME>/client/client.py
 Restart=always
 RestartSec=15
 StandardOutput=syslog

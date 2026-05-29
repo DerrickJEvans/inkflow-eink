@@ -62,18 +62,19 @@ fi
 # Write configurations to config.py
 CONFIG_PY="config.py"
 if [ -f "$CONFIG_PY" ]; then
-  sed -i "s/hostIpAddress = .*/hostIpAddress = '${SERVER_HOST}'/" "$CONFIG_PY"
+  sed -i "s/SERVER_IP = .*/SERVER_IP = '${SERVER_HOST}'/" "$CONFIG_PY"
   echo "✅ Updated config.py with server address: ${SERVER_HOST}"
 else
   cat <<EOF > "$CONFIG_PY"
-# config.py - Client Settings
-hostIpAddress = '${SERVER_HOST}'
-hostPort = '5000'
-deviceId = 'pi_zero_4in26'
-width = 800
-height = 480
-driver = 'epd4in26'
+# config.py - Configuration settings for the Python E-Ink Client
+SERVER_IP = '${SERVER_HOST}'
+SERVER_PORT = '5000'
+DEVICE_NAME = 'Living Room Pi'
+DEVICE_ID = 'dynamic_mac'
+SCREEN_TYPE = '4in26'
+DISPLAY_TYPE = 'waveshare'
 INVERT_COLORS = False
+DEFAULT_POLL_INTERVAL = 1800
 EOF
   echo "✅ Created config.py with server address: ${SERVER_HOST}"
 fi
@@ -81,7 +82,7 @@ fi
 # 5. Create and register the Systemd persistent background service
 echo "⚙️ Creating Systemd background service daemon..."
 CLIENT_DIR=$(pwd)
-USER_NAME=$(logname || echo "derrickjevans1")
+USER_NAME=$(logname || echo $USER || whoami || echo "pi")
 
 SERVICE_FILE="/etc/systemd/system/trmnl-client.service"
 cat <<EOF > "$SERVICE_FILE"

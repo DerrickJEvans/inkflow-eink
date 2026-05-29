@@ -22,13 +22,13 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Determine host user
-SUDO_USER_NAME="${SUDO_USER:-derrickjevans1}"
-USER_HOME="/home/${SUDO_USER_NAME}"
-PROJECT_DIR="${USER_HOME}/trmnl-pi-server"
+# Determine active non-root standard user and home directory dynamically
+SUDO_USER_NAME="${SUDO_USER:-$(logname || echo $USER || whoami || echo "pi")}"
+USER_HOME=$(getent passwd "$SUDO_USER_NAME" | cut -d: -f6)
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-if [ ! -d "$PROJECT_DIR" ]; then
-  echo -e "${RED}[Error] Project directory not found at: ${PROJECT_DIR}${NC}"
+if [ ! -d "$PROJECT_DIR" ] || [ ! -f "${PROJECT_DIR}/server.js" ]; then
+  echo -e "${RED}[Error] Root server script (server.js) not found in directory: ${PROJECT_DIR}${NC}"
   exit 1
 fi
 

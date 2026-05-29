@@ -27,7 +27,7 @@
           "name": "TRMNL Pi Headless Server",
           "description": "Raspberry Pi OS Bookworm Lite (64-bit) with TRMNL pre-installed",
           "icon": "https://raspberrypi.org",
-          "url": "file:///C:/Users/derri/.gemini/antigravity/scratch/trmnl-pi-server/trmnl-pi-server-headless.img",
+          "url": "file:///<PATH_TO_YOUR_WORKSPACE>/trmnl-pi-server-headless.img",
           "devices": [
             "pi4",
             "pi5"

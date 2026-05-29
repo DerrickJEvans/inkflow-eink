@@ -69,7 +69,7 @@ sleep 1.5
 
 # 7. Copy project files and configure setup scripts
 echo -e "${CYAN}[6/7] Injecting server source code and configuration...${NC}"
-TARGET_DIR="${MNT_ROOT}/home/derrickjevans1/trmnl-pi-server"
+TARGET_DIR="${MNT_ROOT}/opt/trmnl-pi-server"
 mkdir -p "$TARGET_DIR"
 
 # Copy files using rsync, excluding large/unnecessary artifacts
@@ -82,7 +82,7 @@ rsync -a \
   --exclude='build_custom_image.sh' \
   "${PROJECT_DIR}/" "$TARGET_DIR/"
 
-# Ensure file ownership is assigned to derrickjevans1 (UID 1000, GID 1000)
+# Ensure file ownership is assigned to default standard user (UID 1000, GID 1000)
 chown -R 1000:1000 "$TARGET_DIR"
 
 # Ensure scripts are executable inside image
@@ -98,7 +98,7 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash /home/derrickjevans1/trmnl-pi-server/setup-firstboot.sh
+ExecStart=/bin/bash /opt/trmnl-pi-server/setup-firstboot.sh
 RemainAfterExit=no
 
 [Install]
@@ -127,6 +127,6 @@ echo -e "    1. Open ${CYAN}Raspberry Pi Imager${NC}."
 echo -e "    2. Under 'OS', select ${CYAN}Use custom${NC} and pick this file."
 echo -e "    3. Click ${CYAN}Next${NC} -> ${CYAN}Edit Settings${NC}."
 echo -e "    4. Configure your SSID, Wi-Fi password, enable SSH, and set"
-echo -e "       username to ${YELLOW}derrickjevans1${NC}."
-echo -e "    5. Flash, boot the Pi 5, and allow ~3 mins for first-boot install."
+echo -e "       your own choice of standard username and password."
+echo -e "    5. Flash, boot the Pi, and allow ~3 mins for first-boot install."
 echo -e "${GREEN}======================================================${NC}\n"
