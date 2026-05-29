@@ -983,7 +983,7 @@ app.all('/api/display', async (req, res) => {
 
     // Return official TRMNL BYOS response format
     res.json({
-      status: 200, // Return standard success status inside JSON body
+      status: 0, // Return standard success status inside JSON body (0 = success in TRMNL BYOS)
       image_url: imageUrl,
       filename: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Standard BYOS field name
       image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Backwards compatibility field
