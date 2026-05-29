@@ -317,7 +317,7 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
  * Checks TfL and UK Train caches for disruptions/delays.
  * Returns 300 (5 minutes) if active disruption is found, else 1800 (30 minutes).
  */
-const resolveDeepSleepInterval = (device) => {
+const resolveDeepSleepInterval = (device, currentRate = 1800) => {
   try {
     const activePlugins = device.activePlugins || [];
     for (const pluginId of activePlugins) {
@@ -362,7 +362,7 @@ const resolveDeepSleepInterval = (device) => {
   } catch (err) {
     console.error(`[Deep Sleep] Error resolving sleep interval for ${device.id}:`, err);
   }
-  return 1800;
+  return currentRate;
 };
 
 // ==========================================
@@ -876,7 +876,7 @@ app.get('/api/display/image.png', async (req, res) => {
     
     const cached = imageCache[deviceId];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
-    const sleepInterval = resolveDeepSleepInterval(device);
+    const sleepInterval = resolveDeepSleepInterval(device, rate);
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -945,7 +945,7 @@ app.get('/api/display/raw', async (req, res) => {
 
     const cached = imageCache[deviceId];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
-    const sleepInterval = resolveDeepSleepInterval(device);
+    const sleepInterval = resolveDeepSleepInterval(device, rate);
 
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -976,7 +976,7 @@ app.all('/api/display', async (req, res) => {
 
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
-    const sleepInterval = resolveDeepSleepInterval(device);
+    const sleepInterval = resolveDeepSleepInterval(device, rate);
 
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
 
