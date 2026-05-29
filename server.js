@@ -891,7 +891,7 @@ app.get('/api/display/image.png', async (req, res) => {
     recordDeviceConnection(device, req);
     const data = await fetchDeviceDisplayData(device, force);
     
-    const cached = imageCache[deviceId];
+    const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepInterval = resolveDeepSleepInterval(device, rate);
 
@@ -960,7 +960,7 @@ app.get('/api/display/raw', async (req, res) => {
     recordDeviceConnection(device, req);
     const data = await fetchDeviceDisplayData(device, force);
 
-    const cached = imageCache[deviceId];
+    const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepInterval = resolveDeepSleepInterval(device, rate);
 
