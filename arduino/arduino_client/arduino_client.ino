@@ -35,12 +35,19 @@ const int fallbackSleepSeconds = 1800;
 // ==========================================
 //          E-PAPER SPI PIN MAPPINGS
 // ==========================================
-// Default wiring for Waveshare E-Paper ESP32 Driver Board or standard ESP32 boards
-#define EPD_CS    5  // Chip Select
+// Default wiring for Waveshare E-Paper ESP32 Driver Board or standard ESP32 boards.
+// 
+// ⚠️ SHIELD CONFLICT WARNING:
+// On the Waveshare Arduino E-Paper Shield or HAT, the onboard SPI serial Flash CS pin 
+// is hardwired to GPIO 5, and the SD Card CS is hardwired to GPIO 4.
+// If you are using this shield, you MUST pull GPIO 5 and 4 HIGH to disable them, and 
+// remap the E-Paper's CS pin to another pin (e.g. GPIO 15, 10, or 25) to prevent SPI collisions!
+#define EPD_CS    15 // Chip Select (Change to 5 if using dedicated ESP32 Driver Board without Flash)
 #define EPD_DC    17 // Data/Command
 #define EPD_RST   16 // Reset
 #define EPD_BUSY  4  // Busy Indicator
 // Note: SPI SCK binds to pin 18, and MOSI/DIN binds to pin 23 by default.
+
 
 // ==========================================
 //      GxEPD2 DISPLAY DRIVER SELECTION
@@ -66,10 +73,50 @@ GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> display(GxEPD2_420(EPD_CS, EPD_DC, EPD
 const int bufferSize = (displayWidth * displayHeight) / 8;
 uint8_t* imageBuffer = nullptr;
 
+// Symmetrical PROGMEM stream loop to load a local fallback diagnostic screen when offline
+void loadLocalFallbackImage() {
+  Serial.println("[Local Stream] Loading fallback diagnostic screen from flash memory...");
+  
+  // Symmetrical byte-by-byte streaming loop to generate/read pixel data
+  // Similar to streaming a PROGMEM array: uint8_t byte = pgm_read_byte(&(myImage[i]))
+  for (uint32_t i = 0; i < bufferSize; i++) {
+    // Generate an elegant monochrome calibration checkerboard grid
+    // Row and column calculations based on 1-bit packed bit alignment (8 pixels per byte)
+    uint32_t pixelIndex = i * 8;
+    uint32_t col = pixelIndex % displayWidth;
+    uint32_t row = pixelIndex / displayWidth;
+    
+    // Create checkerboard blocks (64x64 blocks)
+    if (((row / 64) + (col / 64)) % 2 == 0) {
+      // Diagnostic crosshair lines in the block
+      if (row % 16 == 0 || col % 16 == 0) {
+        imageBuffer[i] = 0x00; // Paint Black gridlines
+      } else {
+        imageBuffer[i] = 0xAA; // Dithered diagnostic gray fill (10101010)
+      }
+    } else {
+      if (row % 16 == 0 || col % 16 == 0) {
+        imageBuffer[i] = 0x00; // Paint Black gridlines
+      } else {
+        imageBuffer[i] = 0xFF; // Paint White fill (11111111)
+      }
+    }
+  }
+  Serial.println("[Local Stream] Diagnostic fallback screen loaded.");
+}
+
 void setup() {
   Serial.begin(115200);
   delay(100);
   Serial.println("\n--- TRMNL Pi ESP32 Client Awake ---");
+
+  // CRITICAL SPI BUS PROTECTION:
+  // Disables the onboard Flash chip (Pin 5) and SD Card (Pin 4) on the Waveshare E-Paper Shield
+  // to protect the hardware SPI lines from package collision/corruption.
+  pinMode(5, OUTPUT);
+  digitalWrite(5, HIGH); // Pull Flash CS HIGH to disable it
+  pinMode(4, OUTPUT);
+  digitalWrite(4, HIGH); // Pull SD CS HIGH to disable it
 
   // Allocate memory for buffer
   imageBuffer = (uint8_t*)malloc(bufferSize);
@@ -85,11 +132,13 @@ void setup() {
   // Download raw screen data
   int sleepSeconds = downloadRawDisplayBytes();
 
-  // If download succeeded, push to screen
+  // If download succeeded, push to screen. Otherwise, load local diagnostic grid!
   if (sleepSeconds > 0) {
     updateDisplay();
   } else {
-    Serial.println("[Warning] Fetch failed. Skipping screen refresh.");
+    Serial.println("[Warning] Fetch failed. Loading local dithered fallback from Flash memory.");
+    loadLocalFallbackImage();
+    updateDisplay();
     sleepSeconds = fallbackSleepSeconds;
   }
 
