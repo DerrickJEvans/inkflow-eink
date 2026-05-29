@@ -44,6 +44,27 @@ if (!fs.existsSync(configPath) && fs.existsSync(configExamplePath)) {
 if (fs.existsSync(configPath)) {
   try {
     config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    // Normalize all device IDs to uppercase and deduplicate on startup
+    if (config && Array.isArray(config.devices)) {
+      const seen = new Set();
+      let deduplicated = false;
+      config.devices = config.devices.filter(d => {
+        if (!d.id) return false;
+        const normalizedId = d.id.toUpperCase();
+        d.id = normalizedId;
+        if (seen.has(normalizedId)) {
+          console.log(`[Startup] Deduplicated duplicate device ID: ${normalizedId}`);
+          deduplicated = true;
+          return false;
+        }
+        seen.add(normalizedId);
+        return true;
+      });
+      if (deduplicated) {
+        saveConfig();
+        console.log("[Startup] Cleaned duplicate devices and auto-saved config.json.");
+      }
+    }
   } catch (err) {
     console.error("Error reading config.json, using defaults", err);
   }
