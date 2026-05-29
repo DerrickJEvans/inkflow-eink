@@ -188,6 +188,10 @@ int downloadRawDisplayBytes() {
   Serial.printf("[HTTP] Fetching raw stream: %s\n", url);
   
   http.begin(url);
+  
+  // Register custom headers to collect from the server response
+  const char* collectHeaders[] = {"X-Refresh-Rate", "X-Trmnl-Deep-Sleep"};
+  http.collectHeaders(collectHeaders, 2);
 
   // Add official TRMNL telemetry headers
   http.addHeader("ID", macAddress);

@@ -124,8 +124,12 @@ bool fetchAndStreamDisplay() {
   Serial.println(macStr);
 
   // Send standard HTTP GET request with TRMNL headers
-  client.print(F("GET /api/display?device="));
+  client.print(F("GET /api/display/raw?device="));
   client.print(macStr);
+  client.print(F("&width="));
+  client.print(displayWidth);
+  client.print(F("&height="));
+  client.print(displayHeight);
   client.println(F(" HTTP/1.1"));
   client.print(F("Host: "));
   client.println(serverIp);
@@ -151,9 +155,10 @@ bool fetchAndStreamDisplay() {
   }
 
   // --- NEW FIXED HEADER PARSER ---
-  // We read the incoming data byte-by-byte looking for the sequence \r\n\r\n 
+  // We read the incoming data byte-by-byte looking for headers and the sequence \r\n\r\n 
   // (Carriage Return, Line Feed, Carriage Return, Line Feed), which marks the end of HTTP headers.
   Serial.println(F("Parsing HTTP Headers..."));
+  String currentLine = "";
   uint8_t headerState = 0;
   timeout = millis();
   
@@ -162,9 +167,32 @@ bool fetchAndStreamDisplay() {
       char c = client.read();
       timeout = millis(); // Reset timeout on incoming text
       
+      // Build current line to parse headers
+      if (c != '\r' && c != '\n') {
+        currentLine += c;
+      }
+      
       // State machine to find the \r\n\r\n boundary cleanly
       if (headerState == 0 && c == '\r') headerState = 1;
-      else if (headerState == 1 && c == '\n') headerState = 2;
+      else if (headerState == 1 && c == '\n') {
+        // Line complete, check for custom refresh rate headers
+        if (currentLine.startsWith("X-Refresh-Rate:") || currentLine.startsWith("X-Trmnl-Deep-Sleep:")) {
+          int colonIdx = currentLine.indexOf(':');
+          if (colonIdx != -1) {
+            String valStr = currentLine.substring(colonIdx + 1);
+            valStr.trim();
+            int parsedRate = valStr.toInt();
+            if (parsedRate > 0) {
+              nextRefreshSeconds = parsedRate;
+              Serial.print(F("[Header] Server set refresh rate: "));
+              Serial.print(nextRefreshSeconds);
+              Serial.println(F(" seconds"));
+            }
+          }
+        }
+        currentLine = "";
+        headerState = 2;
+      }
       else if (headerState == 2 && c == '\r') headerState = 3;
       else if (headerState == 3 && c == '\n') {
         Serial.println(F("[Header] Found boundary safely. Switching to Binary Stream."));
