@@ -955,11 +955,11 @@ app.get('/api/display/raw', async (req, res) => {
 });
 
 // TRMNL Official BYOS Protocol endpoint (expected by TRMNL firmware)
-app.get('/api/display', async (req, res) => {
+app.all('/api/display', async (req, res) => {
   try {
     // TRMNL hardware passes Access-Token and ID in headers
     // But since this is a private network, we fall back to auto-registration
-    const mac = req.headers['id'] || req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
+    const mac = req.headers['id'] || req.headers['x-device-id'] || req.body?.device_id || req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
     const device = getOrCreateDevice(mac, req);
     recordDeviceConnection(device, req);
     
@@ -978,17 +978,18 @@ app.get('/api/display', async (req, res) => {
 
     // Return official TRMNL BYOS response format
     res.json({
+      status: 200, // Return standard success status inside JSON body
       image_url: imageUrl,
-      image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`,
+      filename: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Standard BYOS field name
+      image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Backwards compatibility field
       update_firmware: false,
       firmware_url: null,
-      refresh_rate: rate.toString(),
-      reset_firmware: false,
-      status: 0
+      refresh_rate: parseInt(rate) || 1800, // Return standard integer refresh rate
+      reset_firmware: false
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ status: 1, error: "Setup failed" });
+    res.status(500).json({ status: 500, error: "Setup failed" });
   }
 });
 
