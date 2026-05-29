@@ -1014,7 +1014,7 @@ app.all('/api/setup', (req, res) => {
     // Return official TRMNL BYOS registration response format
     res.json({
       status: 200,
-      setup: true,
+      setup: false,
       api_key: device.id,
       friendly_id: friendlyId,
       image_url: imageUrl,
