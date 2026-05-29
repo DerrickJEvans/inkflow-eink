@@ -196,7 +196,8 @@ const recordDeviceConnection = (device, req) => {
 /**
  * Gets or creates a device config based on ID
  */
-const getOrCreateDevice = (deviceId, req = {}) => {
+const getOrCreateDevice = (rawDeviceId, req = {}) => {
+  const deviceId = rawDeviceId.replace(/:/g, '').toUpperCase();
   let device = config.devices.find(d => d.id === deviceId);
   const query = req.query || {};
   const headers = req.headers || {};
