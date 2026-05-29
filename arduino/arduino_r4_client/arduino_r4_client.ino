@@ -33,8 +33,7 @@ const char* password = "KtYAvLrd4bvuE9";
 const char* serverIp   = "192.168.1.122";
 const int   serverPort = 5000;
 
-// Device Specifications
-const char* deviceId     = "Arduino_4inch";
+// Device Specifications (deviceId is dynamically fetched from your hardware MAC address at boot)
 const int   displayWidth       = 800;   // Seeed KEGM042601M01 4.26" panel
 const int   displayHeight      = 480;   // Seeed KEGM042601M01 4.26" panel
 
@@ -115,12 +114,29 @@ bool fetchAndStreamDisplay() {
     return false;
   }
 
-  // Send standard HTTP GET request
+  // Retrieve hardware MAC address dynamically
+  byte mac[6];
+  WiFi.macAddress(mac);
+  char macStr[18];
+  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X", 
+           mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
+  Serial.print(F("[WiFi] Dynamic hardware MAC address for TRMNL ID: "));
+  Serial.println(macStr);
+
+  // Send standard HTTP GET request with TRMNL headers
   client.print(F("GET /api/display?device="));
-  client.print(deviceId);
+  client.print(macStr);
   client.println(F(" HTTP/1.1"));
   client.print(F("Host: "));
   client.println(serverIp);
+  client.print(F("ID: "));
+  client.println(macStr);
+  client.print(F("Access-Token: "));
+  client.println(macStr); // MAC acts as private API token
+  client.print(F("FW-Version: "));
+  client.println(F("1.2.0"));
+  client.print(F("RSSI: "));
+  client.println(WiFi.RSSI());
   client.println(F("Connection: close"));
   client.println();
 

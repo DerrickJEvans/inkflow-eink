@@ -52,9 +52,9 @@ On the official **Waveshare Arduino E-Paper Shield or HAT**, there is an onboard
 
 1. Open `arduino_client.ino` in the Arduino IDE.
 2. In the top **Configuration Settings** block, update:
-   - `ssid` and `password` to match your home WiFi credentials.
+   - `ssid` and `password` to match your home WiFi router credentials.
    - `serverIp` to match the local IP address of your Raspberry Pi (e.g. `192.168.1.50`).
-   - `deviceId` to give your screen a custom name (e.g. `hallway_clock`).
+   * *Note: The `deviceId` variable is removed! The sketch dynamically reads the board's hardwired MAC address at startup. This means you can flash the **exact same code** across multiple microcontrollers, and they will automatically auto-provision unique consoles on your server dashboard!*
    - `displayWidth` and `displayHeight` to match your screen resolution (e.g. `400` and `300` for a 4.2" screen).
 3. Scroll down to the **GxEPD2 Display Driver Selection** section:
    - By default, the 4.2" Black & White display driver is active.
@@ -101,7 +101,7 @@ To use this sketch successfully on the **Waveshare E-Paper Shield (B)** mounted 
 3. In the top **Configuration Settings** block, update:
    - `ssid` and `password` with your home WiFi router credentials.
    - `serverIp` with the local IP address of your Raspberry Pi (e.g. `192.168.1.122`).
-   - `deviceId` with the screen identifier configured on the server dashboard (defaults to `Arduino_4inch`).
+   * *Note: The `deviceId` parameter is dynamically resolved from the board's hardware MAC address at boot, eliminating the need to edit unique IDs for multiple screens!*
 4. Select **Arduino UNO R4 WiFi** in the Arduino IDE **Tools** -> **Board** menu.
 5. Click **Upload** to compile and flash the direct zero-buffer streaming code!
 6. Open the **Serial Monitor** at **`115200 baud`** to observe raw HTTP packet counts, real-time stream state transitions, auto-padding safety sequences, and hardware drawing cycles.

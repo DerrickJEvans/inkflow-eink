@@ -24,8 +24,7 @@ const char* password = "YOUR_WIFI_PASSWORD";
 const char* serverIp = "192.168.1.100";
 const int serverPort = 5000;
 
-// Device Specifications
-const char* deviceId = "esp32_screen";
+// Device Specifications (deviceId is dynamically fetched from your hardware MAC address at boot)
 const int displayWidth = 400;  // Adjust to match your physical display (e.g., 400 for 4.2", 800 for 7.5")
 const int displayHeight = 300; // Adjust to match your physical display (e.g., 300 for 4.2", 480 for 7.5")
 
@@ -177,14 +176,42 @@ int downloadRawDisplayBytes() {
   
   HTTPClient http;
   
-  // Construct request URL with ID and target dimensions
+  // Retrieve hardware MAC address dynamically
+  String macAddress = WiFi.macAddress();
+  Serial.printf("[WiFi] Fetching dynamic MAC address for TRMNL ID: %s\n", macAddress.c_str());
+  
+  // Construct request URL using dynamic MAC as the deviceId
   char url[256];
   snprintf(url, sizeof(url), "http://%s:%d/api/display/raw?device=%s&width=%d&height=%d", 
-           serverIp, serverPort, deviceId, displayWidth, displayHeight);
+           serverIp, serverPort, macAddress.c_str(), displayWidth, displayHeight);
            
   Serial.printf("[HTTP] Fetching raw stream: %s\n", url);
   
   http.begin(url);
+
+  // Add official TRMNL telemetry headers
+  http.addHeader("ID", macAddress);
+  http.addHeader("Access-Token", macAddress); // MAC acts as private API token
+  http.addHeader("FW-Version", "1.2.0");
+  http.addHeader("RSSI", String(WiFi.RSSI()));
+  
+  // Symmetrical read of battery voltage (common divider is on GPIO 34 for ESP32)
+  float voltage = 3.70;
+  #ifdef ESP32
+    int rawAnalog = analogRead(34);
+    if (rawAnalog > 0) {
+      voltage = (rawAnalog / 4095.0) * 2.0 * 3.3 * 1.1; // Standard scaling calculation
+    }
+  #endif
+  
+  // Format voltage string (e.g. "3.82V")
+  char voltStr[16];
+  dtostrf(voltage, 4, 2, voltStr);
+  String batteryVoltage = String(voltStr) + "V";
+  http.addHeader("Battery-Voltage", batteryVoltage);
+  
+  Serial.printf("[HTTP] Pinging server with telemetry: RSSI=%d dBm, Battery=%s\n", WiFi.RSSI(), batteryVoltage.c_str());
+
   int httpCode = http.GET();
   int sleepTime = fallbackSleepSeconds;
   
