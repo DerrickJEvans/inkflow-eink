@@ -1373,11 +1373,22 @@ function renderHostedWidgetsList(filterText = '') {
         </div>
       </div>
       <p class="hosted-widget-desc">${plugin.description || 'Custom compiled E-Ink widget.'}</p>
+      
+      ${!isCore ? `
+      <div class="hosted-widget-refine-container" id="refine-container-${plugin.id}" style="display: none; padding-top: 10px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <textarea class="refine-prompt-input" placeholder="What changes would you like to make to this widget? (e.g. 'Make font bigger', 'Center all fields', 'Add borders')" style="width: 100%; min-height: 50px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #fff; padding: 6px; font-size: 0.85rem; resize: vertical; margin-bottom: 5px; box-sizing: border-box;"></textarea>
+        <button class="btn btn-primary btn-sm btn-submit-refine" data-plugin-id="${plugin.id}" style="width: 100%; font-size: 0.8rem; padding: 4px 8px; font-weight: 500; cursor: pointer;">✨ Apply Changes</button>
+      </div>
+      ` : ''}
+
       <div class="hosted-widget-meta">
         <span class="hosted-widget-badge ${badgeClass}">${badgeText}</span>
         <div class="hosted-widget-actions">
           <button class="btn-preview-action" data-plugin-id="${plugin.id}">🔬 Preview</button>
-          ${!isCore ? `<button class="btn-delete-action" data-plugin-id="${plugin.id}" title="Delete this AI generated widget">🗑️ Delete</button>` : ''}
+          ${!isCore ? `
+          <button class="btn-refine-toggle" data-plugin-id="${plugin.id}" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; font-size: 0.8rem; padding: 3px 8px; border-radius: 4px; cursor: pointer; transition: all 0.2s;" title="Refine or change this widget's layout/logic">✍️ Refine</button>
+          <button class="btn-delete-action" data-plugin-id="${plugin.id}" title="Delete this AI generated widget">🗑️ Delete</button>
+          ` : ''}
         </div>
       </div>
     `;
@@ -1388,8 +1399,79 @@ function renderHostedWidgetsList(filterText = '') {
       updateAiPreviewMockup(plugin.id);
     });
 
-    // Click on delete button calls delete API
+    // Refinement toggle and submit listeners
     if (!isCore) {
+      const btnRefineToggle = card.querySelector('.btn-refine-toggle');
+      const refineContainer = card.querySelector('.hosted-widget-refine-container');
+      if (btnRefineToggle && refineContainer) {
+        btnRefineToggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isCollapsed = refineContainer.style.display === 'none';
+          refineContainer.style.display = isCollapsed ? 'block' : 'none';
+          btnRefineToggle.style.background = isCollapsed ? 'rgba(79, 70, 229, 0.4)' : 'rgba(255, 255, 255, 0.1)';
+        });
+      }
+
+      const btnSubmitRefine = card.querySelector('.btn-submit-refine');
+      const txtRefinePrompt = card.querySelector('.refine-prompt-input');
+      if (btnSubmitRefine && txtRefinePrompt) {
+        btnSubmitRefine.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const promptText = txtRefinePrompt.value.trim();
+          if (!promptText) {
+            alert("Please describe the changes you want to apply first!");
+            return;
+          }
+
+          const engineName = getActiveBuilderName();
+          btnSubmitRefine.disabled = true;
+          btnSubmitRefine.innerText = "Applying changes...";
+          txtRefinePrompt.disabled = true;
+
+          if (aiLoadingContainer && aiLoadingText) {
+            aiLoadingContainer.style.display = 'block';
+            aiLoadingText.innerText = `${engineName} is refactoring E-Ink layout code...`;
+          }
+
+          try {
+            const response = await fetch('/api/ai/refine', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ pluginId: plugin.id, prompt: promptText })
+            });
+            const reply = await response.json();
+
+            if (reply.success) {
+              showToast(`Widget refined successfully!`);
+              txtRefinePrompt.value = '';
+              refineContainer.style.display = 'none';
+              if (btnRefineToggle) {
+                btnRefineToggle.style.background = 'rgba(255, 255, 255, 0.1)';
+              }
+
+              await fetchPlugins();
+              renderHostedWidgetsList();
+              updateAiPreviewMockup(plugin.id);
+              if (activeDeviceId) {
+                await triggerManualRefresh(activeDeviceId);
+              }
+            } else {
+              showToast(reply.error || "Refinement failed!", true);
+            }
+          } catch (err) {
+            console.error("AI Widget refinement error:", err);
+            showToast("Server error during widget refinement!", true);
+          } finally {
+            btnSubmitRefine.disabled = false;
+            btnSubmitRefine.innerText = "✨ Apply Changes";
+            txtRefinePrompt.disabled = false;
+            if (aiLoadingContainer) {
+              aiLoadingContainer.style.display = 'none';
+            }
+          }
+        });
+      }
+
       const btnDelete = card.querySelector('.btn-delete-action');
       if (btnDelete) {
         btnDelete.addEventListener('click', async (e) => {

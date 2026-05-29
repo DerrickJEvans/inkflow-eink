@@ -313,6 +313,66 @@ Ensure the code is modern, fully completed (no placeholders), robustly handles e
 };
 
 /**
+ * Outcome C: Refines/modifies existing JavaScript plugin code based on a user's refinement prompt
+ */
+const refinePluginCode = async (pluginId, existingCode, refinementPrompt) => {
+  if (widgetBuilderEngine === "none") {
+    return {
+      success: false,
+      error: "No AI provider is configured for Widget Builder. Please configure GEMINI_API_KEY, GROQ_API_KEY, or WIDGET_BUILDER_AI_PROVIDER in your .env file."
+    };
+  }
+
+  const systemInstruction = `
+You are an expert E-Ink widget developer for "InkFlow".
+Your task is to REFINE or MODIFY an existing self-contained JavaScript plugin for our Node.js server.
+You will be provided with the current code of the plugin and the user's specific request for changes (layout modifications, style tweaks, logic changes, or different API sources).
+
+You must output ONLY raw, executable JavaScript code containing the complete updated plugin. Do not wrap the code in markdown backticks, and do not include any explanatory conversational text. The response must be saved directly back to the file and executed immediately.
+
+### Critical Instructions:
+1. Preserve the general architecture, standard E-Ink styles, and necessary exports.
+2. Carefully apply the requested changes (e.g. adjust sizes, add borders, update fetchData logic, change rendered typography/layouts, or inject additional configFields if credentials or coordinates are now needed).
+3. Ensure the \`id\` exported property is precisely "${pluginId}". DO NOT change the plugin's ID.
+4. Ensure the returned code has no syntax errors, is modern, fully completed (no placeholders), and robustly handles network or data error states.
+`;
+
+  try {
+    const rawText = await generateContentWithEngine(
+      widgetBuilderEngine,
+      `Here is the existing code for plugin '${pluginId}':
+\`\`\`javascript
+${existingCode}
+\`\`\`
+
+Here are the user's requested changes:
+"${refinementPrompt}"
+
+Please output the complete, updated JavaScript code satisfying this request.`,
+      systemInstruction,
+      "widget"
+    );
+    const cleanCode = cleanGeneratedCode(rawText);
+
+    // Basic validation check
+    if (!cleanCode.includes("module.exports") || !cleanCode.includes("fetchData") || !cleanCode.includes("renderSVG")) {
+      throw new Error("Refactored code is missing mandatory module.exports schema properties.");
+    }
+
+    return {
+      success: true,
+      code: cleanCode
+    };
+  } catch (err) {
+    console.error("[AI Core] Error refining plugin:", err);
+    return {
+      success: false,
+      error: `Widget refinement failed: ${err.message}`
+    };
+  }
+};
+
+/**
  * Outcome B: Generates an elegant daily morning briefing by summarizing news and weather inputs
  */
 const generateDailyBriefing = async (rssHeadlines, weatherInfo) => {
@@ -389,6 +449,7 @@ module.exports = {
   getWidgetBuilderEngine: () => widgetBuilderEngine,
   getDynamicWidgetsEngine: () => dynamicWidgetsEngine,
   generatePluginCode,
+  refinePluginCode,
   generateDailyBriefing,
   generateSystemInsights,
   reloadAiConfig: () => {

@@ -518,6 +518,66 @@ app.post('/api/ai/build', async (req, res) => {
   }
 });
 
+// AI Widget Refiner endpoint
+app.post('/api/ai/refine', async (req, res) => {
+  try {
+    const { pluginId, prompt } = req.body;
+    if (!pluginId || !prompt) {
+      return res.status(400).json({ error: "Plugin ID and prompt are required" });
+    }
+
+    console.log(`[AI Widget Refiner] Request received for plugin '${pluginId}': "${prompt}"`);
+
+    // Verify file exists
+    const pluginFilePath = path.join(__dirname, 'plugins', `${pluginId}.js`);
+    if (!fs.existsSync(pluginFilePath)) {
+      return res.status(404).json({ error: `Plugin file not found at: ${pluginFilePath}` });
+    }
+
+    // Read current code
+    const existingCode = fs.readFileSync(pluginFilePath, 'utf8');
+
+    // Call Gemini to refine code
+    const result = await aiCore.refinePluginCode(pluginId, existingCode, prompt);
+    if (!result.success) {
+      return res.status(500).json({ error: result.error });
+    }
+
+    const { code } = result;
+
+    // Write refined code back
+    fs.writeFileSync(pluginFilePath, code, 'utf8');
+    console.log(`[AI Widget Refiner] Successfully saved refined plugin to ${pluginFilePath}`);
+
+    // Dynamic hot reload of all plugins!
+    loadPlugins();
+
+    // Verify it compiled successfully
+    if (!PLUGINS[pluginId]) {
+      return res.status(500).json({ error: "Plugin was written but failed to compile and load dynamically after refinement." });
+    }
+
+    // Invalidate the cache for all devices so they show up
+    config.devices.forEach(d => {
+      delete imageCache[d.id];
+    });
+
+    res.json({
+      success: true,
+      message: `Widget '${PLUGINS[pluginId].name}' (${pluginId}) refined and updated successfully!`,
+      pluginId: pluginId,
+      plugin: {
+        id: pluginId,
+        name: PLUGINS[pluginId].name,
+        description: PLUGINS[pluginId].description
+      }
+    });
+  } catch (err) {
+    console.error("[AI Widget Refiner] Endpoint error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get host Raspberry Pi system metrics
 app.get('/api/system-stats', async (req, res) => {
   try {
