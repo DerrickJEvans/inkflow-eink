@@ -106,11 +106,57 @@ def display_inky(img):
         print("Falling back to local mockup preview file.")
         display_mock(img)
 
+def get_mac_address():
+    """
+    Dynamically resolves physical network hardware MAC address.
+    First tries to read standard Linux network interface files (perfect for Raspberry Pi).
+    Falls back to built-in standard uuid.getnode() for cross-platform support.
+    """
+    for interface in ['wlan0', 'eth0']:
+        try:
+            with open(f"/sys/class/net/{interface}/address", "r") as f:
+                val = f.read().strip().upper()
+                if val:
+                    return val
+        except IOError:
+            pass
+    try:
+        import uuid
+        mac = uuid.getnode()
+        # Format 48-bit int to colon-separated uppercase MAC string
+        return ':'.join(['{:02X}'.format((mac >> ele) & 0xff) for ele in range(0, 8*6, 8)][::-1])
+    except Exception:
+        return "UNKNOWN_MAC"
+
+def get_wifi_rssi():
+    """
+    Dynamically fetches WiFi link RSSI metrics on Linux platforms (like Raspberry Pi).
+    Reads metrics directly from /proc/net/wireless to extract dBm signal strength.
+    """
+    try:
+        with open("/proc/net/wireless", "r") as f:
+            lines = f.readlines()
+            for line in lines:
+                if "wlan0" in line:
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        rssi = parts[3].replace('.', '')
+                        return str(int(rssi))
+    except Exception:
+        pass
+    return None
+
 def poll_server():
     """Main fetch loop"""
+    # Dynamically resolve MAC address if configured to do so or if empty
+    device_id = getattr(config, 'DEVICE_ID', 'dynamic_mac')
+    if device_id == 'dynamic_mac' or not device_id:
+        print("[WiFi] Resolving dynamic hardware MAC address for device registration...")
+        device_id = get_mac_address()
+
     server_url = f"http://{config.SERVER_IP}:{config.SERVER_PORT}/api/display/image.png"
     params = {
-        'device': config.DEVICE_ID,
+        'device': device_id,
         'width': config.WIDTH,
         'height': config.HEIGHT
     }
@@ -118,7 +164,7 @@ def poll_server():
     print(f"\n==========================================")
     print(f"📡 E-Ink Client Polling Started")
     print(f"   Server Target: {server_url}")
-    print(f"   Device Name:   {config.DEVICE_ID}")
+    print(f"   Device Name:   {device_id}")
     print(f"   Resolution:    {config.WIDTH}x{config.HEIGHT}px")
     print(f"   Driver Type:   {config.DISPLAY_TYPE.upper()}")
     print(f"==========================================\n")
@@ -127,7 +173,19 @@ def poll_server():
         poll_interval = config.DEFAULT_POLL_INTERVAL
         try:
             print(f"[{time.strftime('%H:%M:%S')}] Connecting to server to fetch fresh image...")
-            response = requests.get(server_url, params=params, timeout=10)
+            
+            # Gather telemetry headers dynamically
+            headers = {
+                'ID': device_id,
+                'Access-Token': device_id,
+                'FW-Version': 'InkFlow-Python-v1.2.0',
+                'Battery-Voltage': 'USB'
+            }
+            rssi = get_wifi_rssi()
+            if rssi:
+                headers['RSSI'] = rssi
+
+            response = requests.get(server_url, params=params, headers=headers, timeout=10)
             
             if response.status_code == 200:
                 print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(response.content)} bytes)")

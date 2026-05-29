@@ -122,6 +122,35 @@ const recordDeviceConnection = (device, req) => {
     const fw = req.headers['fw-version'];
     const rssi = req.headers['rssi'];
 
+    // Identify Client Firmware Type Symmetrically
+    let clientType = device.clientType || "InkFlow C++ Client";
+    const reqPath = req.path || "";
+    const userAgent = req.headers['user-agent'] || "";
+
+    if (reqPath === '/api/display/raw') {
+      if (fw && fw.includes('InkFlow-ESP32')) {
+        clientType = "InkFlow ESP32 Client";
+      } else if (fw && fw.includes('InkFlow-R4')) {
+        clientType = "InkFlow UNO R4 Client";
+      } else {
+        clientType = "InkFlow C++ Client";
+      }
+    } else if (reqPath === '/api/display/image.png') {
+      if (userAgent.toLowerCase().includes('python-requests') || (fw && fw.includes('InkFlow-Python'))) {
+        clientType = "InkFlow Python Client";
+      } else {
+        clientType = "Web Preview / API";
+      }
+    } else if (reqPath === '/api/display' || reqPath === '/api/setup') {
+      clientType = "Official TRMNL Firmware";
+    }
+
+    if (device.clientType !== clientType) {
+      device.clientType = clientType;
+      changed = true;
+      console.log(`[Device Telemetry][${device.id}] Identified Client Type: ${clientType}`);
+    }
+
     if (battery && device.batteryVoltage !== battery) {
       device.batteryVoltage = battery;
       changed = true;

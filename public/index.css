@@ -1599,5 +1599,103 @@ textarea:focus {
   background-color: #020604;
 }
 
+/* ==========================================================================
+   InkFlow Device Telemetry & Firmware Classification Styling
+   ========================================================================== */
+
+.client-badge {
+  font-family: var(--font-header);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 5px;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.client-badge.trmnl {
+  background: rgba(255, 126, 175, 0.12);
+  color: var(--accent-pink);
+  border: 1px solid rgba(255, 126, 175, 0.25);
+}
+
+.client-badge.inkflow-esp32 {
+  background: rgba(0, 242, 254, 0.12);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+}
+
+.client-badge.inkflow-r4 {
+  background: rgba(127, 172, 255, 0.12);
+  color: #7facff;
+  border: 1px solid rgba(127, 172, 255, 0.25);
+}
+
+.client-badge.inkflow-python {
+  background: rgba(255, 198, 0, 0.12);
+  color: #ffc600;
+  border: 1px solid rgba(255, 198, 0, 0.25);
+}
+
+.client-badge.unknown {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Glassmorphic Telemetry Dashboard Row */
+.telemetry-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .telemetry-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.telemetry-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.telemetry-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.telemetry-card .telemetry-label {
+  font-family: var(--font-header);
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+.telemetry-card .telemetry-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 
 

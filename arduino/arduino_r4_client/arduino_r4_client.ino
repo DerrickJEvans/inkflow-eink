@@ -138,7 +138,7 @@ bool fetchAndStreamDisplay() {
   client.print(F("Access-Token: "));
   client.println(macStr); // MAC acts as private API token
   client.print(F("FW-Version: "));
-  client.println(F("1.2.0"));
+  client.println(F("InkFlow-R4-v1.2.0"));
   client.print(F("RSSI: "));
   client.println(WiFi.RSSI());
   client.println(F("Connection: close"));

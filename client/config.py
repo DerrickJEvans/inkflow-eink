@@ -6,8 +6,8 @@ import os
 SERVER_IP = os.environ.get('TRMNL_SERVER_IP', '192.168.1.122')
 SERVER_PORT = os.environ.get('TRMNL_SERVER_PORT', '5000')
 
-# Device Details
-DEVICE_ID = 'pi_zero_4in26'
+# Device Details (Set to 'dynamic_mac' or leave empty to dynamically read your network MAC address at boot!)
+DEVICE_ID = 'dynamic_mac'
 WIDTH = 800
 HEIGHT = 480
 

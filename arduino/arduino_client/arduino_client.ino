@@ -196,7 +196,7 @@ int downloadRawDisplayBytes() {
   // Add official TRMNL telemetry headers
   http.addHeader("ID", macAddress);
   http.addHeader("Access-Token", macAddress); // MAC acts as private API token
-  http.addHeader("FW-Version", "1.2.0");
+  http.addHeader("FW-Version", "InkFlow-ESP32-v1.2.0");
   http.addHeader("RSSI", String(WiFi.RSSI()));
   
   // Symmetrical read of battery voltage (common divider is on GPIO 34 for ESP32)

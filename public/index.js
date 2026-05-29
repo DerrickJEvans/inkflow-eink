@@ -696,11 +696,29 @@ function renderDevicesList() {
         metaText += ` (${formatRelativeTime(dev.lastSeen)})`;
       }
     }
+
+    let clientBadgeClass = 'unknown';
+    let clientBadgeLabel = dev.clientType || 'InkFlow C++ Client';
+    
+    if (clientBadgeLabel.toLowerCase().includes('esp32')) {
+      clientBadgeClass = 'inkflow-esp32';
+    } else if (clientBadgeLabel.toLowerCase().includes('r4') || clientBadgeLabel.toLowerCase().includes('renesas')) {
+      clientBadgeClass = 'inkflow-r4';
+    } else if (clientBadgeLabel.toLowerCase().includes('python')) {
+      clientBadgeClass = 'inkflow-python';
+    } else if (clientBadgeLabel.toLowerCase().includes('trmnl')) {
+      clientBadgeClass = 'trmnl';
+    } else if (clientBadgeLabel.toLowerCase().includes('c++') || clientBadgeLabel === 'InkFlow C++ Client') {
+      clientBadgeClass = 'inkflow-esp32';
+    }
     
     item.innerHTML = `
       <div class="device-info">
         <span class="name">${dev.name}</span>
         <span class="meta">${metaText}</span>
+        <div style="margin-top: 4px;">
+          <span class="client-badge ${clientBadgeClass}">${clientBadgeLabel}</span>
+        </div>
       </div>
       <span class="device-badge">${dev.id}</span>
     `;
@@ -763,6 +781,63 @@ function selectDevice(deviceId, isNew = false) {
         netEl.value = device.lastHostname ? `${device.lastHostname} (${device.lastIp})` : device.lastIp;
       } else {
         netEl.value = 'Never connected';
+      }
+    }
+
+    // Load telemetry stats dynamically
+    const telemetryContainer = document.getElementById('device-telemetry-container');
+    if (telemetryContainer) {
+      if (device.lastIp || device.clientType || device.batteryVoltage || device.rssi) {
+        telemetryContainer.style.display = 'grid';
+        
+        // Client Firmware
+        const clientTypeEl = document.getElementById('telemetry-client-type');
+        if (clientTypeEl) {
+          clientTypeEl.innerText = device.clientType || 'InkFlow C++ Client';
+        }
+        
+        // Firmware Version
+        const fwVersionEl = document.getElementById('telemetry-fw-version');
+        if (fwVersionEl) {
+          fwVersionEl.innerText = device.fwVersion || '1.2.0';
+        }
+        
+        // RSSI WiFi
+        const rssiEl = document.getElementById('telemetry-rssi');
+        if (rssiEl) {
+          if (device.rssi) {
+            const dbm = parseInt(device.rssi);
+            let rssiIcon = '📶';
+            if (dbm > -50) rssiIcon = '🟢';
+            else if (dbm > -70) rssiIcon = '🟡';
+            else rssiIcon = '🔴';
+            rssiEl.innerText = `${rssiIcon} ${device.rssi} dBm`;
+          } else {
+            rssiEl.innerText = 'N/A';
+          }
+        }
+        
+        // Battery Voltage / USB
+        const batteryEl = document.getElementById('telemetry-battery');
+        if (batteryEl) {
+          if (device.batteryVoltage) {
+            let batIcon = '🔋';
+            if (device.batteryVoltage.includes('V') || !isNaN(parseFloat(device.batteryVoltage))) {
+              const volts = parseFloat(device.batteryVoltage);
+              if (!isNaN(volts)) {
+                if (volts < 3.3) batIcon = '🪫';
+                else if (volts < 3.7) batIcon = '🟡';
+              }
+            } else if (device.batteryVoltage.toLowerCase().includes('usb') || device.batteryVoltage === 'USB') {
+              batIcon = '⚡';
+            }
+            batteryEl.innerText = `${batIcon} ${device.batteryVoltage}`;
+          } else {
+            batteryEl.innerText = '⚡ USB Powered';
+          }
+        }
+      } else {
+        telemetryContainer.style.display = 'none';
       }
     }
 
