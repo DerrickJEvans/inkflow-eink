@@ -189,6 +189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const refreshRate = parseInt(document.getElementById('edit-device-refresh').value);
     const layoutMode = "rotation";
     const ditherMode = document.getElementById('edit-device-dither').value;
+    const invertColors = document.getElementById('edit-device-invert').value === 'true';
     
     // Read selected plugins & their custom durations dynamically in customized sequence!
     const activePlugins = [];
@@ -221,6 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       activePlugins, 
       layoutMode: "rotation", 
       ditherMode,
+      invertColors,
       rotationIntervals 
     };
     
@@ -846,6 +848,9 @@ function selectDevice(deviceId, isNew = false) {
 
     // Load ditherMode
     document.getElementById('edit-device-dither').value = device.ditherMode || 'floyd-steinberg';
+
+    // Load invertColors
+    document.getElementById('edit-device-invert').value = device.invertColors ? 'true' : 'false';
 
     updateScreenMockup(device.id);
     updateGuides(device);

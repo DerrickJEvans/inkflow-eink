@@ -216,6 +216,13 @@ const renderDeviceImage = async (device, settings) => {
   const ditherMode = device.ditherMode || 'floyd-steinberg';
   const dithered = applyFloydSteinbergDither(rawGrayscale, w, h, ditherMode);
 
+  // Apply optional color inversion
+  if (device.invertColors) {
+    for (let i = 0; i < dithered.length; i++) {
+      dithered[i] = dithered[i] === 0 ? 255 : 0;
+    }
+  }
+
   // 4. Export PNG
   const pngBuffer = await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
     .png({ palette: true, colors: 2 })
