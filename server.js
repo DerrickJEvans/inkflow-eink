@@ -116,6 +116,27 @@ const recordDeviceConnection = (device, req) => {
       device.lastSeen = nowStr;
       changed = true;
     }
+
+    // Capture telemetry headers from physical TRMNL BYOS hardware
+    const battery = req.headers['battery-voltage'];
+    const fw = req.headers['fw-version'];
+    const rssi = req.headers['rssi'];
+
+    if (battery && device.batteryVoltage !== battery) {
+      device.batteryVoltage = battery;
+      changed = true;
+      console.log(`[Device Telemetry][${device.id}] Updated Battery Voltage: ${battery}`);
+    }
+    if (fw && device.fwVersion !== fw) {
+      device.fwVersion = fw;
+      changed = true;
+      console.log(`[Device Telemetry][${device.id}] Updated Firmware Version: ${fw}`);
+    }
+    if (rssi && device.rssi !== rssi) {
+      device.rssi = rssi;
+      changed = true;
+      console.log(`[Device Telemetry][${device.id}] Updated WiFi RSSI: ${rssi} dBm`);
+    }
     
     if (changed) {
       saveConfig();
@@ -859,11 +880,37 @@ app.get('/api/display', async (req, res) => {
   }
 });
 
-// TRMNL Setup Endpoint
-app.post('/api/setup', (req, res) => {
-  const mac = req.headers['id'] || 'default_screen';
-  console.log(`[TRMNL Setup] Device ${mac} initiated setup.`);
-  res.json({ status: 0, setup: true });
+// TRMNL Setup Endpoint (supports both GET and POST for official TRMNL BYOS hardware registration)
+app.all('/api/setup', (req, res) => {
+  try {
+    const mac = req.headers['id'] || req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
+    console.log(`[TRMNL Setup] Device ${mac} initiated setup via ${req.method}.`);
+    
+    // Auto-Register or get existing device in E-Ink configuration
+    const device = getOrCreateDevice(mac, req.query);
+    recordDeviceConnection(device, req);
+    
+    // Generate friendly ID from the MAC/Device ID
+    const friendlyId = mac.replace(/:/g, '').slice(-6).toUpperCase();
+    
+    // Construct the immediate setup/rendering image URL
+    const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const serverIp = req.headers.host;
+    const imageUrl = `${protocol}://${serverIp}/api/display/image.png?device=${device.id}`;
+    
+    // Return official TRMNL BYOS registration response format
+    res.json({
+      status: 200,
+      setup: true,
+      api_key: device.id,
+      friendly_id: friendlyId,
+      image_url: imageUrl,
+      message: "Welcome to InkFlow E-Ink Server!"
+    });
+  } catch (err) {
+    console.error("[TRMNL Setup] Error in registration handler:", err);
+    res.status(500).json({ status: 500, error: "Setup failed" });
+  }
 });
 
 // TRMNL Log Endpoint
