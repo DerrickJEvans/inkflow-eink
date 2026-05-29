@@ -19,23 +19,28 @@
 
 #include <SPI.h>
 #include <WiFiS3.h>
-#include "epd4in26.h"     // Native working Waveshare driver
-
 // ==========================================
 //           CONFIGURATION SETTINGS
 // ==========================================
 
-// WiFi Settings
+// 1. WiFi Settings
 const char* ssid     = "PLUSNET-TQC29S";
 const char* password = "KtYAvLrd4bvuE9";
 
-// Server Settings (Your Raspberry Pi's local IP address)
+// 2. Server Settings (Your Raspberry Pi's local IP address)
 const char* serverIp   = "192.168.1.122";
 const int   serverPort = 5000;
 
-// Device Specifications (deviceId is dynamically fetched from your hardware MAC address at boot)
-const int   displayWidth       = 800;   // Seeed KEGM042601M01 4.26" panel
-const int   displayHeight      = 480;   // Seeed KEGM042601M01 4.26" panel
+// 3. Dynamic Device Naming
+// Setting this automatically updates your screen name in the Control Center!
+const char* customDeviceName = "Living Room R4 Panel";
+
+// 4. E-Paper Screen Selection
+// Simply uncomment your exact Waveshare display screen size model:
+#define SCREEN_TYPE_4_26      // Waveshare 4.26" (800x480 B&W) - Recommended Default
+//#define SCREEN_TYPE_7_50    // Waveshare 7.5" (800x480 B&W V2)
+//#define SCREEN_TYPE_4_20    // Waveshare 4.2" (400x300 B&W)
+//#define SCREEN_TYPE_2_90    // Waveshare 2.9" (296x128 B&W)
 
 // Default refresh interval (seconds) if server header is missing
 const int fallbackSleepSeconds = 30;
@@ -45,13 +50,39 @@ const int fallbackSleepSeconds = 30;
 #define RAM_CS    5   
 #define SD_CS     6   
 
+
+// ==========================================
+//      DYNAMIC DRIVER & SIZE RESOLUTION
+// ==========================================
+#if defined(SCREEN_TYPE_4_26)
+  #include "epd4in26.h"
+  #define DISPLAY_WIDTH  800
+  #define DISPLAY_HEIGHT 480
+#elif defined(SCREEN_TYPE_7_50)
+  #include "epd7in5_V2.h"
+  #define DISPLAY_WIDTH  800
+  #define DISPLAY_HEIGHT 480
+#elif defined(SCREEN_TYPE_4_20)
+  #include "epd4in2.h"
+  #define DISPLAY_WIDTH  400
+  #define DISPLAY_HEIGHT 300
+#elif defined(SCREEN_TYPE_2_90)
+  #include "epd2in9.h"
+  #define DISPLAY_WIDTH  296
+  #define DISPLAY_HEIGHT 128
+#else
+  #error "No valid SCREEN_TYPE defined! Please uncomment one of the screen options at the top."
+#endif
+
+const int displayWidth = DISPLAY_WIDTH;
+const int displayHeight = DISPLAY_HEIGHT;
+
 Epd epd;
 WiFiClient client;
 int nextRefreshSeconds = fallbackSleepSeconds;
 
 // Total bytes needed for a full horizontal 1-bit screen transmission frame
-// (800 width * 480 height) / 8 bits = 48000 bytes
-const uint32_t totalImageBytes = 48000; 
+const uint32_t totalImageBytes = (displayWidth * displayHeight) / 8; 
 
 // ==========================================
 //                  SETUP
@@ -137,6 +168,8 @@ bool fetchAndStreamDisplay() {
   client.println(macStr);
   client.print(F("Access-Token: "));
   client.println(macStr); // MAC acts as private API token
+  client.print(F("Device-Name: "));
+  client.println(customDeviceName);
   client.print(F("FW-Version: "));
   client.println(F("InkFlow-R4-v1.2.0"));
   client.print(F("RSSI: "));

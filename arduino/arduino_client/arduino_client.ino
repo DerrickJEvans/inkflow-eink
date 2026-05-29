@@ -12,21 +12,28 @@
 #include <GxEPD2_3C.h> // Supports 3-color (Black/White/Red) or monochrome screens
 #include <GxEPD2_BW.h> // Supports monochrome (Black/White) screens
 
-// ==========================================
+/// ==========================================
 //           CONFIGURATION SETTINGS
 // ==========================================
 
-// WiFi Settings
+// 1. WiFi Settings
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
-// Server Settings (Change to your Raspberry Pi's local IP address)
+// 2. Server Settings (Change to your Raspberry Pi's local IP address)
 const char* serverIp = "192.168.1.100";
 const int serverPort = 5000;
 
-// Device Specifications (deviceId is dynamically fetched from your hardware MAC address at boot)
-const int displayWidth = 400;  // Adjust to match your physical display (e.g., 400 for 4.2", 800 for 7.5")
-const int displayHeight = 300; // Adjust to match your physical display (e.g., 300 for 4.2", 480 for 7.5")
+// 3. Dynamic Device Naming
+// Setting this automatically updates your screen name in the Control Center!
+const char* customDeviceName = "Living Room ESP32 Panel";
+
+// 4. E-Paper Screen Selection
+// Simply uncomment your exact Waveshare display screen size:
+#define SCREEN_TYPE_4_20      // Waveshare 4.2" (400x300 B&W) - Recommended Default
+//#define SCREEN_TYPE_7_50    // Waveshare 7.5" (800x480 B&W Version 2)
+//#define SCREEN_TYPE_2_90    // Waveshare 2.9" (296x128 B&W)
+//#define SCREEN_TYPE_2_70    // Waveshare 2.7" (264x176 B&W)
 
 // Default sleep duration (seconds) if server header is missing
 const int fallbackSleepSeconds = 1800; 
@@ -49,22 +56,30 @@ const int fallbackSleepSeconds = 1800;
 
 
 // ==========================================
-//      GxEPD2 DISPLAY DRIVER SELECTION
+//      DYNAMIC DRIVER & SIZE RESOLUTION
 // ==========================================
-// Uncomment the line that corresponds to your exact Waveshare display model:
+#if defined(SCREEN_TYPE_4_20)
+  #define DISPLAY_WIDTH  400
+  #define DISPLAY_HEIGHT 300
+  GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> display(GxEPD2_420(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#elif defined(SCREEN_TYPE_7_50)
+  #define DISPLAY_WIDTH  800
+  #define DISPLAY_HEIGHT 480
+  GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#elif defined(SCREEN_TYPE_2_90)
+  #define DISPLAY_WIDTH  296
+  #define DISPLAY_HEIGHT 128
+  GxEPD2_BW<GxEPD2_290_T94, GxEPD2_290_T94::HEIGHT> display(GxEPD2_290_T94(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#elif defined(SCREEN_TYPE_2_70)
+  #define DISPLAY_WIDTH  264
+  #define DISPLAY_HEIGHT 176
+  GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> display(GxEPD2_270(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#else
+  #error "No valid SCREEN_TYPE defined! Please uncomment one of the screen options at the top."
+#endif
 
-// For Waveshare 4.2" Black & White screen (400x300) [RECOMMENDED DEFAULT]
-GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> display(GxEPD2_420(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-
-// For Waveshare 7.5" Black & White screen (800x480 Version 2)
-// GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-
-// For Waveshare 2.9" Black & White screen (296x128)
-// GxEPD2_BW<GxEPD2_290_T94, GxEPD2_290_T94::HEIGHT> display(GxEPD2_290_T94(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-
-// For Waveshare 2.7" Black & White screen (264x176)
-// GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> display(GxEPD2_270(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-
+const int displayWidth = DISPLAY_WIDTH;
+const int displayHeight = DISPLAY_HEIGHT;
 
 // Allocate buffer to hold the downloaded raw 1-bit pixel bitmap
 // Calculated as: (width * height) / 8 bytes.
@@ -196,6 +211,7 @@ int downloadRawDisplayBytes() {
   // Add official TRMNL telemetry headers
   http.addHeader("ID", macAddress);
   http.addHeader("Access-Token", macAddress); // MAC acts as private API token
+  http.addHeader("Device-Name", customDeviceName);
   http.addHeader("FW-Version", "InkFlow-ESP32-v1.2.0");
   http.addHeader("RSSI", String(WiFi.RSSI()));
   

@@ -14,6 +14,24 @@ except ImportError:
     print("[Error] config.py not found in client directory. Please create it.")
     sys.exit(1)
 
+# Dynamic Display Resolution & Model resolution based on SCREEN_TYPE
+# Pre-configured screen definitions mapping: type -> (width, height, waveshare_model)
+SCREEN_DEFINITIONS = {
+    '4in26': (800, 480, 'epd4in26'),
+    '7in5':  (800, 480, 'epd7in5_V2'),
+    '4in2':  (400, 300, 'epd4in2'),
+    '2in9':  (296, 128, 'epd2in9')
+}
+
+screen_type = getattr(config, 'SCREEN_TYPE', '4in26')
+default_w, default_h, default_model = SCREEN_DEFINITIONS.get(screen_type, (800, 480, 'epd4in26'))
+
+# Use manual overrides if provided, else use dynamically resolved defaults
+WIDTH = getattr(config, 'WIDTH', None) or default_w
+HEIGHT = getattr(config, 'HEIGHT', None) or default_h
+WAVESHARE_MODEL = getattr(config, 'WAVESHARE_MODEL', None) or default_model
+DEVICE_NAME = getattr(config, 'DEVICE_NAME', 'InkFlow Python Client')
+
 def render_ascii_preview(img):
     """
     Renders a quick low-res ASCII thumbnail of the e-ink screen in terminal logs.
@@ -45,7 +63,7 @@ def display_mock(img):
 
 def display_waveshare(img):
     """Pushes image to Waveshare SPI E-Paper display"""
-    model = config.WAVESHARE_MODEL
+    model = WAVESHARE_MODEL
     print(f"[Hardware Display] Loading Waveshare EPD driver: {model}")
     try:
         # Dynamically import waveshare e-paper drivers
@@ -157,15 +175,15 @@ def poll_server():
     server_url = f"http://{config.SERVER_IP}:{config.SERVER_PORT}/api/display/image.png"
     params = {
         'device': device_id,
-        'width': config.WIDTH,
-        'height': config.HEIGHT
+        'width': WIDTH,
+        'height': HEIGHT
     }
     
     print(f"\n==========================================")
     print(f"📡 E-Ink Client Polling Started")
     print(f"   Server Target: {server_url}")
-    print(f"   Device Name:   {device_id}")
-    print(f"   Resolution:    {config.WIDTH}x{config.HEIGHT}px")
+    print(f"   Device Name:   {DEVICE_NAME} ({device_id})")
+    print(f"   Resolution:    {WIDTH}x{HEIGHT}px")
     print(f"   Driver Type:   {config.DISPLAY_TYPE.upper()}")
     print(f"==========================================\n")
     
@@ -178,6 +196,7 @@ def poll_server():
             headers = {
                 'ID': device_id,
                 'Access-Token': device_id,
+                'Device-Name': DEVICE_NAME,
                 'FW-Version': 'InkFlow-Python-v1.2.0',
                 'Battery-Voltage': 'USB'
             }

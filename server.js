@@ -192,18 +192,32 @@ const recordDeviceConnection = (device, req) => {
 /**
  * Gets or creates a device config based on ID
  */
-const getOrCreateDevice = (deviceId, reqQuery = {}) => {
+const getOrCreateDevice = (deviceId, req = {}) => {
   let device = config.devices.find(d => d.id === deviceId);
-  
+  const query = req.query || {};
+  const headers = req.headers || {};
+  let changed = false;
+
+  // Resolve friendly name from custom headers or queries
+  const rawName = headers['device-name'] || query.name;
+  let customName = null;
+  if (rawName) {
+    try {
+      customName = decodeURIComponent(rawName);
+    } catch(e) {
+      customName = rawName;
+    }
+  }
+
   if (!device) {
     // Auto-Register new device!
-    const width = parseInt(reqQuery.width) || 800;
-    const height = parseInt(reqQuery.height) || 480;
-    const name = `Auto-Registered ${deviceId.toUpperCase()}`;
+    const width = parseInt(query.width) || 800;
+    const height = parseInt(query.height) || 480;
+    const friendlyName = customName || `Auto-Registered ${deviceId.toUpperCase()}`;
 
     device = {
       id: deviceId,
-      name: name,
+      name: friendlyName,
       width: width,
       height: height,
       refreshRate: 1800, // 30 minutes default
@@ -211,9 +225,18 @@ const getOrCreateDevice = (deviceId, reqQuery = {}) => {
     };
 
     config.devices.push(device);
-    saveConfig();
-    console.log(`[Auto-Registration] Registered new device: ${deviceId} (${width}x${height})`);
+    changed = true;
+    console.log(`[Auto-Registration] Registered new device: ${deviceId} (${width}x${height}) with friendly name: ${friendlyName}`);
+  } else if (customName && device.name !== customName) {
+    device.name = customName;
+    changed = true;
+    console.log(`[Device Telemetry][${device.id}] Dynamically updated name from client device config: ${customName}`);
   }
+
+  if (changed) {
+    saveConfig();
+  }
+
   return device;
 };
 
@@ -783,7 +806,7 @@ app.get('/api/display/image.png', async (req, res) => {
     const deviceId = req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
     const force = req.query.force === 'true';
     
-    const device = getOrCreateDevice(deviceId, req.query);
+    const device = getOrCreateDevice(deviceId, req);
     recordDeviceConnection(device, req);
     const data = await fetchDeviceDisplayData(device, force);
     
@@ -852,7 +875,7 @@ app.get('/api/display/raw', async (req, res) => {
     const deviceId = req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
     const force = req.query.force === 'true';
 
-    const device = getOrCreateDevice(deviceId, req.query);
+    const device = getOrCreateDevice(deviceId, req);
     recordDeviceConnection(device, req);
     const data = await fetchDeviceDisplayData(device, force);
 
@@ -877,7 +900,7 @@ app.get('/api/display', async (req, res) => {
     // TRMNL hardware passes Access-Token and ID in headers
     // But since this is a private network, we fall back to auto-registration
     const mac = req.headers['id'] || req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
-    const device = getOrCreateDevice(mac, req.query);
+    const device = getOrCreateDevice(mac, req);
     recordDeviceConnection(device, req);
     
     // Trigger render to keep files up to date
@@ -916,7 +939,7 @@ app.all('/api/setup', (req, res) => {
     console.log(`[TRMNL Setup] Device ${mac} initiated setup via ${req.method}.`);
     
     // Auto-Register or get existing device in E-Ink configuration
-    const device = getOrCreateDevice(mac, req.query);
+    const device = getOrCreateDevice(mac, req);
     recordDeviceConnection(device, req);
     
     // Generate friendly ID from the MAC/Device ID
