@@ -164,7 +164,9 @@ const recordDeviceConnection = (device, req) => {
       if (userAgent.toLowerCase().includes('python-requests') || (fw && fw.includes('InkFlow-Python'))) {
         clientType = "InkFlow Python Client";
       } else {
-        clientType = "Web Preview / API";
+        // Prevent browser previews from overwriting identified physical hardware client types
+        const isHardware = device.clientType && device.clientType !== "Web Preview / API";
+        clientType = isHardware ? device.clientType : "Web Preview / API";
       }
     } else if (reqPath === '/api/display' || reqPath === '/api/setup') {
       clientType = "Official TRMNL Firmware";
