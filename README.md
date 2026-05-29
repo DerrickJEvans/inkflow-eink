@@ -92,7 +92,24 @@ graph TD
 
 ### 3. TRMNL Official BYOS Protocol Endpoint
 * **URL**: `GET /api/display`
-* **Response**: JSON payload containing the direct absolute image URL, refresh rate, and firmware status conforming to the official TRMNL BYOS hardware requirements.
+* **Headers**: Passed by the physical device:
+  * `ID`: Hardware MAC address (e.g., `DC:B4:D9:0E:B6:F8`)
+* **Response**: JSON payload conforming to the official TRMNL BYOS hardware requirements:
+  ```json
+  {
+    "status": 0,
+    "image_url": "http://[server-ip]:5000/api/display/image.png?device=[device-id]",
+    "filename": "screen-[device-id]-[timestamp].png",
+    "image_name": "screen-[device-id]-[timestamp].png",
+    "update_firmware": false,
+    "firmware_url": null,
+    "refresh_rate": 1800,
+    "reset_firmware": false
+  }
+  ```
+  > [!NOTE]
+  > Under the TRMNL BYOS protocol, the `status` field must be set to `0` inside the JSON body to indicate success. A status code of `200` or standard HTTP success codes inside the JSON body will be rejected by the device's firmware as an error, causing it to retry immediately without downloading the E-Ink display image.
+
 
 ---
 
