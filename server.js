@@ -220,13 +220,26 @@ const getOrCreateDevice = (rawDeviceId, req = {}) => {
     const height = parseInt(query.height) || 480;
     const friendlyName = customName || `Auto-Registered ${deviceId.toUpperCase()}`;
 
-    device = {
+     device = {
       id: deviceId,
       name: friendlyName,
       width: width,
       height: height,
       refreshRate: 1800, // 30 minutes default
-      activePlugins: ["system", "weather", "rss", "notes"]
+      activePlugins: ["system", "weather", "rss", "notes"],
+      rotationIntervals: {
+        "system": 30,
+        "weather": 30,
+        "rss": 30,
+        "notes": 30,
+        "ai_advisor": 30,
+        "ai_briefing": 30,
+        "xkcd": 30,
+        "feynman_quote": 30,
+        "world_clock": 30,
+        "tfl": 30,
+        "uk_trains": 30
+      }
     };
 
     config.devices.push(device);
@@ -265,6 +278,9 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
       const currentPlugin = activePlugins[currentIndex % activePlugins.length];
       if (device.rotationIntervals && device.rotationIntervals[currentPlugin]) {
         refreshRate = parseInt(device.rotationIntervals[currentPlugin]) || refreshRate;
+      } else if (activePlugins.length > 1 || device.layoutMode === 'rotation') {
+        // Fall back to a standard 30-second carousel rotation if not configured
+        refreshRate = 30;
       }
     }
   }
