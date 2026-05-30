@@ -40,7 +40,7 @@ chown -R "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$PROJECT_DIR"
 USER_LINK="${USER_HOME}/trmnl-pi-server"
 if [ ! -e "$USER_LINK" ]; then
   echo -e "${CYAN}Creating convenience symbolic link in standard user's home directory...${NC}"
-  ln -s "$PROJECT_DIR" "$USER_LINK"
+  ln -sf "$PROJECT_DIR" "$USER_LINK"
   chown -h "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$USER_LINK"
 fi
 

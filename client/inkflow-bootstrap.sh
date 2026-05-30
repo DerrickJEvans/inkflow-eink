@@ -22,10 +22,10 @@ fi
 sed -i 's/\r$//' "$SETUP_FILE"
 
 # Parse configuration values
-ROLE=$(grep -E '^ROLE=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ')
-DEVICE_NAME=$(grep -E '^DEVICE_NAME=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\''')
-SCREEN_TYPE=$(grep -E '^SCREEN_TYPE=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ')
-SERVER_IP=$(grep -E '^SERVER_IP=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ')
+ROLE=$(grep -E '^ROLE=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
+DEVICE_NAME=$(grep -E '^DEVICE_NAME=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
+SCREEN_TYPE=$(grep -E '^SCREEN_TYPE=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
+SERVER_IP=$(grep -E '^SERVER_IP=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
 
 # --- SERVER PROVISIONING ---
 if [ "$ROLE" == "server" ]; then

@@ -101,11 +101,13 @@ EOF
         fi
     fi
 
-    # Prompt user to adjust server IP live during installer
-    read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.122): " SERVER_IP
-    if [ -n "$SERVER_IP" ]; then
-        sed -i "s/TRMNL_SERVER_IP=.*/TRMNL_SERVER_IP=${SERVER_IP}/" .env 2>/dev/null || sed -i "s/SERVER_HOST=.*/SERVER_HOST=${SERVER_IP}/" .env
-        echo -e "${GREEN}✅ Server IP address saved to .env.${NC}"
+    # Prompt user to adjust server IP live during installer (only if running interactively)
+    if [ -t 0 ]; then
+        read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.122): " SERVER_IP
+        if [ -n "$SERVER_IP" ]; then
+            sed -i "s/TRMNL_SERVER_IP=.*/TRMNL_SERVER_IP=${SERVER_IP}/" .env 2>/dev/null || sed -i "s/SERVER_HOST=.*/SERVER_HOST=${SERVER_IP}/" .env
+            echo -e "${GREEN}✅ Server IP address saved to .env.${NC}"
+        fi
     fi
 
     # 5. Create Systemd Service
@@ -149,7 +151,9 @@ EOF
     echo -e "      • Status check:  ./trmnl-client.sh status"
     echo -e "      • Restart:       ./trmnl-client.sh restart"
     echo -e "${GREEN}====================================================${NC}\n"
-    read -n 1 -s -r -p "Press any key to return to menu..."
+    if [ -t 0 ]; then
+        read -n 1 -s -r -p "Press any key to return to menu..."
+    fi
 }
 
 # Action: Start Client

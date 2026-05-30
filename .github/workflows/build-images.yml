@@ -32,17 +32,6 @@ jobs:
           LOOP_DEV=$(sudo losetup -fP --show "$IMAGE_FILE")
           echo "Loop device created at: $LOOP_DEV"
           
-          # CRITICAL compatibility fix: Disable metadata_csum_seed and orphan_file BEFORE mounting!
-          # This forces the host kernel to write all customizations in a fully compatible format without checksum mismatches.
-          echo "⚙️ Running initial e2fsck filesystem check..."
-          sudo e2fsck -fy "${LOOP_DEV}p2"
-          
-          echo "⚙️ Stripping modern incompatible metadata_csum_seed and orphan_file features..."
-          sudo tune2fs -O ^metadata_csum_seed,^orphan_file "${LOOP_DEV}p2"
-          
-          echo "⚙️ Re-checking and rewriting filesystem metadata structures..."
-          sudo e2fsck -fDy "${LOOP_DEV}p2"
-          
           # Create directories for mounting
           mkdir -p mnt/boot mnt/root
           
@@ -57,7 +46,6 @@ jobs:
           
           # 2. Inject our bootstrap script
           sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-bootstrap.sh mnt/root/usr/local/bin/inkflow-bootstrap
-          sudo chmod +x mnt/root/usr/local/bin/inkflow-bootstrap
           
           # 2.5. Inject default inkflow-setup.txt configuration template into the FAT boot partition from repo
           sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-setup.txt mnt/boot/inkflow-setup.txt
@@ -65,8 +53,20 @@ jobs:
           # 3. Inject our systemd bootstrap service from repo
           sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-bootstrap.service mnt/root/etc/systemd/system/inkflow-bootstrap.service
           
-          # 4. Enable bootstrap service to execute on next boot
-          sudo ln -s /etc/systemd/system/inkflow-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/inkflow-bootstrap.service
+          # CRITICAL: Clean up CRLF (Windows carriage returns) from injected files to prevent kernel shebang and systemd parser errors!
+          sudo sed -i 's/\r$//' mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo sed -i 's/\r$//' mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          sudo sed -i 's/\r$//' mnt/boot/inkflow-setup.txt
+          
+          # CRITICAL: Harden execution permissions and transfer file ownership to root:root for systemd security requirements!
+          sudo chmod 755 mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo chown root:root mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo chmod 644 mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          sudo chown root:root mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          
+          # 4. Enable bootstrap service to execute on next boot (ensure parent wants folder exists)
+          sudo mkdir -p mnt/root/etc/systemd/system/multi-user.target.wants
+          sudo ln -sf /etc/systemd/system/inkflow-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/inkflow-bootstrap.service
           
           # Sync all buffered writes to the image block device
           sync
@@ -75,14 +75,9 @@ jobs:
           sudo umount mnt/boot
           sudo umount mnt/root
           
-          # Strip modern incompatible features again AFTER unmounting, in case the host kernel re-enabled them!
-          echo "⚙️ Stripping modern incompatible metadata_csum_seed and orphan_file features after unmounting..."
-          sudo e2fsck -fy "${LOOP_DEV}p2"
-          sudo tune2fs -O ^metadata_csum_seed,^orphan_file "${LOOP_DEV}p2"
-          
-          # Perform final e2fsck verification scan to rewrite descriptors and mark partition cleanly
+          # Perform standard e2fsck verification scan to replay journal and mark partition clean
           echo "⚙️ Performing final e2fsck verification scan..."
-          sudo e2fsck -fDy "${LOOP_DEV}p2"
+          sudo e2fsck -fy "${LOOP_DEV}p2"
           
           # Flush all loopback caches and sync buffers directly to the raw image file
           echo "⚙️ Flushing loopback buffers and syncing to disk..."
