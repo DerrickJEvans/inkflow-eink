@@ -13,10 +13,15 @@ graph TD
     A[Plugins: Weather, RSS, Notes, System] --> B[renderer.js: SVG Assembler]
     B --> C[Sharp Grayscale Rasterization]
     C --> D[Floyd-Steinberg Dither Engine]
+    
     D --> E[PNG Stream: /api/display/image.png]
     D --> F[1-Bit Packed Raw Stream: /api/display/raw]
+    
     E --> G[Python Client / Web UI]
-    F --> H[ESP32 Deep-Sleep Arduino Client]
+    F --> H[ESP32 / R4 Deep-Sleep Arduino Client]
+    
+    I[JSON BYOS: /api/display] -->|1. Polls JSON| J[Official TRMNL BYOS Firmware]
+    J -->|2. Fetches PNG| E
 ```
 
 ### 1. Symmetrical Carousel (Rotation) Mode
