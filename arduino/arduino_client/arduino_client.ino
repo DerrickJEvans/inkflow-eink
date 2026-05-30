@@ -12,48 +12,7 @@
 #include <GxEPD2_3C.h> // Supports 3-color (Black/White/Red) or monochrome screens
 #include <GxEPD2_BW.h> // Supports monochrome (Black/White) screens
 
-/// ==========================================
-//           CONFIGURATION SETTINGS
-// ==========================================
-
-// 1. WiFi Settings
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
-
-// 2. Server Settings (Change to your Raspberry Pi's local IP address)
-const char* serverIp = "192.168.1.100";
-const int serverPort = 5000;
-
-// 3. Dynamic Device Naming
-// Setting this automatically updates your screen name in the Control Center!
-const char* customDeviceName = "Living Room ESP32 Panel";
-
-// 4. E-Paper Screen Selection
-// Simply uncomment your exact Waveshare display screen size:
-#define SCREEN_TYPE_4_20      // Waveshare 4.2" (400x300 B&W) - Recommended Default
-//#define SCREEN_TYPE_7_50    // Waveshare 7.5" (800x480 B&W Version 2)
-//#define SCREEN_TYPE_2_90    // Waveshare 2.9" (296x128 B&W)
-//#define SCREEN_TYPE_2_70    // Waveshare 2.7" (264x176 B&W)
-
-// Default sleep duration (seconds) if server header is missing
-const int fallbackSleepSeconds = 1800; 
-
-// ==========================================
-//          E-PAPER SPI PIN MAPPINGS
-// ==========================================
-// Default wiring for Waveshare E-Paper ESP32 Driver Board or standard ESP32 boards.
-// 
-// ⚠️ SHIELD CONFLICT WARNING:
-// On the Waveshare Arduino E-Paper Shield or HAT, the onboard SPI serial Flash CS pin 
-// is hardwired to GPIO 5, and the SD Card CS is hardwired to GPIO 4.
-// If you are using this shield, you MUST pull GPIO 5 and 4 HIGH to disable them, and 
-// remap the E-Paper's CS pin to another pin (e.g. GPIO 15, 10, or 25) to prevent SPI collisions!
-#define EPD_CS    15 // Chip Select (Change to 5 if using dedicated ESP32 Driver Board without Flash)
-#define EPD_DC    17 // Data/Command
-#define EPD_RST   16 // Reset
-#define EPD_BUSY  4  // Busy Indicator
-// Note: SPI SCK binds to pin 18, and MOSI/DIN binds to pin 23 by default.
-
+#include "config.h"
 
 // ==========================================
 //      DYNAMIC DRIVER & SIZE RESOLUTION
