@@ -57,9 +57,18 @@ jobs:
           # 4. Enable bootstrap service to execute on next boot
           sudo ln -s /etc/systemd/system/inkflow-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/inkflow-bootstrap.service
           
+          # Sync all buffered writes to the image block device
+          sync
+          
           # Cleanup mounts safely
           sudo umount mnt/boot
           sudo umount mnt/root
+          
+          # Force repair and sanitize the ext4 root partition to correct any metadata checksum mismatches
+          echo "⚙️ Verifying and repairing ext4 metadata checksums..."
+          sudo e2fsck -fy "${LOOP_DEV}p2"
+          
+          # Detach loop device safely
           sudo losetup -d "$LOOP_DEV"
 
       - name: 📦 Compress and Package custom E-Ink OS
