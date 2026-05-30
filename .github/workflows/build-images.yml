@@ -75,20 +75,24 @@ jobs:
 
       - name: 📦 Compress and Package custom E-Ink OS
         run: |
-          mv pi-os-lite.img trmnl-eink-os.img
-          xz -z -9 trmnl-eink-os.img
+          mv pi-os-lite.img inkflow.img
+          xz -z -9 inkflow.img
 
       - name: 💾 Save build image as action artifact
         uses: actions/upload-artifact@v4
         with:
-          name: trmnl-eink-os
-          path: trmnl-eink-os.img.xz
+          name: inkflow
+          path: |
+            inkflow.img.xz
+            inkflow-imager-repo.json
           retention-days: 7
 
       - name: 🚀 Publish release packages
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: trmnl-eink-os.img.xz
+          files: |
+            inkflow.img.xz
+            inkflow-imager-repo.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
