@@ -13,6 +13,9 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
+      - name: 🌐 Set up QEMU for ARM emulation inside Docker
+        uses: docker/setup-qemu-action@v3
+
       - name: ⚙️ Install system packaging and emulation tools
         run: |
           sudo apt-get update
