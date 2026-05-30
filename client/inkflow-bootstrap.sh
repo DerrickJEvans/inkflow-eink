@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# trmnl-bootstrap.sh - Automatic Firstboot Provisioner
+# inkflow-bootstrap.sh - Automatic Firstboot Provisioner
 # ==============================================================================
 # Reads the FAT boot partition for user configuration directives and configures
 # client/server services in real-time.
@@ -10,11 +10,11 @@ set -x
 
 BOOT_DIR="/boot/firmware"
 [ ! -d "$BOOT_DIR" ] && BOOT_DIR="/boot"
-SETUP_FILE="${BOOT_DIR}/trmnl-setup.txt"
+SETUP_FILE="${BOOT_DIR}/inkflow-setup.txt"
 
 # If no config is found on the boot partition, exit silently
 if [ ! -f "$SETUP_FILE" ]; then
-    echo "No trmnl-setup.txt configuration found on FAT partition. Skipping auto-provisioning."
+    echo "No inkflow-setup.txt configuration found on FAT partition. Skipping auto-provisioning."
     exit 0
 fi
 
@@ -67,7 +67,7 @@ fi
 
 # --- CLEAN UP & PURGE BOOTSTRAPPER ---
 echo "✅ Provisioning completed. Disabling firstboot service."
-systemctl disable trmnl-bootstrap.service
+systemctl disable inkflow-bootstrap.service
 
 # Move setup file to a backup so it doesn't trigger again
 mv "$SETUP_FILE" "${SETUP_FILE}.processed"

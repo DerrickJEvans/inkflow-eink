@@ -57,7 +57,7 @@ graph TD
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
 ### 4. GitHub Actions CI/CD Image Compiler
-* **`build-images.yml`**: A secure GitHub Actions pipeline that downloads Raspberry Pi OS Bookworm Lite, mounts the ext4 root filesystem cleanly in user-space, injects our firstboot bootstrapper `trmnl-bootstrap.service`, and packages a custom E-Ink OS image file.
+* **`build-images.yml`**: A secure GitHub Actions pipeline that downloads Raspberry Pi OS Bookworm Lite, mounts the ext4 root filesystem cleanly in user-space, injects our firstboot bootstrapper `inkflow-bootstrap.service`, and packages a custom E-Ink OS image file.
 * **Automated & Downloadable**: Releases are automatically built and compiled when code changes are tagged, or manually dispatched via a single click in the Actions tab.
 
 ---
@@ -202,7 +202,7 @@ sudo ./install.sh
 
 We have created an automated **GitHub Actions CI/CD pipeline** that packages the entire codebase into a single, pre-compiled **Universal Inkflow OS Image** (`inkflow.img.xz`) available on your repository's **Releases** tab.
 
-This single image contains both the server and client codebase. Its active mode (whether it boots as a server or a display client) is determined dynamically on its very first boot by reading a simple configuration file named **`trmnl-setup.txt`** that you can create natively inside Windows Explorer!
+This single image contains both the server and client codebase. Its active mode (whether it boots as a server or a display client) is determined dynamically on its very first boot by reading a simple configuration file named **`inkflow-setup.txt`** located on the FAT boot partition.
 
 #### 1. Download and Flash the Universal Image
 To unlock Raspberry Pi Imager's native **OS Customization (Edit Settings)** menu for our custom image, you launch the Imager pointing to the pre-packaged **`inkflow-imager-repo.json`** file. Because the JSON uses a relative path internally, you do not need to edit any file paths!
@@ -221,40 +221,44 @@ To unlock Raspberry Pi Imager's native **OS Customization (Edit Settings)** menu
    * Configure your **Wi-Fi** network SSID and password.
    * Enable **SSH** (using password authentication).
    * Define your standard **username** and **password**.
-6. Click **Save** and write the image to your SD card.
+6. Click **Save** and write the SD card.
 
 #### 2. Configure screen details in Windows Explorer
-Once flashing is completed, leave the SD card plugged into your Windows PC. The boot partition will mount automatically as a standard USB drive (usually called `boot` or `bootfs`):
+Once flashing is completed, leave the SD card plugged into your Windows PC. The boot partition will mount automatically as a standard USB drive (usually called `boot` or `bootfs`).
+
+To make deployment fully plug-and-play, Inkflow OS **pre-injects a default `inkflow-setup.txt` configuration file** into the boot partition. By default, this file is pre-configured to build a **Server**. 
+
+If you want your Pi to boot as a Server, you do not need to make any changes! Simply eject the SD card and boot your Pi.
+
+If you wish to configure it as an E-Ink display **Client** instead, or customize the device name, follow these quick steps:
 
 1. Double-click the drive to open it.
-2. Right-click in the empty space -> Select **New** -> Select **Text Document**.
-3. Name the file exactly **`trmnl-setup.txt`**.
-4. Open the file in Notepad, copy-paste the config template below, and adjust the values for your device:
+2. Open the file **`inkflow-setup.txt`** in Notepad.
+3. You will see the following pre-injected configuration:
 
 ```ini
 # ==============================================================================
-# OPTION 1: CONFIGURE AS A SERVER (Web Console & AI Studio)
+# INKFLOW OS E-INK BOOT CONFIGURATION FILE
 # ==============================================================================
-ROLE=server                  # REQUIRED: Enables the server and automated installer
-DEVICE_NAME=Living Room Pi   # OPTIONAL: Sets initial default screen name
+# Customize your role and display size natively inside Windows!
+# By default, this image is configured to boot as the Main Dashboard Server.
 
-# Note: SCREEN_TYPE and SERVER_IP are NOT used or required for ROLE=server.
-# The server runs locally and automatically renders layouts dynamically in 
-# any E-Ink screen resolution.
+ROLE=server                  # REQUIRED: Set to 'server' or 'client'
+DEVICE_NAME=Living Room Pi   # OPTIONAL: Friendly name of your screen
+
+# ==============================================================================
+# CLIENT-MODE CONFIGURATION DIRECTIVES (Commented out by default)
+# ==============================================================================
+# To configure this machine as a Standalone E-Ink Client, uncomment and fill out 
+# the parameters below:
+# ------------------------------------------------------------------------------
+# ROLE=client
+# SERVER_IP=192.168.1.122      # REQUIRED: The local IP of your main server Pi
+# SCREEN_TYPE=4in26            # REQUIRED: Your display size: '4in26', '7in5', '4in2', '2in9'
+# DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
 ```
 
-Or, if configuring as a screen client:
-
-```ini
-# ==============================================================================
-# OPTION 2: CONFIGURE AS A STANDALONE E-INK CLIENT (Display HATs)
-# ==============================================================================
-ROLE=client                  # REQUIRED: Enables the client-side drivers and loops
-SERVER_IP=192.168.1.122      # REQUIRED: The local IP of your main server Pi
-SCREEN_TYPE=4in26            # REQUIRED: Your display size: '4in26', '7in5', '4in2', '2in9'
-DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
-```
-
+4. Adjust the file (e.g. comment out the server role, uncomment the client role and fill out your server's IP and display size).
 5. Click **Save** and safely eject the SD card.
 6. Plug the card into your Raspberry Pi and power it on.
 

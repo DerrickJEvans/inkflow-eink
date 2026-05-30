@@ -46,19 +46,42 @@ jobs:
           sudo rsync -av --exclude="node_modules" --exclude="*.img" --exclude="*.img.xz" --exclude=".git" --exclude=".github" --exclude="cache" --exclude="mnt" ./ mnt/root/opt/trmnl-pi-server/
           
           # 2. Inject our bootstrap script
-          sudo cp mnt/root/opt/trmnl-pi-server/client/trmnl-bootstrap.sh mnt/root/usr/local/bin/trmnl-bootstrap
-          sudo chmod +x mnt/root/usr/local/bin/trmnl-bootstrap
+          sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-bootstrap.sh mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo chmod +x mnt/root/usr/local/bin/inkflow-bootstrap
+          
+          # 2.5. Inject default inkflow-setup.txt configuration template into the FAT boot partition
+          cat <<EOF | sudo tee mnt/boot/inkflow-setup.txt
+# ==============================================================================
+# INKFLOW OS E-INK BOOT CONFIGURATION FILE
+# ==============================================================================
+# Customize your role and display size natively inside Windows!
+# By default, this image is configured to boot as the Main Dashboard Server.
+
+ROLE=server                  # REQUIRED: Set to 'server' or 'client'
+DEVICE_NAME=Living Room Pi   # OPTIONAL: Friendly name of your screen
+
+# ==============================================================================
+# CLIENT-MODE CONFIGURATION DIRECTIVES (Commented out by default)
+# ==============================================================================
+# To configure this machine as a Standalone E-Ink Client, uncomment and fill out 
+# the parameters below:
+# ------------------------------------------------------------------------------
+# ROLE=client
+# SERVER_IP=192.168.1.122      # REQUIRED: The local IP of your main server Pi
+# SCREEN_TYPE=4in26            # REQUIRED: Your display size: '4in26', '7in5', '4in2', '2in9'
+# DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
+EOF
           
           # 3. Inject our systemd bootstrap service
-          cat <<EOF | sudo tee mnt/root/etc/systemd/system/trmnl-bootstrap.service
+          cat <<EOF | sudo tee mnt/root/etc/systemd/system/inkflow-bootstrap.service
           [Unit]
-          Description=TRMNL Pi E-Ink Firstboot Auto-Provisioner
+          Description=Inkflow OS E-Ink Firstboot Auto-Provisioner
           After=network-online.target
           Wants=network-online.target
 
           [Service]
           Type=oneshot
-          ExecStart=/usr/local/bin/trmnl-bootstrap
+          ExecStart=/usr/local/bin/inkflow-bootstrap
           RemainAfterExit=yes
 
           [Install]
@@ -66,7 +89,7 @@ jobs:
           EOF
           
           # 4. Enable bootstrap service to execute on next boot
-          sudo ln -s /etc/systemd/system/trmnl-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/trmnl-bootstrap.service
+          sudo ln -s /etc/systemd/system/inkflow-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/inkflow-bootstrap.service
           
           # Cleanup mounts safely
           sudo umount mnt/boot
