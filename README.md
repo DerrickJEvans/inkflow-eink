@@ -205,16 +205,26 @@ We have created an automated **GitHub Actions CI/CD pipeline** that packages the
 This single image contains both the server and client codebase. Its active mode (whether it boots as a server or a display client) is determined dynamically on its very first boot by reading a simple configuration file named **`trmnl-setup.txt`** that you can create natively inside Windows Explorer!
 
 #### 1. Download and Flash the Universal Image
+To unlock Raspberry Pi Imager's native **OS Customization (Edit Settings)** menu for our custom image, you must launch the Imager pointing to our **repository JSON file (`trmnl-imager-repo.json`)** which registers the standard initialization format:
+
 1. Download the pre-compiled **`trmnl-eink-os.img.xz`** package from the **Releases** tab of your GitHub repository.
-2. Open **Raspberry Pi Imager** on your Windows PC.
-3. **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
-4. **Choose OS**: Scroll to the bottom -> Select **Use custom** -> Select your downloaded `trmnl-eink-os.img.xz` file.
-5. **Choose Storage**: Select your SD card.
-6. Click **Next** -> Click **EDIT SETTINGS** (OS Customization):
+2. Open **`trmnl-imager-repo.json`** in your editor and update the `"url"` field to the absolute file path of your downloaded `trmnl-eink-os.img.xz` file:
+   ```json
+   "url": "C:\\Users\\<YourUsername>\\Downloads\\trmnl-eink-os.img.xz"
+   ```
+3. Open **PowerShell** or **Command Prompt** on your Windows PC and launch the Imager pointing to the JSON file:
+   ```cmd
+   "C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "C:\path\to\your\trmnl-pi-server\trmnl-imager-repo.json"
+   ```
+4. In the Imager UI:
+   * **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
+   * **Choose OS**: Select **TRMNL Pi Server OS** -> **TRMNL Pi Headless Server**.
+   * **Choose Storage**: Select your SD card.
+5. Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings**:
    * Configure your **Wi-Fi** network SSID and password.
    * Enable **SSH** (using password authentication).
-   * Define your **username** and **password**.
-7. Click **Save** and write the image to your SD card.
+   * Define your standard **username** and **password**.
+6. Click **Save** and write the image to your SD card.
 
 #### 2. Configure screen details in Windows Explorer
 Once flashing is completed, leave the SD card plugged into your Windows PC. The boot partition will mount automatically as a standard USB drive (usually called `boot` or `bootfs`):
