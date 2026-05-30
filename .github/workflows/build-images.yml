@@ -72,9 +72,14 @@ jobs:
           echo "⚙️ Stripping modern metadata checksums and orphan file trackers..."
           sudo tune2fs -O ^metadata_csum,^orphan_file "${LOOP_DEV}p2"
           
-          # Step 3: Force check filesystem a second time to rewrite descriptors and mark it as clean and pristine
-          echo "⚙️ Sanitizing and verifying ext4 partition..."
-          sudo e2fsck -fy "${LOOP_DEV}p2"
+          # Step 3: Force check and optimize directories a second time to rewrite descriptors and mark clean
+          echo "⚙️ Sanitizing, optimizing, and verifying ext4 partition..."
+          sudo e2fsck -fDy "${LOOP_DEV}p2"
+          
+          # Step 4: Flush all caches and sync buffers directly to the raw image file
+          echo "⚙️ Flushing loopback buffers and syncing to disk..."
+          sudo blockdev --flushbufs "$LOOP_DEV"
+          sync
           
           # Detach loop device safely
           sudo losetup -d "$LOOP_DEV"
