@@ -166,7 +166,33 @@ sudo ./install.sh
 ```
 Once the installer completes, the server will be running persistently in the background. Open your browser and navigate to `http://<your-pi-ip>:5000` to manage your server!
 
+#### 💡 Alternative: Direct Git Sparse Checkout (Cleanest, Server-Only Installation)
+If your Pi 5 has direct internet access, you can run a **Git Sparse Checkout** directly on your server Pi. This will download only the server files and configurations, entirely omitting the `client/` and `arduino/` subdirectories to keep your server installation clean, lightweight, and clutter-free:
+```bash
+# 1. Create a sparse repository folder on the Pi
+mkdir -p ~/trmnl-pi-server && cd ~/trmnl-pi-server
+git init
+
+# 2. Add remote repository upstream
+git remote add origin https://github.com/DerrickJEvans/trmnl-pi-server.git
+
+# 3. Enable sparse-checkout and exclude client/ and arduino/ folders
+git config core.sparseCheckout true
+echo "/*" >> .git/info/sparse-checkout
+echo "!/client/" >> .git/info/sparse-checkout
+echo "!/arduino/" >> .git/info/sparse-checkout
+
+# 4. Pull origin/main (this will only fetch server files and configs!)
+git pull origin main
+
+# 5. Strip Windows line endings (if git configured it) and run the installer
+sed -i 's/\r$//' *.sh
+chmod +x install.sh
+sudo ./install.sh
+```
+
 ---
+
 
 ### Option B: Build a Custom Plug-and-Play OS Image (Advanced)
 If you want to build a raw custom `.img` file that can be flashed straight to an SD card:
