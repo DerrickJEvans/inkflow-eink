@@ -194,40 +194,48 @@ sudo ./install.sh
 ---
 
 
-### Option B: Build a Custom Plug-and-Play OS Image (Advanced)
-If you want to build a raw custom `.img` file that can be flashed straight to an SD card:
+### Option B: Pre-Compiled Universal E-Ink OS Image (GitHub Automated & Recommended)
 
-#### 1. Run the Image Builder (inside WSL Ubuntu)
-To ensure high-performance native partition loopback mounting, run the builder in WSL's local home folder:
-```bash
-# Sync files to WSL (replace <WSL-USERNAME> and <PATH-TO-WORKSPACE> with actual paths)
-wsl mkdir -p /home/<WSL-USERNAME>/trmnl-pi-server
-wsl rsync -a --exclude="node_modules" --exclude="*.img" --exclude="*.xz" /mnt/c/<PATH-TO-WORKSPACE>/ /home/<WSL-USERNAME>/trmnl-pi-server/
+We have created an automated **GitHub Actions CI/CD pipeline** that packages the entire codebase into a single, pre-compiled **Universal E-Ink OS Image** (`trmnl-eink-os.img.xz`) available on your repository's **Releases** tab.
 
-# Normalize line endings and run as root to mount loop offsets natively
-wsl -u root -d Ubuntu -e bash -c "sed -i 's/\r$//' /home/<WSL-USERNAME>/trmnl-pi-server/*.sh"
-wsl -u root -d Ubuntu -e bash -c "cd /home/<WSL-USERNAME>/trmnl-pi-server && ./build_custom_image.sh"
+This single image contains both the server and client codebase. Its active mode (whether it boots as a server or a display client) is determined dynamically on its very first boot by reading a simple configuration file named **`trmnl-setup.txt`** that you can create natively inside Windows Explorer!
 
-# Copy the finished image (2.7 GB) back to Windows and clean up WSL
-wsl cp /home/<WSL-USERNAME>/trmnl-pi-server/trmnl-pi-server-headless.img /mnt/c/<PATH-TO-WORKSPACE>/
-wsl rm -rf /home/<WSL-USERNAME>/trmnl-pi-server
+#### 1. Download and Flash the Universal Image
+1. Download the pre-compiled **`trmnl-eink-os.img.xz`** package from the **Releases** tab of your GitHub repository.
+2. Open **Raspberry Pi Imager** on your Windows PC.
+3. **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
+4. **Choose OS**: Scroll to the bottom -> Select **Use custom** -> Select your downloaded `trmnl-eink-os.img.xz` file.
+5. **Choose Storage**: Select your SD card.
+6. Click **Next** -> Click **EDIT SETTINGS** (OS Customization):
+   * Configure your **Wi-Fi** network SSID and password.
+   * Enable **SSH** (using password authentication).
+   * Define your **username** and **password**.
+7. Click **Save** and write the image to your SD card.
+
+#### 2. Configure screen details in Windows Explorer
+Once flashing is completed, leave the SD card plugged into your Windows PC. The boot partition will mount automatically as a standard USB drive (usually called `boot` or `bootfs`):
+
+1. Double-click the drive to open it.
+2. Right-click in the empty space -> Select **New** -> Select **Text Document**.
+3. Name the file exactly **`trmnl-setup.txt`**.
+4. Open the file in Notepad, copy-paste the config template below, and adjust the values for your device:
+
+```ini
+# ==============================================================================
+# TRMNL E-Ink Boot Configuration File
+# ==============================================================================
+# Customize your role and screen settings natively inside Windows!
+
+ROLE=client                  # Set to 'server' (for the web console) or 'client' (for display hats)
+DEVICE_NAME=Kitchen E-Ink    # The friendly name displayed in the Control Center
+SCREEN_TYPE=4in26            # Choose display size: '4in26', '7in5', '4in2', '2in9'
+SERVER_IP=192.168.1.122      # (Required only if ROLE=client) The IP of your server Pi
 ```
 
-#### 2. Flash via Imager with OS Customizations Enabled
-To unlock Raspberry Pi Imager's hidden **OS Customization (Edit Settings)** menu for a custom `.img` file, you must launch the Imager pointing to the custom local repository JSON file we created (`trmnl-imager-repo.json`):
+5. Click **Save** and safely eject the SD card.
+6. Plug the card into your Raspberry Pi and power it on.
 
-> [!NOTE]
-> Before running the Imager command, open `trmnl-imager-repo.json` in your editor and replace `<PATH_TO_YOUR_WORKSPACE>` with the absolute Windows path to your workspace directory!
-
-Run this command in Windows Command Prompt (CMD) or PowerShell (replace `<PATH-TO-YOUR-WORKSPACE>` with the actual path):
-```cmd
-"C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "<PATH-TO-YOUR-WORKSPACE>\trmnl-imager-repo.json"
-```
-* **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
-* **Choose OS**: Select **TRMNL Pi Server OS** -> **TRMNL Pi Headless Server**.
-* **Choose Storage**: Select your SD card.
-* Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings** to configure your Wi-Fi, SSH, and set your choice of standard username and password.
-* Flash, insert the card into your Pi, power it up, and wait 3 minutes for native first-boot provisioning!
+On first boot, the Pi OS will automatically connect to Wi-Fi, register the standard accounts, run our bootstrap provisioner in the background, set up the correct display drivers/environment parameters, and boot cleanly. **Your screen goes live in minutes without typing a single terminal command!**
 
 ---
 
