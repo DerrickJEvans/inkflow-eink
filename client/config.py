@@ -1,51 +1,64 @@
-# config.py - Configuration settings for the Python E-Ink Client
+# config.py - Configuration settings loader for the Python E-Ink Client
 import os
 
-# Server Settings
-# Change to your Pi server's IP address (e.g., '192.168.1.100')
+# Resolve the absolute path of the local .env file in the client directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(current_dir, '.env')
+
+# Manually parse the .env file if it exists to avoid external pip dependencies
+if os.path.exists(env_path):
+    with open(env_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            # Ignore empty lines and comments
+            if not line or line.startswith('#'):
+                continue
+            # Parse KEY=VALUE
+            if '=' in line:
+                key, val = line.split('=', 1)
+                key = key.strip()
+                val = val.strip()
+                # Strip wrapping quotes if present
+                if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                    val = val[1:-1]
+                # Write to os.environ if not already set (allowing standard shell env overrides)
+                if key not in os.environ:
+                    os.environ[key] = val
+
+# Helper function to parse booleans safely
+def parse_bool(val):
+    if not val:
+        return False
+    return val.lower() in ('true', '1', 'yes', 'on')
+
+# Helper function to parse integers safely
+def parse_int(val):
+    try:
+        return int(val) if val else None
+    except ValueError:
+        return None
+
+# ==============================================================================
+#                               CONFIG VARIABLES
+# ==============================================================================
+
+# 1. Server Settings
 SERVER_IP = os.environ.get('TRMNL_SERVER_IP', '192.168.1.122')
 SERVER_PORT = os.environ.get('TRMNL_SERVER_PORT', '5000')
 
-# ==============================================================================
-#                                DEVICE DETAILS
-# ==============================================================================
+# 2. Device Settings
+DEVICE_NAME = os.environ.get('TRMNL_DEVICE_NAME', 'Living Room Pi')
+DEVICE_ID = os.environ.get('TRMNL_DEVICE_ID', 'dynamic_mac')
 
-# 1. Dynamic Device Naming
-# Setting this automatically updates your screen name in the Control Center!
-DEVICE_NAME = 'Living Room Pi'
+# 3. Screen & Driver Selection
+SCREEN_TYPE = os.environ.get('TRMNL_SCREEN_TYPE', '4in26')
+DISPLAY_TYPE = os.environ.get('TRMNL_DISPLAY_TYPE', 'waveshare')
 
-# 2. Dynamic Device ID (MAC Address)
-# Set to 'dynamic_mac' or leave empty to dynamically read your network MAC address at boot!
-DEVICE_ID = 'dynamic_mac'
+# 4. Color Contrast & Sleep Settings
+INVERT_COLORS = parse_bool(os.environ.get('TRMNL_INVERT_COLORS', 'false'))
+DEFAULT_POLL_INTERVAL = parse_int(os.environ.get('TRMNL_DEFAULT_POLL_INTERVAL', '1800')) or 1800
 
-# 3. E-Paper Screen Size Selection
-# Choose a pre-configured option: 
-#   '4in26'      - Waveshare 4.26" (800x480) [Recommended Default]
-#   '7in5'       - Waveshare 7.5" V2 (800x480)
-#   '4in2'       - Waveshare 4.2" (400x300)
-#   '2in9'       - Waveshare 2.9" (296x128)
-SCREEN_TYPE = '4in26'
-
-# Hardware Display Driver Selector
-# Options: 
-#   'mock'       - Saves to local 'debug_preview.png' file (great for debugging on PCs!)
-#   'waveshare'  - Drives Waveshare SPI e-paper screens
-#   'inky'       - Drives Pimoroni Inky pHAT / wHAT boards
-DISPLAY_TYPE = 'waveshare'
-
-# ==============================================================================
-#                        MANUAL HARDWARE OVERRIDES
-# ==============================================================================
-# Set any of these to override the defaults resolved automatically by SCREEN_TYPE.
-# If left as None, the settings will be perfectly resolved based on SCREEN_TYPE!
-WIDTH = None
-HEIGHT = None
-WAVESHARE_MODEL = None
-
-# Color Inversion
-# Set to True if your screen shows white text on a black background (inverted/dark mode)
-# Set to False for standard black text on a white paper background
-INVERT_COLORS = False
-
-# Fallback Poll Interval (in seconds) if server doesn't respond with one
-DEFAULT_POLL_INTERVAL = 1800 
+# 5. Manual Hardware Resolution Overrides
+WIDTH = parse_int(os.environ.get('TRMNL_WIDTH', ''))
+HEIGHT = parse_int(os.environ.get('TRMNL_HEIGHT', ''))
+WAVESHARE_MODEL = os.environ.get('TRMNL_WAVESHARE_MODEL', '') or None
