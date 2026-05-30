@@ -82,7 +82,7 @@ fi
 # 5. Create and register the Systemd persistent background service
 echo "⚙️ Creating Systemd background service daemon..."
 CLIENT_DIR=$(pwd)
-USER_NAME=$(logname || echo $USER || whoami || echo "pi")
+USER_NAME=$(logname 2>/dev/null || awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
 
 SERVICE_FILE="/etc/systemd/system/trmnl-client.service"
 cat <<EOF > "$SERVICE_FILE"

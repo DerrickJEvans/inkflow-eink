@@ -22,14 +22,26 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# Determine active non-root standard user and home directory dynamically
-SUDO_USER_NAME="${SUDO_USER:-$(logname || echo $USER || whoami || echo "pi")}"
+# Determine active non-root standard user dynamically (UID >= 1000)
+SUDO_USER_NAME="${SUDO_USER:-$(logname 2>/dev/null || awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")}"
 USER_HOME=$(getent passwd "$SUDO_USER_NAME" | cut -d: -f6)
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ ! -d "$PROJECT_DIR" ] || [ ! -f "${PROJECT_DIR}/server.js" ]; then
   echo -e "${RED}[Error] Root server script (server.js) not found in directory: ${PROJECT_DIR}${NC}"
   exit 1
+fi
+
+# Ensure standard user recursively owns the project directory for permissions and dynamic access
+echo -e "${CYAN}Setting ownership of project directory to standard user ${SUDO_USER_NAME}...${NC}"
+chown -R "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$PROJECT_DIR"
+
+# Create a convenient symlink in the user's home directory if it doesn't exist
+USER_LINK="${USER_HOME}/trmnl-pi-server"
+if [ ! -e "$USER_LINK" ]; then
+  echo -e "${CYAN}Creating convenience symbolic link in standard user's home directory...${NC}"
+  ln -s "$PROJECT_DIR" "$USER_LINK"
+  chown -h "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$USER_LINK"
 fi
 
 echo -e "${CYAN}[1/5] Updating package cache...${NC}"

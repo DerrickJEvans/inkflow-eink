@@ -6,7 +6,7 @@
 # client/server services in real-time.
 # ==============================================================================
 
-set -x
+set -euxo pipefail
 
 BOOT_DIR="/boot/firmware"
 [ ! -d "$BOOT_DIR" ] && BOOT_DIR="/boot"

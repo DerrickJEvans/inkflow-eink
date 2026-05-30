@@ -32,6 +32,17 @@ jobs:
           LOOP_DEV=$(sudo losetup -fP --show "$IMAGE_FILE")
           echo "Loop device created at: $LOOP_DEV"
           
+          # CRITICAL compatibility fix: Disable metadata_csum_seed and orphan_file BEFORE mounting!
+          # This forces the host kernel to write all customizations in the compatible format without mismatch errors.
+          echo "⚙️ Running initial e2fsck filesystem check..."
+          sudo e2fsck -fy "${LOOP_DEV}p2"
+          
+          echo "⚙️ Stripping modern incompatible metadata_csum_seed and orphan_file features..."
+          sudo tune2fs -O ^metadata_csum_seed,^orphan_file "${LOOP_DEV}p2"
+          
+          echo "⚙️ Sanitizing and optimizing directory structures..."
+          sudo e2fsck -fDy "${LOOP_DEV}p2"
+          
           # Create directories for mounting
           mkdir -p mnt/boot mnt/root
           
@@ -64,19 +75,16 @@ jobs:
           sudo umount mnt/boot
           sudo umount mnt/root
           
-          # Step 1: Force check filesystem (required by tune2fs to allow structural metadata changes)
-          echo "⚙️ Running initial e2fsck filesystem check..."
+          # Strip modern incompatible features again AFTER unmounting, in case the host kernel re-enabled them!
+          echo "⚙️ Stripping modern incompatible metadata_csum_seed and orphan_file features after unmounting..."
           sudo e2fsck -fy "${LOOP_DEV}p2"
-          
-          # Step 2: Disable modern incompatible metadata_csum_seed and orphan_file, while keeping metadata_csum fully active
-          echo "⚙️ Stripping incompatible metadata_csum_seed and orphan_file features..."
           sudo tune2fs -O ^metadata_csum_seed,^orphan_file "${LOOP_DEV}p2"
           
-          # Step 3: Force check and optimize directories a second time to rewrite descriptors and mark clean
-          echo "⚙️ Sanitizing, optimizing, and verifying ext4 partition..."
-          sudo e2fsck -fDy "${LOOP_DEV}p2"
+          # Perform final e2fsck verification scan to mark the partition cleanly
+          echo "⚙️ Performing final e2fsck verification scan..."
+          sudo e2fsck -fy "${LOOP_DEV}p2"
           
-          # Step 4: Flush all caches and sync buffers directly to the raw image file
+          # Flush all loopback caches and sync buffers directly to the raw image file
           echo "⚙️ Flushing loopback buffers and syncing to disk..."
           sudo blockdev --flushbufs "$LOOP_DEV"
           sync
