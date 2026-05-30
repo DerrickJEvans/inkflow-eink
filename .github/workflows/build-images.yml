@@ -18,15 +18,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y kpartx unzip wget xz-utils coreutils jq
 
-      - name: 💾 Download official Raspberry Pi OS Bookworm Lite
+      # pi-gen requires substantial disk space; free up the runner
+      - name: 🧹 Free Disk Space
         run: |
-          # Fetch the latest official 64-bit Lite image link
-          wget -O pi-os-lite.img.xz https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2024-10-28/2024-10-22-raspios-bookworm-arm64-lite.img.xz
-          xz -d pi-os-lite.img.xz
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+
+      - name: 🛠️ Run pi-gen-action to build base Bookworm image
+        uses: usimd/pi-gen-action@v1
+        with:
+          image-name: "custom-debian-pi"
+          release: "bookworm" # Options: bullseye, bookworm, trixie
+          compression: "none"
+          # CRITICAL: Force native loop devices. USE_QCOW2=0 prevents 
+          # first-boot partition resize failures.
+          extra-vars: |
+            USE_QCOW2=0
+          # Build up to stage 2 for a clean "Lite" Debian system
+          stage-list: "stage0 stage1 stage2"
 
       - name: 🔧 Mount Image & Inject Customizations
         run: |
-          IMAGE_FILE="pi-os-lite.img"
+          IMAGE_FILE="deploy/custom-debian-pi.img"
           
           # Create loopback devices for partitions
           LOOP_DEV=$(sudo losetup -fP --show "$IMAGE_FILE")
@@ -94,7 +108,7 @@ jobs:
 
       - name: 📦 Compress and Package custom E-Ink OS
         run: |
-          mv pi-os-lite.img inkflow.img
+          mv deploy/custom-debian-pi.img inkflow.img
           
           # 1. Calculate uncompressed metrics
           EXTRACT_SIZE=$(stat -c%s inkflow.img)
