@@ -64,11 +64,15 @@ jobs:
           sudo umount mnt/boot
           sudo umount mnt/root
           
-          # Disable metadata checksums and orphan files to guarantee 100% kernel compatibility on target hardware
+          # Step 1: Force check filesystem (required by tune2fs to allow structural metadata changes)
+          echo "⚙️ Running initial e2fsck filesystem check..."
+          sudo e2fsck -fy "${LOOP_DEV}p2"
+          
+          # Step 2: Disable metadata checksums and orphan files to guarantee 100% kernel compatibility on target hardware
           echo "⚙️ Stripping modern metadata checksums and orphan file trackers..."
           sudo tune2fs -O ^metadata_csum,^orphan_file "${LOOP_DEV}p2"
           
-          # Force repair and sanitize the ext4 root partition to mark the filesystem as clean and pristine
+          # Step 3: Force check filesystem a second time to rewrite descriptors and mark it as clean and pristine
           echo "⚙️ Sanitizing and verifying ext4 partition..."
           sudo e2fsck -fy "${LOOP_DEV}p2"
           
