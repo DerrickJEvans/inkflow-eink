@@ -2,7 +2,7 @@
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins, compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
 
-Includes a complete **automated headless Raspberry Pi OS raw image builder** utilizing user-space FUSE mounts, making setup fully plug-and-play.
+Includes a complete **automated GitHub Actions CI/CD E-Ink OS Image compiler** supporting plug-and-play role configurations natively inside Windows Explorer.
 
 ---
 
@@ -56,9 +56,9 @@ graph TD
   * **Event Propagation Safety Blocks**: Text inputs, checkboxes, and notice additions intercept mousedown events to prevent catalog re-selections or preview restarts while typing.
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
-### 4. Headless OS Raw Image Builder
-* **`build_custom_image.sh`**: A shell tool that downloads Raspberry Pi OS Bookworm Lite, mounts the ext4 root filesystem headlessly using FUSE (`fuse2fs`), injects your custom server configurations, and configures a self-cleaning first-boot provisioning service.
-* **No Loop Devices**: Builds raw images completely in user-space without using root loopback loop devices (`losetup`), making it fast, robust, and safe.
+### 4. GitHub Actions CI/CD Image Compiler
+* **`build-images.yml`**: A secure GitHub Actions pipeline that downloads Raspberry Pi OS Bookworm Lite, mounts the ext4 root filesystem cleanly in user-space, injects our firstboot bootstrapper `trmnl-bootstrap.service`, and packages a custom E-Ink OS image file.
+* **Automated & Downloadable**: Releases are automatically built and compiled when code changes are tagged, or manually dispatched via a single click in the Actions tab.
 
 ---
 
@@ -72,7 +72,6 @@ graph TD
 * [**`public/`**](public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
 * [**`client/`**](client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
 * [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
-* [**`build_custom_image.sh`**](build_custom_image.sh): Native image packaging script using `fuse2fs`.
 * [**`install.sh`**](install.sh): One-click Linux server automated service setup and daemon registration.
 * [**`trmnl.sh`**](trmnl.sh): Master server control, system diagnostics, and safe update assistant.
 * [**`client/trmnl-client.sh`**](client/trmnl-client.sh): Master client installer, telemetry scanner, and daemon manager.
