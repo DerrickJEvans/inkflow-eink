@@ -226,14 +226,26 @@ Once flashing is completed, leave the SD card plugged into your Windows PC. The 
 
 ```ini
 # ==============================================================================
-# TRMNL E-Ink Boot Configuration File
+# OPTION 1: CONFIGURE AS A SERVER (Web Console & AI Studio)
 # ==============================================================================
-# Customize your role and screen settings natively inside Windows!
+ROLE=server                  # REQUIRED: Enables the server and automated installer
+DEVICE_NAME=Living Room Pi   # OPTIONAL: Sets initial default screen name
 
-ROLE=client                  # Set to 'server' (for the web console) or 'client' (for display hats)
-DEVICE_NAME=Kitchen E-Ink    # The friendly name displayed in the Control Center
-SCREEN_TYPE=4in26            # Choose display size: '4in26', '7in5', '4in2', '2in9'
-SERVER_IP=192.168.1.122      # (Required only if ROLE=client) The IP of your server Pi
+# Note: SCREEN_TYPE and SERVER_IP are NOT used or required for ROLE=server.
+# The server runs locally and automatically renders layouts dynamically in 
+# any E-Ink screen resolution.
+```
+
+Or, if configuring as a screen client:
+
+```ini
+# ==============================================================================
+# OPTION 2: CONFIGURE AS A STANDALONE E-INK CLIENT (Display HATs)
+# ==============================================================================
+ROLE=client                  # REQUIRED: Enables the client-side drivers and loops
+SERVER_IP=192.168.1.122      # REQUIRED: The local IP of your main server Pi
+SCREEN_TYPE=4in26            # REQUIRED: Your display size: '4in26', '7in5', '4in2', '2in9'
+DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
 ```
 
 5. Click **Save** and safely eject the SD card.
