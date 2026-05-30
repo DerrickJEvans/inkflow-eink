@@ -13,10 +13,10 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⚙️ Install system packaging tools
+      - name: ⚙️ Install system packaging and emulation tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y kpartx unzip wget xz-utils coreutils jq
+          sudo apt-get install -y kpartx unzip wget xz-utils coreutils jq qemu-user-static binfmt-support
 
       # pi-gen requires substantial disk space; free up the runner
       - name: 🧹 Free Disk Space
@@ -27,14 +27,15 @@ jobs:
 
       - name: 🛠️ Run pi-gen-action to build base Bookworm image
         uses: usimd/pi-gen-action@v1
+        env:
+          # CRITICAL: Force native loop devices. USE_QCOW2=0 prevents 
+          # first-boot partition resize failures.
+          USE_QCOW2: 0
         with:
           image-name: "custom-debian-pi"
           release: "bookworm" # Options: bullseye, bookworm, trixie
           compression: "none"
-          # CRITICAL: Force native loop devices. USE_QCOW2=0 prevents 
-          # first-boot partition resize failures.
-          extra-vars: |
-            USE_QCOW2=0
+          verbose-output: true
           # Build up to stage 2 for a clean "Lite" Debian system
           stage-list: "stage0 stage1 stage2"
 
