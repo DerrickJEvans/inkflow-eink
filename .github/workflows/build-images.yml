@@ -40,7 +40,7 @@ jobs:
           # --- Injection Phase ---
           # 1. Copy repository files into /opt/trmnl-pi-server (excluding loopback images and git metadata)
           sudo mkdir -p mnt/root/opt/trmnl-pi-server
-          sudo rsync -av --exclude="node_modules" --exclude="*.img" --exclude="*.img.xz" --exclude=".git" --exclude=".github" --exclude="cache" ./ mnt/root/opt/trmnl-pi-server/
+          sudo rsync -av --exclude="node_modules" --exclude="*.img" --exclude="*.img.xz" --exclude=".git" --exclude=".github" --exclude="cache" --exclude="mnt" ./ mnt/root/opt/trmnl-pi-server/
           
           # 2. Inject our bootstrap script
           sudo cp mnt/root/opt/trmnl-pi-server/client/trmnl-bootstrap.sh mnt/root/usr/local/bin/trmnl-bootstrap
