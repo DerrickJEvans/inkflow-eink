@@ -69,6 +69,9 @@ graph TD
 * [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
 * [**`build_custom_image.sh`**](build_custom_image.sh): Native image packaging script using `fuse2fs`.
 * [**`install.sh`**](install.sh): One-click Linux server automated service setup and daemon registration.
+* [**`trmnl.sh`**](trmnl.sh): Master server control, system diagnostics, and safe update assistant.
+* [**`client/trmnl-client.sh`**](client/trmnl-client.sh): Master client installer, telemetry scanner, and daemon manager.
+
 
 ---
 
@@ -314,112 +317,45 @@ sudo raspi-config
 # Select 'Interface Options' -> 'SPI' -> 'Enable (Yes)' -> 'Finish' & Reboot.
 ```
 
-#### 3. Install System Dependencies & Drivers
-After the Pi reboots, log back in and run:
+#### 2. Get the Client Code (Git Sparse Checkout)
+To download *only* the client code on your standalone client Pi Zero without downloading server code or large node packages, run these commands in your client Pi's SSH terminal to perform a highly efficient sparse checkout:
 ```bash
-sudo apt-get update
-sudo apt-get install -y python3-pip python3-pil python3-numpy git
+# Initialize a sparse repository locally on the client Pi
+mkdir -p ~/trmnl-client && cd ~/trmnl-client
+git init
+
+# Add the remote repository URL
+git remote add origin https://github.com/DerrickJEvans/trmnl-pi-server.git
+
+# Configure git to only check out the client folder
+git config core.sparseCheckout true
+echo "client/*" >> .git/info/sparse-checkout
+
+# Pull origin/main (this will only download the client folder!)
+git pull origin main
 ```
+This isolates the client files cleanly under `~/trmnl-client/client/`.
 
-##### 💡 RAM & Disk Space Preservation (Git Sparse-Checkout)
-The official Waveshare repository is over 1.2 GB and contains heavy PDFs and code for dozens of different microcontrollers (Arduino, STM32, Pico, etc.) that you don't need. Cloning it directly will exhaust the Raspberry Pi Zero's 512MB RAM and `/tmp` space, causing it to crash.
+#### 3. Run the Automated Client Installer (`trmnl-client.sh`)
+We have created a master client management script `trmnl-client.sh` to automate the entire process (installing dependencies, enabling hardware SPI, installing Waveshare drivers, setting up `.env` files, and registering systemd services) under a single interactive CLI.
 
-To install **only** the Python driver files we need (less than 1MB), run these commands inside your SSH session to perform a highly-efficient **sparse partial clone**:
+To configure your client automatically, run:
 ```bash
-# 1. Clean up any previous failed attempts
-rm -rf e-Paper
-
-# 2. Clone the repository structure without downloading files (sparse partial clone)
-git clone --filter=blob:none --sparse https://github.com/waveshare/e-Paper.git
-
-# 3. Enter the repository directory
-cd e-Paper
-
-# 4. Tell Git to ONLY download the Raspberry Pi Python driver files
-git sparse-checkout set RaspberryPi_JetsonNano/python
-
-# 5. Navigate to the Python driver directory
-cd RaspberryPi_JetsonNano/python
-
-# 6. Install the package globally on your Pi Zero 2 W
-sudo pip3 install . --break-system-packages
+cd ~/trmnl-client/client
+chmod +x trmnl-client.sh
+./trmnl-client.sh
 ```
+* **Select Option `[1]` (Run Automated Client Setup/Installer)**.
+* When prompted, enter your main TRMNL Server IP address (e.g. `192.168.1.122`).
+* The installer will handle all package updates, enable SPI in `/boot/firmware/config.txt`, perform a low-RAM sparse install of Waveshare python drivers to prevent crashes, create a secure local `.env` configuration file, and spawn a persistent background service daemon (`trmnl-client.service`).
 
-#### 4. Transfer & Configure the Client Code
-From your computer's terminal, copy the `client` directory to the Pi using SCP (replace `<USERNAME>` and `<PI-ZERO-IP>` with your standard Pi credentials, and `<PATH-TO-WORKSPACE>` with your actual local path):
-```bash
-scp -r "<PATH-TO-WORKSPACE>/client" <USERNAME>@<PI-ZERO-IP>:~/
-```
-*(On the Pi Zero, `client/config.py` is pre-configured with your display selection, friendly device name, target server IP on port `5000`, and `INVERT_COLORS = False` to ensure correct black-on-white rendering).*
+#### 4. Managing and Upgrading the Client
+Your client is now fully active! You can use `trmnl-client.sh` anytime to manage operations:
+* **Interactive Dashboard**: `./trmnl-client.sh` (opens the colorful control console)
+* **Check live telemetry & connection diagnostics**: `./trmnl-client.sh status`
+* **Stream real-time background logs**: `./trmnl-client.sh logs`
+* **Safely pull code upgrades and restart services**: `./trmnl-client.sh update`
 
-##### 🎨 E-Ink Color Inversion Toggle (Standard vs. Dark Mode)
-Different e-ink screens interpret colors differently. If your screen renders **white text on a black background** (inverted) and you want standard **black text on a white background** (or vice versa):
-1. Open the configuration file on your Pi:
-   ```bash
-   nano ~/client/config.py
-   ```
-2. Locate `INVERT_COLORS` and set it to `True` or `False` to easily toggle modes:
-   ```python
-   INVERT_COLORS = False # Set to True for Dark Mode / False for Standard Paper-White
-   ```
-
-#### 5. Verify & Run
-SSH into the Pi Zero 2 W and run manually to test:
-```bash
-cd ~/client
-python3 client.py
-```
-*The client will connect to your Pi 5 server, auto-register as `pi_zero_4in26`, dither the image, and render it onto the physical screen!*
-
-#### 6. Register as an Automatic Boot Service (Persistent Daemon)
-To keep the client running indefinitely in the background and survive reboots, configure it as a **Systemd background service**.
-
-##### 🌟 Why a Systemd Service is Critical:
-1. **Auto-Start on Power-Up:** Starts the Python client automatically every time the Pi Zero 2 W boots up.
-2. **Network Resilience:** The service waits for the Wi-Fi connection to become active (`network-online.target`) before launching, preventing connection errors on boot.
-3. **Auto-Recovery:** If the Pi Zero loses Wi-Fi connection, or the client crashes for any reason, Systemd will automatically wait 15 seconds (`RestartSec=15`) and restart the script in a clean loop.
-
-To set up the service:
-
-> [!TIP]
-> Alternatively, you can just run the automated setup script (`./setup_client.sh`) from within the `client/` folder on the Pi, which will automatically detect your username and absolute paths, compile dependencies, and register the systemd service for you perfectly!
-
-To configure the systemd service manually:
-```bash
-# Create systemd service definition
-sudo nano /etc/systemd/system/trmnl-client.service
-```
-Paste this configuration (replace `<YOUR-USERNAME>` with your actual Pi username, e.g. `pi`):
-```ini
-[Unit]
-Description=TRMNL E-Ink Display Client
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-User=<YOUR-USERNAME>
-WorkingDirectory=/home/<YOUR-USERNAME>/client
-ExecStart=/usr/bin/python3 /home/<YOUR-USERNAME>/client/client.py
-Restart=always
-RestartSec=15
-StandardOutput=syslog
-StandardError=syslog
-SyslogIdentifier=trmnl-client
-
-[Install]
-WantedBy=multi-user.target
-```
-Enable and start the background service:
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable trmnl-client.service
-sudo systemctl start trmnl-client.service
-```
-Check real-time activity logs:
-```bash
-journalctl -u trmnl-client.service -f -n 50
-```
 
 
 ---
