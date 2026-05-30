@@ -21,33 +21,6 @@
 #include <WiFiS3.h>
 #include "config.h"
 
-
-// ==========================================
-//      DYNAMIC DRIVER & SIZE RESOLUTION
-// ==========================================
-#if defined(SCREEN_TYPE_4_26)
-  #include "epd4in26.h"
-  #define DISPLAY_WIDTH  800
-  #define DISPLAY_HEIGHT 480
-#elif defined(SCREEN_TYPE_7_50)
-  #include "epd7in5_V2.h"
-  #define DISPLAY_WIDTH  800
-  #define DISPLAY_HEIGHT 480
-#elif defined(SCREEN_TYPE_4_20)
-  #include "epd4in2.h"
-  #define DISPLAY_WIDTH  400
-  #define DISPLAY_HEIGHT 300
-#elif defined(SCREEN_TYPE_2_90)
-  #include "epd2in9.h"
-  #define DISPLAY_WIDTH  296
-  #define DISPLAY_HEIGHT 128
-#else
-  #error "No valid SCREEN_TYPE defined! Please uncomment one of the screen options at the top."
-#endif
-
-const int displayWidth = DISPLAY_WIDTH;
-const int displayHeight = DISPLAY_HEIGHT;
-
 Epd epd;
 WiFiClient client;
 int nextRefreshSeconds = fallbackSleepSeconds;

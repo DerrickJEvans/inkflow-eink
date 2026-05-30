@@ -14,32 +14,6 @@
 
 #include "config.h"
 
-// ==========================================
-//      DYNAMIC DRIVER & SIZE RESOLUTION
-// ==========================================
-#if defined(SCREEN_TYPE_4_20)
-  #define DISPLAY_WIDTH  400
-  #define DISPLAY_HEIGHT 300
-  GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> display(GxEPD2_420(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-#elif defined(SCREEN_TYPE_7_50)
-  #define DISPLAY_WIDTH  800
-  #define DISPLAY_HEIGHT 480
-  GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-#elif defined(SCREEN_TYPE_2_90)
-  #define DISPLAY_WIDTH  296
-  #define DISPLAY_HEIGHT 128
-  GxEPD2_BW<GxEPD2_290_T94, GxEPD2_290_T94::HEIGHT> display(GxEPD2_290_T94(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-#elif defined(SCREEN_TYPE_2_70)
-  #define DISPLAY_WIDTH  264
-  #define DISPLAY_HEIGHT 176
-  GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> display(GxEPD2_270(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
-#else
-  #error "No valid SCREEN_TYPE defined! Please uncomment one of the screen options at the top."
-#endif
-
-const int displayWidth = DISPLAY_WIDTH;
-const int displayHeight = DISPLAY_HEIGHT;
-
 // Allocate buffer to hold the downloaded raw 1-bit pixel bitmap
 // Calculated as: (width * height) / 8 bytes.
 // E.g., 400 * 300 / 8 = 15,000 bytes (15 KB), easily fits in ESP32's 320 KB RAM.

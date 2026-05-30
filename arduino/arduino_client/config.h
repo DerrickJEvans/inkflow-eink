@@ -33,4 +33,30 @@ const int fallbackSleepSeconds = 1800;
 #define EPD_RST   16 // Reset
 #define EPD_BUSY  4  // Busy Indicator
 
+// ==============================================================================
+//                  DYNAMIC DRIVER & SIZE RESOLUTION
+// ==============================================================================
+#if defined(SCREEN_TYPE_4_20)
+  #define DISPLAY_WIDTH  400
+  #define DISPLAY_HEIGHT 300
+  GxEPD2_BW<GxEPD2_420, GxEPD2_420::HEIGHT> display(GxEPD2_420(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#elif defined(SCREEN_TYPE_7_50)
+  #define DISPLAY_WIDTH  800
+  #define DISPLAY_HEIGHT 480
+  GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT> display(GxEPD2_750_T7(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#elif defined(SCREEN_TYPE_2_90)
+  #define DISPLAY_WIDTH  296
+  #define DISPLAY_HEIGHT 128
+  GxEPD2_BW<GxEPD2_290_T94, GxEPD2_290_T94::HEIGHT> display(GxEPD2_290_T94(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#elif defined(SCREEN_TYPE_2_70)
+  #define DISPLAY_WIDTH  264
+  #define DISPLAY_HEIGHT 176
+  GxEPD2_BW<GxEPD2_270, GxEPD2_270::HEIGHT> display(GxEPD2_270(EPD_CS, EPD_DC, EPD_RST, EPD_BUSY));
+#else
+  #error "No valid SCREEN_TYPE defined! Please uncomment one of the screen options in config.h."
+#endif
+
+const int displayWidth = DISPLAY_WIDTH;
+const int displayHeight = DISPLAY_HEIGHT;
+
 #endif // CONFIG_H
