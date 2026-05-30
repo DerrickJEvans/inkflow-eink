@@ -16,7 +16,7 @@ jobs:
       - name: ⚙️ Install system packaging tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y kpartx unzip wget xz-utils coreutils
+          sudo apt-get install -y kpartx unzip wget xz-utils coreutils jq
 
       - name: 💾 Download official Raspberry Pi OS Bookworm Lite
         run: |
@@ -74,8 +74,35 @@ jobs:
       - name: 📦 Compress and Package custom E-Ink OS
         run: |
           mv pi-os-lite.img inkflow.img
-          # Compress using multi-threading and an efficient compression level to prevent timeouts/OOMs
+          
+          # 1. Calculate uncompressed metrics
+          EXTRACT_SIZE=$(stat -c%s inkflow.img)
+          EXTRACT_SHA=$(sha256sum inkflow.img | awk '{print $1}')
+          echo "Raw image size: $EXTRACT_SIZE"
+          echo "Raw image SHA256: $EXTRACT_SHA"
+          
+          # 2. Compress using multi-threading and an efficient compression level to prevent timeouts/OOMs
           xz -T 0 -3 inkflow.img
+          
+          # 3. Calculate compressed metrics
+          DOWNLOAD_SIZE=$(stat -c%s inkflow.img.xz)
+          DOWNLOAD_SHA=$(sha256sum inkflow.img.xz | awk '{print $1}')
+          echo "Compressed image size: $DOWNLOAD_SIZE"
+          echo "Compressed image SHA256: $DOWNLOAD_SHA"
+          
+          # 4. Inject calculated metrics dynamically into repository JSON using jq
+          jq --arg ext_size "$EXTRACT_SIZE" \
+             --arg ext_sha "$EXTRACT_SHA" \
+             --arg dl_size "$DOWNLOAD_SIZE" \
+             --arg dl_sha "$DOWNLOAD_SHA" \
+             '.os_list[0].subitems[0].extract_size = ($ext_size | tonumber) |
+              .os_list[0].subitems[0].extract_sha256 = $ext_sha |
+              .os_list[0].subitems[0].image_download_size = ($dl_size | tonumber) |
+              .os_list[0].subitems[0].image_download_sha256 = $dl_sha' \
+             inkflow-imager-repo.json > tmp.json && mv tmp.json inkflow-imager-repo.json
+          
+          echo "✅ Dynamically compiled inkflow-imager-repo.json successfully!"
+          cat inkflow-imager-repo.json
 
       - name: 💾 Save build image as action artifact
         uses: actions/upload-artifact@v4

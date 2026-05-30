@@ -27,7 +27,7 @@
           "name": "Inkflow Headless OS",
           "description": "Raspberry Pi OS Bookworm Lite (64-bit) with Inkflow pre-installed",
           "icon": "https://raspberrypi.org",
-          "url": "inkflow.img.xz",
+          "url": "file:///C:/Users/derri/Downloads/inkflow.img.xz",
           "devices": [
             "pi4",
             "pi5"
