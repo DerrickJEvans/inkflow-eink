@@ -29,16 +29,22 @@ jobs:
 
       - name: 🔧 Mount Image & Inject Customizations
         run: |
-          # Create loopback devices for partitions
           IMAGE_FILE="pi-os-lite.img"
-          LOOP_DEV=$(sudo losetup -fP --show "$IMAGE_FILE")
+          
+          # Create loopback device
+          LOOP_DEV=$(sudo losetup -f --show "$IMAGE_FILE")
+          echo "Loop device created at: $LOOP_DEV"
+          
+          # Map partitions reliably with kpartx
+          sudo kpartx -av "$LOOP_DEV"
+          LOOP_NAME=$(basename "$LOOP_DEV")
           
           # Create directories for mounting
           mkdir -p mnt/boot mnt/root
           
-          # Mount Boot (FAT) and Root (Ext4) partitions
-          sudo mount "${LOOP_DEV}p1" mnt/boot
-          sudo mount "${LOOP_DEV}p2" mnt/root
+          # Mount Boot (FAT) and Root (Ext4) partitions using mapper devices
+          sudo mount "/dev/mapper/${LOOP_NAME}p1" mnt/boot
+          sudo mount "/dev/mapper/${LOOP_NAME}p2" mnt/root
           
           # --- Injection Phase ---
           # 1. Copy repository files into /opt/trmnl-pi-server (excluding loopback images and git metadata)
@@ -50,7 +56,7 @@ jobs:
           sudo chmod +x mnt/root/usr/local/bin/inkflow-bootstrap
           
           # 2.5. Inject default inkflow-setup.txt configuration template into the FAT boot partition
-          cat <<EOF | sudo tee mnt/boot/inkflow-setup.txt
+          cat <<'EOF' | sudo tee mnt/boot/inkflow-setup.txt
 # ==============================================================================
 # INKFLOW OS E-INK BOOT CONFIGURATION FILE
 # ==============================================================================
@@ -72,21 +78,21 @@ DEVICE_NAME=Living Room Pi   # OPTIONAL: Friendly name of your screen
 # DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
 EOF
           
-          # 3. Inject our systemd bootstrap service
-          cat <<EOF | sudo tee mnt/root/etc/systemd/system/inkflow-bootstrap.service
-          [Unit]
-          Description=Inkflow OS E-Ink Firstboot Auto-Provisioner
-          After=network-online.target
-          Wants=network-online.target
+          # 3. Inject our systemd bootstrap service (Unindented to prevent systemd parsing failures)
+          cat <<'EOF' | sudo tee mnt/root/etc/systemd/system/inkflow-bootstrap.service
+[Unit]
+Description=Inkflow OS E-Ink Firstboot Auto-Provisioner
+After=network-online.target
+Wants=network-online.target
 
-          [Service]
-          Type=oneshot
-          ExecStart=/usr/local/bin/inkflow-bootstrap
-          RemainAfterExit=yes
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/inkflow-bootstrap
+RemainAfterExit=yes
 
-          [Install]
-          WantedBy=multi-user.target
-          EOF
+[Install]
+WantedBy=multi-user.target
+EOF
           
           # 4. Enable bootstrap service to execute on next boot
           sudo ln -s /etc/systemd/system/inkflow-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/inkflow-bootstrap.service
@@ -94,12 +100,14 @@ EOF
           # Cleanup mounts safely
           sudo umount mnt/boot
           sudo umount mnt/root
+          sudo kpartx -d "$LOOP_DEV"
           sudo losetup -d "$LOOP_DEV"
 
       - name: 📦 Compress and Package custom E-Ink OS
         run: |
           mv pi-os-lite.img inkflow.img
-          xz -z -9 inkflow.img
+          # Compress using multi-threading and an efficient compression level to prevent timeouts/OOMs
+          xz -T 0 -3 inkflow.img
 
       - name: 💾 Save build image as action artifact
         uses: actions/upload-artifact@v4
