@@ -64,8 +64,12 @@ jobs:
           sudo umount mnt/boot
           sudo umount mnt/root
           
-          # Force repair and sanitize the ext4 root partition to correct any metadata checksum mismatches
-          echo "⚙️ Verifying and repairing ext4 metadata checksums..."
+          # Disable metadata checksums and orphan files to guarantee 100% kernel compatibility on target hardware
+          echo "⚙️ Stripping modern metadata checksums and orphan file trackers..."
+          sudo tune2fs -O ^metadata_csum,^orphan_file "${LOOP_DEV}p2"
+          
+          # Force repair and sanitize the ext4 root partition to mark the filesystem as clean and pristine
+          echo "⚙️ Sanitizing and verifying ext4 partition..."
           sudo e2fsck -fy "${LOOP_DEV}p2"
           
           # Detach loop device safely
