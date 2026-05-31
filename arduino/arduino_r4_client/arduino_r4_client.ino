@@ -385,7 +385,8 @@ bool connectWiFi() {
 void startSetupWizard() {
   Serial.println(F("[Setup AP] Starting soft AP mode..."));
   WiFi.disconnect();
-  delay(100);
+  WiFi.end(); // Completely reset the co-processor firmware state
+  delay(1000); // Allow co-processor to power down and reboot cleanly
   
   // Render setup instructions onto the E-Ink Screen physically
   drawSetupSplashDirect();
