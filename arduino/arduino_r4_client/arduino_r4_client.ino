@@ -38,6 +38,7 @@ struct EEPROMConfig {
   char server_host[65];
   int server_port;
   char device_name[65];
+  uint8_t show_connecting; 
   uint32_t magic;
 };
 
@@ -74,6 +75,7 @@ void loadConfiguration() {
     strncpy(activeConfig.server_host, default_serverIp.c_str(), sizeof(activeConfig.server_host) - 1);
     activeConfig.server_port = default_serverPort;
     strncpy(activeConfig.device_name, default_deviceName.c_str(), sizeof(activeConfig.device_name) - 1);
+    activeConfig.show_connecting = 1; // Show connecting splash on first boot
     activeConfig.magic = CONFIG_MAGIC;
     
     // Save defaults to EEPROM so they persist
@@ -90,7 +92,7 @@ void loadConfiguration() {
 }
 
 // Writes active configurations to non-volatile EEPROM
-void saveConfiguration(const char* ssidVal, const char* passVal, const char* hostVal, int portVal, const char* nameVal) {
+void saveConfiguration(const char* ssidVal, const char* passVal, const char* hostVal, int portVal, const char* nameVal, uint8_t showConnectingVal = 1) {
   memset(&activeConfig, 0, sizeof(EEPROMConfig));
   
   strncpy(activeConfig.wifi_ssid, ssidVal, sizeof(activeConfig.wifi_ssid) - 1);
@@ -98,6 +100,7 @@ void saveConfiguration(const char* ssidVal, const char* passVal, const char* hos
   strncpy(activeConfig.server_host, hostVal, sizeof(activeConfig.server_host) - 1);
   activeConfig.server_port = portVal;
   strncpy(activeConfig.device_name, nameVal, sizeof(activeConfig.device_name) - 1);
+  activeConfig.show_connecting = showConnectingVal;
   activeConfig.magic = CONFIG_MAGIC;
   
   EEPROM.put(0, activeConfig);
@@ -351,8 +354,13 @@ bool connectWiFi() {
   Serial.print(F("Attempting to connect to SSID Network: "));
   Serial.println(activeConfig.wifi_ssid);
   
-  // Show connection status splash screen on the E-Ink display
-  drawConnectingSplashDirect(activeConfig.wifi_ssid, activeConfig.server_host, activeConfig.server_port);
+  // Show connection status splash screen on the E-Ink display only if flagged
+  if (activeConfig.show_connecting == 1) {
+    drawConnectingSplashDirect(activeConfig.wifi_ssid, activeConfig.server_host, activeConfig.server_port);
+    // Clear flag and write back to EEPROM so subsequent sleep-wake boots connect silently in background!
+    activeConfig.show_connecting = 0;
+    EEPROM.put(0, activeConfig);
+  }
   
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println(F("[Error] WiFi communication chip missing."));
