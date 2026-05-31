@@ -124,18 +124,27 @@ void setup() {
   loadConfiguration();
 
   // 10-Second Serial trigger prompt to allow developers to force reset settings
-  Serial.println(F("\n💡 Press 'r' in Serial Monitor within 10 seconds to force clear settings & launch Setup AP Portal..."));
-  unsigned long promptStart = millis();
+  // SWRF flag in RSTSR1 register is set to 1 on software resets (simulated sleep wakes)
+  bool isWarmReset = (R_SYSTEM->RSTSR1_b.SWRF == 0x1);
   bool resetPressed = false;
-  while (millis() - promptStart < 10000) {
-    if (Serial.available() > 0) {
-      char c = Serial.read();
-      if (c == 'r' || c == 'R') {
-        resetPressed = true;
-        break;
+  
+  if (isWarmReset) {
+    Serial.println(F("[Sleep] Resuming silently from simulated sleep wake..."));
+    // Clear the software reset flag so subsequent physical resets are caught cleanly
+    R_SYSTEM->RSTSR1_b.SWRF = 0;
+  } else {
+    Serial.println(F("\n💡 Press 'r' in Serial Monitor within 10 seconds to force clear settings & launch Setup AP Portal..."));
+    unsigned long promptStart = millis();
+    while (millis() - promptStart < 10000) {
+      if (Serial.available() > 0) {
+        char c = Serial.read();
+        if (c == 'r' || c == 'R') {
+          resetPressed = true;
+          break;
+        }
       }
+      delay(10);
     }
-    delay(10);
   }
 
   if (resetPressed) {
