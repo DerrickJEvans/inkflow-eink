@@ -439,10 +439,29 @@ cd inkflow-eink
   3. Binds and preserves your E-Ink caches (`cache/`), configurations (`config.json`), `.env` secrets, and LLM model files (`ollama-data` volume) persistently on the host.
   4. Allows the server to query local models by simply pointing `OLLAMA_HOST` in `.env` to `http://ollama:11434`.
 
-### 2. Auto-Provisioning Server Installer & Safe Updater
-If running a native Linux installation on your Raspberry Pi 5 server, the system handles Option B (Ollama) setup dynamically:
-* **Fresh Installs (`install.sh`)**: Running `sudo ./install.sh` automatically installs Node dependencies, checks if Ollama is on the host, installs/enables it as a systemd service, pulls `llama3.2:1b`, and configures the default `.env` template.
-* **Current Server Upgrades (`update.sh`)**: Running `./update.sh` on your active server automatically cleans local Git states, pulls new code, installs new npm dependencies, installs/enables Ollama on the host via `sudo`, pulls the `llama3.2:1b` model, appends the local `.env` keys, and restarts the backend daemons cleanly.
+### 2. Auto-Provisioning Server Installer & Safe Updater (Native Bare-Metal)
+If you prefer to run the server natively on your host machine without container sandboxing (e.g., directly on a Raspberry Pi 5 OS), you can use the automated installer shell script.
+
+**Prerequisite:** Ensure **Git** is installed on the host. *(Docker is NOT required).*
+
+#### 1. Clone the Repository & Navigate
+First, clone the codebase to your server host and navigate into the root directory:
+```bash
+git clone https://github.com/DerrickJEvans/inkflow-eink.git
+cd inkflow-eink
+```
+
+#### 2. Run the Installer or Updater
+* **Fresh Installs (`install.sh`)**: Run the installer script to automatically setup Node.js dependencies, check/install Ollama natively as a systemd service, pull `llama3.2:1b`, and register the `inkflow-eink.service` system daemon:
+  ```bash
+  sudo chmod +x install.sh
+  sudo ./install.sh
+  ```
+* **Current Server Upgrades (`update.sh`)**: Run the upgrade script on your active server to automatically clean local Git states, pull new code, install new npm dependencies, update Ollama models, append any new local `.env` keys, and restart the backend daemons cleanly:
+  ```bash
+  chmod +x update.sh
+  ./update.sh
+  ```
 
 ### 3. One-Line Client Bootstrapper (`client/setup_client.sh`)
 Provisioning new Raspberry Pi Zero 2 W clients has been consolidated into a single piped command. 
