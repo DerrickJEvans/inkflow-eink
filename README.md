@@ -56,10 +56,6 @@ graph TD
   * **Event Propagation Safety Blocks**: Text inputs, checkboxes, and notice additions intercept mousedown events to prevent catalog re-selections or preview restarts while typing.
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
-### 4. GitHub Actions CI/CD Image Compiler
-* **`build-images.yml`**: A secure GitHub Actions pipeline that downloads Raspberry Pi OS Bookworm Lite, mounts the ext4 root filesystem cleanly in user-space, injects our firstboot bootstrapper `inkflow-bootstrap.service`, and packages a custom E-Ink OS image file.
-* **Automated & Downloadable**: Releases are automatically built and compiled when code changes are tagged, or manually dispatched via a single click in the Actions tab.
-
 ---
 
 ## 📁 Repository Structure
@@ -122,7 +118,7 @@ graph TD
 
 ## 🚀 Getting Started & Setup
 
-### Option A: Headless Native Local Network Installation (Highly Recommended)
+### 💻 Headless Native Local Network Installation (Highly Recommended)
 This is the **most robust and reliable method** for setting up your Raspberry Pi 5. It uses the official uncorrupted Raspberry Pi OS Lite, flashes it via the Imager, and copies your exact local workspace files directly over your home Wi-Fi using built-in Windows OpenSSH (`scp`).
 
 #### 1. Flash a Fresh Official OS
@@ -198,73 +194,6 @@ sudo ./install.sh
 ---
 
 
-### Option B: Pre-Compiled Universal Inkflow OS Image (GitHub Automated & Recommended)
-
-We have created an automated **GitHub Actions CI/CD pipeline** that packages the entire codebase into a single, pre-compiled **Universal Inkflow OS Image** (`inkflow.img.xz`) available on your repository's **Releases** tab.
-
-This single image contains both the server and client codebase. Its active mode (whether it boots as a server or a display client) is determined dynamically on its very first boot by reading a simple configuration file named **`inkflow-setup.txt`** located on the FAT boot partition.
-
-#### 1. Download and Flash the Universal Image
-To unlock Raspberry Pi Imager's native **OS Customization (Edit Settings)** menu for our custom image, you launch the Imager pointing to the pre-packaged **`inkflow-imager-repo.json`** file. Because the JSON uses a relative path internally, you do not need to edit any file paths!
-
-1. Download the pre-compiled **`inkflow.zip`** package from your GitHub **Releases** or Actions page.
-2. **Extract** the ZIP archive. Inside, you will find both **`inkflow.img.xz`** and **`inkflow-imager-repo.json`** located together in the same folder.
-3. Open **PowerShell** or **Command Prompt** on your Windows PC and launch the Imager pointing to the extracted JSON file:
-   ```cmd
-   "C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "C:\path\to\extracted\inkflow-imager-repo.json"
-   ```
-4. In the Imager UI:
-   * **Choose Device**: Select **Raspberry Pi 5** (or your Pi model).
-   * **Choose OS**: Select **Inkflow OS** -> **Inkflow Headless OS**.
-   * **Choose Storage**: Select your SD card.
-5. Click **Next** -> The **"Apply OS customization settings"** window will now be successfully unlocked! Select **Edit Settings**:
-   * Configure your **Wi-Fi** network SSID and password.
-   * Enable **SSH** (using password authentication).
-   * Define your standard **username** and **password**.
-6. Click **Save** and write the SD card.
-
-#### 2. Configure screen details in Windows Explorer
-Once flashing is completed, leave the SD card plugged into your Windows PC. The boot partition will mount automatically as a standard USB drive (usually called `boot` or `bootfs`).
-
-To make deployment fully plug-and-play, Inkflow OS **pre-injects a default `inkflow-setup.txt` configuration file** into the boot partition. By default, this file is pre-configured to build a **Server**. 
-
-If you want your Pi to boot as a Server, you do not need to make any changes! Simply eject the SD card and boot your Pi.
-
-If you wish to configure it as an E-Ink display **Client** instead, or customize the device name, follow these quick steps:
-
-1. Double-click the drive to open it.
-2. Open the file **`inkflow-setup.txt`** in Notepad.
-3. You will see the following pre-injected configuration:
-
-```ini
-# ==============================================================================
-# INKFLOW OS E-INK BOOT CONFIGURATION FILE
-# ==============================================================================
-# Customize your role and display size natively inside Windows!
-# By default, this image is configured to boot as the Main Dashboard Server.
-
-ROLE=server                  # REQUIRED: Set to 'server' or 'client'
-DEVICE_NAME=Living Room Pi   # OPTIONAL: Friendly name of your screen
-
-# ==============================================================================
-# CLIENT-MODE CONFIGURATION DIRECTIVES (Commented out by default)
-# ==============================================================================
-# To configure this machine as a Standalone E-Ink Client, uncomment and fill out 
-# the parameters below:
-# ------------------------------------------------------------------------------
-# ROLE=client
-# SERVER_IP=192.168.1.122      # REQUIRED: The local IP of your main server Pi
-# SCREEN_TYPE=4in26            # REQUIRED: Your display size: '4in26', '7in5', '4in2', '2in9'
-# DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
-```
-
-4. Adjust the file (e.g. comment out the server role, uncomment the client role and fill out your server's IP and display size).
-5. Click **Save** and safely eject the SD card.
-6. Plug the card into your Raspberry Pi and power it on.
-
-On first boot, the Pi OS will automatically connect to Wi-Fi, register the standard accounts, run our bootstrap provisioner in the background, set up the correct display drivers/environment parameters, and boot cleanly. **Your screen goes live in minutes without typing a single terminal command!**
-
----
 
 ## 🧠 Multi-Provider AI Integration (Gemini, Groq, & Local Ollama)
 
