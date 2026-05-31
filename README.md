@@ -198,6 +198,9 @@ chmod +x install.sh
 sudo ./install.sh
 ```
 
+> [!TIP]
+> **GitHub Authentication Issues**: If your repository is set to private, Git will prompt you for your credentials on `git pull`. Because GitHub **no longer supports standard account passwords** for CLI operations, you must generate and enter a **Personal Access Token (PAT)** classic (from GitHub Settings -> Developer settings -> Personal access tokens with the `repo` scope enabled) as your password. Alternatively, you can use your SSH key credentials by changing the remote origin to the SSH address: `git remote set-url origin git@github.com:DerrickJEvans/inkflow-eink.git`.
+
 ---
 
 
@@ -333,6 +336,9 @@ echo 'client/*' >> .git/info/sparse-checkout
 git pull origin main
 ```
 This isolates the client files cleanly under `~/inkflow-client/client/`.
+
+> [!TIP]
+> **GitHub Authentication Issues**: If your repository is set to private, Git will prompt you for your credentials on `git pull`. Because GitHub **no longer supports standard account passwords** for CLI operations, you must generate and enter a **Personal Access Token (PAT)** classic (from GitHub Settings -> Developer settings -> Personal access tokens with the `repo` scope enabled) as your password. Alternatively, you can use your SSH key credentials by changing the remote origin to the SSH address: `git remote set-url origin git@github.com:DerrickJEvans/inkflow-eink.git`.
 
 #### 3. Run the Automated Client Installer (`inkflow-client.sh`)
 We have created a master client management script `inkflow-client.sh` to automate the entire process (installing dependencies, enabling hardware SPI, installing Waveshare drivers, setting up `.env` files, and registering systemd services) under a single interactive CLI.
