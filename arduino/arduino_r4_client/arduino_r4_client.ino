@@ -533,15 +533,6 @@ void startSetupWizard() {
       } else if (reqPath == "/" || reqPath == "/setup" || reqPath == "/index.html") {
         Serial.println(F("[Web Server] Serving setup page..."));
         
-        // WiFi scan networks
-        int numNetworks = WiFi.scanNetworks();
-        String wifiOptions = "";
-        for (int i = 0; i < numNetworks; i++) {
-          String s = WiFi.SSID(i);
-          int32_t r = WiFi.RSSI(i);
-          wifiOptions += "<option value=\"" + s + "\">" + s + " (" + String(r) + " dBm)</option>\n";
-        }
-        
         client.println(F("HTTP/1.1 200 OK"));
         client.println(F("Content-Type: text/html"));
         client.println(F("Connection: close"));
@@ -559,10 +550,7 @@ void startSetupWizard() {
         client.println(F(".form-group input:focus,.form-group select:focus{border-color:var(--primary);}.btn-submit{width:100%;padding:14px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;}"));
         client.println(F(".btn-submit:hover{background:var(--primary-hover);}.footer{text-align:center;margin-top:25px;font-size:12px;color:var(--text-muted);}</style></head>"));
         client.println(F("<body><div class=\"container\"><div class=\"header\"><h1>InkFlow R4 Setup</h1><p>Configure wireless networks & InkFlow server</p></div>"));
-        client.println(F("<form action=\"/save\" method=\"POST\"><div class=\"form-group\"><label>Scanned Networks</label>"));
-        client.println(F("<select onchange=\"document.getElementById('manual_ssid').value = this.value\"><option value=\"\">-- Select Network --</option>"));
-        client.print(wifiOptions);
-        client.println(F("</select></div><div class=\"form-group\"><label>WiFi SSID (or Manual Entry)</label><input type=\"text\" id=\"manual_ssid\" name=\"manual_ssid\" placeholder=\"WiFi name\" required></div>"));
+        client.println(F("<form action=\"/save\" method=\"POST\"><div class=\"form-group\"><label>WiFi SSID</label><input type=\"text\" id=\"manual_ssid\" name=\"manual_ssid\" placeholder=\"WiFi name\" required></div>"));
         client.println(F("<div class=\"form-group\"><label>WiFi Password</label><input type=\"password\" name=\"password\" placeholder=\"Password\"></div>"));
         client.println(F("<div class=\"form-group\"><label>InkFlow Server Host / IP</label><input type=\"text\" name=\"server\" placeholder=\"e.g. 192.168.1.122 or mypi.local\" required></div>"));
         client.println(F("<div class=\"form-group\"><label>Port Bind</label><input type=\"number\" name=\"port\" value=\"5000\" required></div>"));
