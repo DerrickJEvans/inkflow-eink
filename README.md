@@ -65,7 +65,7 @@ graph TD
   * Gemini AI: [`ai_briefing.js`](plugins/ai_briefing.js), [`ai_advisor.js`](plugins/ai_advisor.js).
 * [**`public/`**](public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
 * [**`client/`**](client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
-* [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI using hardware deep sleep.
+* [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI (featuring native hardware deep sleep on ESP32, and an optimized delay refresh cycle on UNO R4).
 * [**`install.sh`**](install.sh): One-click Linux server automated service setup and daemon registration.
 * [**`trmnl.sh`**](trmnl.sh): Master server control, system diagnostics, and safe update assistant.
 * [**`client/trmnl-client.sh`**](client/trmnl-client.sh): Master client installer, telemetry scanner, and daemon manager.
