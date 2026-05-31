@@ -352,7 +352,7 @@ Designed to run on a headless Raspberry Pi Zero 2 W equipped with a **Waveshare 
 
 #### 1. Assembly & Hardware Setup
 * Plug the **Waveshare E-Paper Driver HAT Rev 2.3** directly onto the Pi Zero 2 W's 40-pin GPIO header.
-* Connect the **4.26" e-Paper panel** to the HAT using the flat ribbon cable (FFC) via the GH1.25 9-pin connector. Make sure pins face down and the black latch is firmly locked.
+* Connect the **4.26" e-Paper panel** to the HAT using the flat ribbon cable (FFC) via the GH1.25 9-pin connector. Make sure the pins face upward and the flip latch at the back is firmly locked.
 * Boot a clean **Raspberry Pi OS Lite (64-bit)** card flashed with Imager (enabling SSH & Wi-Fi in the custom settings).
 
 #### 2. OS SPI Configuration
