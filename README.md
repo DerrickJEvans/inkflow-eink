@@ -185,9 +185,9 @@ git remote add origin https://github.com/DerrickJEvans/inkflow-eink.git
 
 # 3. Enable sparse-checkout and exclude client/ and arduino/ folders
 git config core.sparseCheckout true
-echo "/*" >> .git/info/sparse-checkout
-echo "!/client/" >> .git/info/sparse-checkout
-echo "!/arduino/" >> .git/info/sparse-checkout
+echo '/*' >> .git/info/sparse-checkout
+echo '!/client/' >> .git/info/sparse-checkout
+echo '!/arduino/' >> .git/info/sparse-checkout
 
 # 4. Pull origin/main (this will only fetch server files and configs!)
 git pull origin main
@@ -327,7 +327,7 @@ git remote add origin https://github.com/DerrickJEvans/inkflow-eink.git
 
 # Configure git to only check out the client folder
 git config core.sparseCheckout true
-echo "client/*" >> .git/info/sparse-checkout
+echo 'client/*' >> .git/info/sparse-checkout
 
 # Pull origin/main (this will only download the client folder!)
 git pull origin main
