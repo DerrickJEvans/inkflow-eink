@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# trmnl.sh - Master Management and Diagnostic Utility for TRMNL Pi Server
+# inkflow.sh - Master Management and Diagnostic Utility for InkFlow E-Ink Server
 # ==============================================================================
 # Provides a high-fidelity interactive terminal interface and quick CLI shortcuts
 # to manage services, view logs, run diagnostics, and align local systems.
@@ -23,7 +23,7 @@ NC='\033[0m' # No Color
 print_header() {
     clear
     echo -e "${CYAN}┌────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│             🌐 TRMNL Pi E-Ink Control Center          │${NC}"
+    echo -e "${CYAN}│             🌐 InkFlow E-Ink Control Center           │${NC}"
     echo -e "${CYAN}│                Master Service Controller               │${NC}"
     echo -e "${CYAN}└────────────────────────────────────────────────────────┘${NC}"
 }
@@ -39,8 +39,8 @@ require_sudo() {
 
 # Action: Start Server
 start_server() {
-    echo -e "\n${BLUE}🚀 Starting TRMNL Pi Server daemon...${NC}"
-    if sudo systemctl start trmnl-pi.service; then
+    echo -e "\n${BLUE}🚀 Starting InkFlow E-Ink Server daemon...${NC}"
+    if sudo systemctl start inkflow-eink.service; then
         echo -e "${GREEN}✅ Service started successfully!${NC}"
     else
         echo -e "${RED}❌ Failed to start service. Check system logs for details.${NC}"
@@ -50,8 +50,8 @@ start_server() {
 
 # Action: Stop Server
 stop_server() {
-    echo -e "\n${RED}🛑 Stopping TRMNL Pi Server daemon...${NC}"
-    if sudo systemctl stop trmnl-pi.service; then
+    echo -e "\n${RED}🛑 Stopping InkFlow E-Ink Server daemon...${NC}"
+    if sudo systemctl stop inkflow-eink.service; then
         echo -e "${GREEN}✅ Service stopped successfully.${NC}"
     else
         echo -e "${RED}❌ Failed to stop service.${NC}"
@@ -61,8 +61,8 @@ stop_server() {
 
 # Action: Restart Server
 restart_server() {
-    echo -e "\n${BLUE}🔄 Restarting TRMNL Pi Server daemon...${NC}"
-    if sudo systemctl restart trmnl-pi.service; then
+    echo -e "\n${BLUE}🔄 Restarting InkFlow E-Ink Server daemon...${NC}"
+    if sudo systemctl restart inkflow-eink.service; then
         echo -e "${GREEN}✅ Service restarted successfully!${NC}"
     else
         echo -e "${RED}❌ Failed to restart service.${NC}"
@@ -72,9 +72,9 @@ restart_server() {
 
 # Action: View Live Logs
 view_logs() {
-    echo -e "\n${MAGENTA}📋 Opening TRMNL Pi Server live log stream (Press Ctrl+C to exit)...${NC}"
+    echo -e "\n${MAGENTA}📋 Opening InkFlow E-Ink Server live log stream (Press Ctrl+C to exit)...${NC}"
     echo -e "${MAGENTA}----------------------------------------------------------------------${NC}"
-    sudo journalctl -u trmnl-pi.service -f -n 50
+    sudo journalctl -u inkflow-eink.service -f -n 50
 }
 
 # Action: Run System Diagnostics
@@ -83,8 +83,8 @@ run_diagnostics() {
     echo -e "${BLUE}------------------------------------------------------------${NC}"
 
     # 1. Check if Server is running
-    echo -n "• TRMNL Pi Service status: "
-    if systemctl is-active --quiet trmnl-pi.service; then
+    echo -n "• InkFlow E-Ink Service status: "
+    if systemctl is-active --quiet inkflow-eink.service; then
         echo -e "${GREEN}🟢 ACTIVE (Running in background)${NC}"
     else
         echo -e "${RED}🔴 INACTIVE (Stopped)${NC}"
@@ -165,7 +165,7 @@ show_menu() {
         print_header
         
         # Check current service status for header info
-        if systemctl is-active --quiet trmnl-pi.service; then
+        if systemctl is-active --quiet inkflow-eink.service; then
             STATUS_STR="${GREEN}🟢 RUNNING (production)${NC}"
         else
             STATUS_STR="${RED}🔴 STOPPED${NC}"
@@ -175,9 +175,9 @@ show_menu() {
         echo -e " Server Status:  $STATUS_STR"
         echo -e " Web Interface:  ${CYAN}http://${LOCAL_IP}:5000${NC}"
         echo -e "──────────────────────────────────────────────────────────"
-        echo -e " ${BLUE}[1]${NC}  🚀 Start TRMNL Pi Server"
-        echo -e " ${BLUE}[2]${NC}  🛑 Stop TRMNL Pi Server"
-        echo -e " ${BLUE}[3]${NC}  🔄 Restart TRMNL Pi Server"
+        echo -e " ${BLUE}[1]${NC}  🚀 Start InkFlow E-Ink Server"
+        echo -e " ${BLUE}[2]${NC}  🛑 Stop InkFlow E-Ink Server"
+        echo -e " ${BLUE}[3]${NC}  🔄 Restart InkFlow E-Ink Server"
         echo -e " ${BLUE}[4]${NC}  📋 View Real-Time Live Logs"
         echo -e " ${BLUE}[5]${NC}  🔍 Run System Diagnostics & Network Check"
         echo -e " ${BLUE}[6]${NC}  📥 Pull Core Codebase Updates"

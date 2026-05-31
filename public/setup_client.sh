@@ -84,10 +84,10 @@ echo "⚙️ Creating Systemd background service daemon..."
 CLIENT_DIR=$(pwd)
 USER_NAME=$(logname 2>/dev/null || awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
 
-SERVICE_FILE="/etc/systemd/system/trmnl-client.service"
+SERVICE_FILE="/etc/systemd/system/inkflow-client.service"
 cat <<EOF > "$SERVICE_FILE"
 [Unit]
-Description=TRMNL E-Ink Display Client
+Description=InkFlow E-Ink Display Client
 After=network-online.target
 Wants=network-online.target
 
@@ -100,7 +100,7 @@ Restart=always
 RestartSec=15
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=trmnl-client
+SyslogIdentifier=inkflow-client
 
 [Install]
 WantedBy=multi-user.target
@@ -108,11 +108,11 @@ EOF
 
 # Reload and enable the service
 systemctl daemon-reload
-systemctl enable trmnl-client.service
-systemctl restart trmnl-client.service
+systemctl enable inkflow-client.service
+systemctl restart inkflow-client.service
 
 echo "===================================================="
 echo "  🎉 Installation Complete! 🎉"
-echo "  Status: trmnl-client service started successfully."
-echo "  Run 'journalctl -u trmnl-client.service -f' to see live logs."
+echo "  Status: inkflow-client service started successfully."
+echo "  Run 'journalctl -u inkflow-client.service -f' to see live logs."
 echo "===================================================="

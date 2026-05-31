@@ -73,10 +73,10 @@ The sever also features an  **Plugin Studio** which Hot-loads natural language d
   * Gemini AI: [`ai_briefing.js`](plugins/ai_briefing.js), [`ai_advisor.js`](plugins/ai_advisor.js).
 * [**`public/`**](public): Sleek HTML5 / CSS3 local control panel to configure active widgets, rotation intervals, and custom settings.
 * [**`client/`**](client): Python-based client supporting local mockup preview files, Pimoroni Inky series, and SPI-connected Waveshare EPD hats.
-* [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI (featuring native hardware deep sleep on ESP32, and an optimized delay refresh cycle on UNO R4).
+* [**`arduino/`**](arduino): Optimized C++ Arduino code driving Waveshare E-Paper displays via SPI (featuring native hardware deep sleep on ESP32, and simulated deep sleep via software delay loops and hardware-level restarts on UNO R4).
 * [**`install.sh`**](install.sh): One-click Linux server automated service setup and daemon registration.
-* [**`trmnl.sh`**](trmnl.sh): Master server control, system diagnostics, and safe update assistant.
-* [**`client/trmnl-client.sh`**](client/trmnl-client.sh): Master client installer, telemetry scanner, and daemon manager.
+* [**`inkflow.sh`**](inkflow.sh): Master server control, system diagnostics, and safe update assistant.
+* [**`client/inkflow-client.sh`**](client/inkflow-client.sh): Master client installer, telemetry scanner, and daemon manager.
 
 
 ---
@@ -141,16 +141,16 @@ This is the **most robust and reliable method** for setting up your Raspberry Pi
 Open a terminal (e.g. **PowerShell** on Windows or Terminal on macOS/Linux) and run these commands to compress your workspace (excluding massive development dependencies) and copy it directly to the Pi:
 ```bash
 # cd into your workspace folder
-cd "/path/to/your/trmnl-pi-server"
+cd "/path/to/your/inkflow-eink"
 
 # Pack workspace into a lightweight archive in the parent directory
-tar -czf ../trmnl-pi-server.tar.gz --exclude="node_modules" --exclude="*.img" --exclude="*.xz" .
+tar -czf ../inkflow-eink.tar.gz --exclude="node_modules" --exclude="*.img" --exclude="*.xz" .
 
 # Transfer the archive to the Pi (replace <USERNAME> and <IP-ADDRESS> with your credentials)
-scp ../trmnl-pi-server.tar.gz <USERNAME>@<IP-ADDRESS>:~/
+scp ../inkflow-eink.tar.gz <USERNAME>@<IP-ADDRESS>:~/
 
 # Delete the temporary local archive
-rm ../trmnl-pi-server.tar.gz
+rm ../inkflow-eink.tar.gz
 ```
 *(Tip: If `ssh` blocks the connection with a "host identification has changed" warning because you flashed a new OS, clear it with `ssh-keygen -R <IP-ADDRESS>` first).*
 
@@ -161,9 +161,9 @@ Connect to your Pi via SSH and run the native installer to compile everything na
 ssh <USERNAME>@<IP-ADDRESS>
 
 # Extract the package
-mkdir -p ~/trmnl-pi-server
-tar -xzf trmnl-pi-server.tar.gz -C ~/trmnl-pi-server
-cd ~/trmnl-pi-server
+mkdir -p ~/inkflow-eink
+tar -xzf inkflow-eink.tar.gz -C ~/inkflow-eink
+cd ~/inkflow-eink
 
 # Strip Windows line endings and run the native automated installer
 sed -i 's/\r$//' *.sh
@@ -176,11 +176,11 @@ Once the installer completes, the server will be running persistently in the bac
 If your Pi 5 has direct internet access, you can run a **Git Sparse Checkout** directly on your server Pi. This will download only the server files and configurations, entirely omitting the `client/` and `arduino/` subdirectories to keep your server installation clean, lightweight, and clutter-free:
 ```bash
 # 1. Create a sparse repository folder on the Pi
-mkdir -p ~/trmnl-pi-server && cd ~/trmnl-pi-server
+mkdir -p ~/inkflow-eink && cd ~/inkflow-eink
 git init
 
 # 2. Add remote repository upstream
-git remote add origin https://github.com/DerrickJEvans/trmnl-pi-server.git
+git remote add origin https://github.com/DerrickJEvans/inkflow-eink.git
 
 # 3. Enable sparse-checkout and exclude client/ and arduino/ folders
 git config core.sparseCheckout true
@@ -317,11 +317,11 @@ sudo raspi-config
 To download *only* the client code on your standalone client Pi Zero without downloading server code or large node packages, run these commands in your client Pi's SSH terminal to perform a highly efficient sparse checkout:
 ```bash
 # Initialize a sparse repository locally on the client Pi
-mkdir -p ~/trmnl-client && cd ~/trmnl-client
+mkdir -p ~/inkflow-client && cd ~/inkflow-client
 git init
 
 # Add the remote repository URL
-git remote add origin https://github.com/DerrickJEvans/trmnl-pi-server.git
+git remote add origin https://github.com/DerrickJEvans/inkflow-eink.git
 
 # Configure git to only check out the client folder
 git config core.sparseCheckout true
@@ -330,27 +330,27 @@ echo "client/*" >> .git/info/sparse-checkout
 # Pull origin/main (this will only download the client folder!)
 git pull origin main
 ```
-This isolates the client files cleanly under `~/trmnl-client/client/`.
+This isolates the client files cleanly under `~/inkflow-client/client/`.
 
-#### 3. Run the Automated Client Installer (`trmnl-client.sh`)
-We have created a master client management script `trmnl-client.sh` to automate the entire process (installing dependencies, enabling hardware SPI, installing Waveshare drivers, setting up `.env` files, and registering systemd services) under a single interactive CLI.
+#### 3. Run the Automated Client Installer (`inkflow-client.sh`)
+We have created a master client management script `inkflow-client.sh` to automate the entire process (installing dependencies, enabling hardware SPI, installing Waveshare drivers, setting up `.env` files, and registering systemd services) under a single interactive CLI.
 
 To configure your client automatically, run:
 ```bash
-cd ~/trmnl-client/client
-chmod +x trmnl-client.sh
-./trmnl-client.sh
+cd ~/inkflow-client/client
+chmod +x inkflow-client.sh
+./inkflow-client.sh
 ```
 * **Select Option `[1]` (Run Automated Client Setup/Installer)**.
 * When prompted, enter your main TRMNL Server IP address (e.g. `192.168.1.122`).
-* The installer will handle all package updates, enable SPI in `/boot/firmware/config.txt`, perform a low-RAM sparse install of Waveshare python drivers to prevent crashes, create a secure local `.env` configuration file, and spawn a persistent background service daemon (`trmnl-client.service`).
+* The installer will handle all package updates, enable SPI in `/boot/firmware/config.txt`, perform a low-RAM sparse install of Waveshare python drivers to prevent crashes, create a secure local `.env` configuration file, and spawn a persistent background service daemon (`inkflow-client.service`).
 
 #### 4. Managing and Upgrading the Client
-Your client is now fully active! You can use `trmnl-client.sh` anytime to manage operations:
-* **Interactive Dashboard**: `./trmnl-client.sh` (opens the colorful control console)
-* **Check live telemetry & connection diagnostics**: `./trmnl-client.sh status`
-* **Stream real-time background logs**: `./trmnl-client.sh logs`
-* **Safely pull code upgrades and restart services**: `./trmnl-client.sh update`
+Your client is now fully active! You can use `inkflow-client.sh` anytime to manage operations:
+* **Interactive Dashboard**: `./inkflow-client.sh` (opens the colorful control console)
+* **Check live telemetry & connection diagnostics**: `./inkflow-client.sh status`
+* **Stream real-time background logs**: `./inkflow-client.sh logs`
+* **Safely pull code upgrades and restart services**: `./inkflow-client.sh update`
 
 
 
@@ -394,7 +394,7 @@ Provisioning new Raspberry Pi Zero 2 W clients has been consolidated into a sing
   2. Enables hardware SPI interfaces in `/boot/config.txt` or `/boot/firmware/config.txt`.
   3. Orchestrates a memory-safe partial Git checkout of the Waveshare Python libraries to prevent 512MB RAM client crashes.
   4. Prompts you for the target server's address and updates `config.py`.
-  5. Registers, enables, and boots up a persistent `trmnl-client.service` daemon background service.
+  5. Registers, enables, and boots up a persistent `inkflow-client.service` daemon background service.
 
 ---
 

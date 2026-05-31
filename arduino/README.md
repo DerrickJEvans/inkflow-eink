@@ -66,17 +66,24 @@ On the official **Waveshare Arduino E-Paper Shield or HAT**, there is an onboard
 
 ---
 
-## 🔋 Battery Operations & Sleep Cycles
+## 🔋 Sleep & Battery Mechanics: ESP32 vs. UNO R4 WiFi
 
-The sketch is built using ESP32's hardware **Deep Sleep** protocol:
-- It wakes up from sleep.
-- Boots and connects to WiFi in less than 3 seconds.
-- Queries `/api/display/raw` on the server, downloading the tiny dithered 1-bit pixel array (only 15 KB for a 400x300 screen).
-- **Symmetrical PROGMEM Stream Loop (Offline Fallback)**: If the WiFi connection fails or the server is offline, the client does not remain blank. Instead, it utilizes an optimized, memory-efficient PROGMEM streaming loop (`loadLocalFallbackImage()`) to read calibration checkerboard patterns and crosshairs out of Flash memory and draw them onto the screen. This serves as an immediate physical proof that your display wiring, controller, and SPI lines are 100% operational!
-- Parses the server-provided `X-Refresh-Rate` header (or sleeps for 30 minutes by default).
-- Drives SPI lines to paint the e-ink screen.
-- Powers down the screen's SPI controller and puts the ESP32 into a deep sleep state where it draws practically **zero current (~10µA)**.
-- This allows your custom e-ink dashboard to run on a single Lithium battery for **months**!
+The two Arduino clients handle power management and refresh cycles differently based on their physical hardware architectures:
+
+### ⚡ ESP32 Native Hardware Deep Sleep (`arduino_client/`)
+The ESP32 sketch is built using the controller's native hardware **Deep Sleep** protocol:
+* **Execution flow**: It wakes up from deep sleep, boots, and establishes a WiFi connection in less than 3 seconds.
+* **Data Fetching**: Queries `/api/display/raw` on the server to download the tiny dithered 1-bit pixel array (e.g. only 15 KB for a 400x300 screen).
+* **Symmetrical PROGMEM Stream Loop (Offline Fallback)**: If the WiFi connection fails or the server is offline, the client does not remain blank. Instead, it utilizes an optimized, memory-efficient PROGMEM streaming loop (`loadLocalFallbackImage()`) to read calibration checkerboard patterns and crosshairs out of Flash memory and draw them onto the screen. This serves as an immediate physical proof that your display wiring, controller, and SPI lines are 100% operational!
+* **Power Down**: After pushing pixels to the screen, it powers down the display's SPI controller and puts the ESP32 chip into a native deep sleep state, drawing practically **zero current (~10µA)**.
+* **Reboot Cycle**: When the deep sleep timer expires, the chip performs a cold boot and restarts the program. This native power-saving mode allows the ESP32 client to run on a single Lithium battery for **months**!
+
+### 🎛️ Arduino UNO R4 WiFi Deep Sleep Simulation (`arduino_r4_client/`)
+Because the Arduino UNO R4 WiFi lacks a native, low-power deep sleep mode that preserves socket/SPI states without complex external circuitry, it **simulates deep sleep in software**:
+* **Execution flow**: After performing a zero-buffer direct SPI stream to paint the screen, it shuts down the onboard WiFi radio (`WiFi.end()`) to drastically reduce board power draw.
+* **Deep Wait Loop**: It enters a lightweight delay loop `delay(1000)` running once per second for the duration of the required refresh interval (supplied by the server's `X-Refresh-Rate` header or defaulting to 1800 seconds).
+* **Hardware-Level Software Reset**: Once the delay loop completes, it executes a hardware-level software reset (`NVIC_SystemReset()`). This completely reboots the UNO R4 microcontroller, clearing all RAM allocations, restarting the network stack, and running the setup routine completely fresh.
+* **Benefits**: This simulation ensures the client is extremely stable, completely prevents memory fragmentation or leakages over long-term operations, and avoids keeping the power-hungry WiFi radio active during idle times.
 
 ---
 

@@ -125,13 +125,13 @@ fi
 
 # 6. Restart backend daemon service if active
 echo -e "\n${BLUE}🔄 Restarting backend services...${NC}"
-if systemctl is-active --quiet trmnl-pi 2>/dev/null || systemctl is-enabled --quiet trmnl-pi 2>/dev/null; then
-    echo -e "Restarting systemd daemon (trmnl-pi.service)..."
-    sudo systemctl restart trmnl-pi
+if systemctl is-active --quiet inkflow-eink 2>/dev/null || systemctl is-enabled --quiet inkflow-eink 2>/dev/null; then
+    echo -e "Restarting systemd daemon (inkflow-eink.service)..."
+    sudo systemctl restart inkflow-eink
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ trmnl-pi background service restarted successfully!${NC}"
+        echo -e "${GREEN}✅ inkflow-eink background service restarted successfully!${NC}"
     else
-        echo -e "${YELLOW}⚠️ Code updated, but service restart failed. Run: sudo systemctl restart trmnl-pi${NC}"
+        echo -e "${YELLOW}⚠️ Code updated, but service restart failed. Run: sudo systemctl restart inkflow-eink${NC}"
     fi
 else
     echo -e "Restarting local background node server process..."

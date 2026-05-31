@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# trmnl-client.sh - Master Management and Installer Utility for TRMNL Python Client
+# inkflow-client.sh - Master Management and Installer Utility for InkFlow Python Client
 # ==============================================================================
 # Provides a clean interactive terminal menu and CLI commands to install, configure,
 # manage, diagnose, and update the standalone Python client.
@@ -22,7 +22,7 @@ NC='\033[0m' # No Color
 print_header() {
     clear
     echo -e "${CYAN}┌────────────────────────────────────────────────────────┐${NC}"
-    echo -e "${CYAN}│             📟 TRMNL Python E-Ink Client               │${NC}"
+    echo -e "${CYAN}│             📟 InkFlow Python E-Ink Client             │${NC}"
     echo -e "${CYAN}│                Master Device Controller                │${NC}"
     echo -e "${CYAN}└────────────────────────────────────────────────────────┘${NC}"
 }
@@ -43,7 +43,7 @@ install_client() {
     echo -e "\n${BLUE}📦 [1/4] Installing system dependencies (SPI, Git, PIL, NumPy)...${NC}"
     apt-get update
     apt-get install -y python3-pip python3-pil python3-numpy python3-spidev git
-
+ 
     # 2. Enable SPI interface in Pi config
     echo -e "\n${BLUE}🔌 [2/4] Enabling hardware SPI interface...${NC}"
     CONFIG_FILE="/boot/firmware/config.txt"
@@ -111,13 +111,13 @@ EOF
     fi
 
     # 5. Create Systemd Service
-    echo -e "\n${BLUE}⚙️ Creating systemd service background daemon (trmnl-client.service)...${NC}"
+    echo -e "\n${BLUE}⚙️ Creating systemd service background daemon (inkflow-client.service)...${NC}"
     USER_NAME=$(logname 2>/dev/null || awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
-    SERVICE_FILE="/etc/systemd/system/trmnl-client.service"
+    SERVICE_FILE="/etc/systemd/system/inkflow-client.service"
 
     cat <<EOF > "$SERVICE_FILE"
 [Unit]
-Description=TRMNL E-Ink Display Client background daemon
+Description=InkFlow E-Ink Display Client background daemon
 After=network-online.target
 Wants=network-online.target
 
@@ -130,15 +130,15 @@ Restart=always
 RestartSec=15
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=trmnl-client
+SyslogIdentifier=inkflow-client
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
     systemctl daemon-reload
-    systemctl enable trmnl-client.service
-    systemctl restart trmnl-client.service
+    systemctl enable inkflow-client.service
+    systemctl restart inkflow-client.service
 
     echo -e "\n${GREEN}====================================================${NC}"
     echo -e "${GREEN}    🎉 Client Installation Successfully Completed! 🎉${NC}"
@@ -147,9 +147,9 @@ EOF
     echo -e "  • Service will auto-launch when this Pi boots."
     echo -e ""
     echo -e "  💡 Useful Commands:"
-    echo -e "      • Check logs:    ./trmnl-client.sh logs"
-    echo -e "      • Status check:  ./trmnl-client.sh status"
-    echo -e "      • Restart:       ./trmnl-client.sh restart"
+    echo -e "      • Check logs:    ./inkflow-client.sh logs"
+    echo -e "      • Status check:  ./inkflow-client.sh status"
+    echo -e "      • Restart:       ./inkflow-client.sh restart"
     echo -e "${GREEN}====================================================${NC}\n"
     if [ -t 0 ]; then
         read -n 1 -s -r -p "Press any key to return to menu..."
@@ -158,8 +158,8 @@ EOF
 
 # Action: Start Client
 start_client() {
-    echo -e "\n${BLUE}🚀 Starting trmnl-client background service...${NC}"
-    if sudo systemctl start trmnl-client.service; then
+    echo -e "\n${BLUE}🚀 Starting inkflow-client background service...${NC}"
+    if sudo systemctl start inkflow-client.service; then
         echo -e "${GREEN}✅ Service started successfully!${NC}"
     else
         echo -e "${RED}❌ Failed to start service.${NC}"
@@ -169,8 +169,8 @@ start_client() {
 
 # Action: Stop Client
 stop_client() {
-    echo -e "\n${RED}🛑 Stopping trmnl-client background service...${NC}"
-    if sudo systemctl stop trmnl-client.service; then
+    echo -e "\n${RED}🛑 Stopping inkflow-client background service...${NC}"
+    if sudo systemctl stop inkflow-client.service; then
         echo -e "${GREEN}✅ Service stopped successfully.${NC}"
     else
         echo -e "${RED}❌ Failed to stop service.${NC}"
@@ -180,8 +180,8 @@ stop_client() {
 
 # Action: Restart Client
 restart_client() {
-    echo -e "\n${BLUE}🔄 Restarting trmnl-client background service...${NC}"
-    if sudo systemctl restart trmnl-client.service; then
+    echo -e "\n${BLUE}🔄 Restarting inkflow-client background service...${NC}"
+    if sudo systemctl restart inkflow-client.service; then
         echo -e "${GREEN}✅ Service restarted successfully!${NC}"
     else
         echo -e "${RED}❌ Failed to restart service.${NC}"
@@ -191,9 +191,9 @@ restart_client() {
 
 # Action: View Live Logs
 view_logs() {
-    echo -e "\n${BLUE}📋 Opening trmnl-client live log feed (Press Ctrl+C to exit)...${NC}"
+    echo -e "\n${BLUE}📋 Opening inkflow-client live log feed (Press Ctrl+C to exit)...${NC}"
     echo -e "${BLUE}----------------------------------------------------------------------${NC}"
-    sudo journalctl -u trmnl-client.service -f -n 50
+    sudo journalctl -u inkflow-client.service -f -n 50
 }
 
 # Action: Diagnostics Scan
@@ -202,8 +202,8 @@ run_diagnostics() {
     echo -e "${BLUE}------------------------------------------------------------${NC}"
 
     # 1. Check Service
-    echo -n "• Client Service (trmnl-client.service): "
-    if systemctl is-active --quiet trmnl-client.service 2>/dev/null; then
+    echo -n "• Client Service (inkflow-client.service): "
+    if systemctl is-active --quiet inkflow-client.service 2>/dev/null; then
         echo -e "${GREEN}🟢 ACTIVE (Running)${NC}"
     else
         echo -e "${RED}🔴 INACTIVE (Stopped)${NC}"
@@ -285,10 +285,10 @@ update_client() {
 
     # Restart service
     echo -e "\n${BLUE}🔄 [2/2] Reloading background service...${NC}"
-    if sudo systemctl restart trmnl-client.service 2>/dev/null; then
+    if sudo systemctl restart inkflow-client.service 2>/dev/null; then
         echo -e "${GREEN}✅ Client daemon restarted with new updates successfully!${NC}"
     else
-        echo -e "${YELLOW}⚠️ Updates pulled, but systemd service restart failed. Run: ./trmnl-client.sh restart${NC}"
+        echo -e "${YELLOW}⚠️ Updates pulled, but systemd service restart failed. Run: ./inkflow-client.sh restart${NC}"
     fi
     read -n 1 -s -r -p "Press any key to return to menu..."
 }
@@ -299,7 +299,7 @@ show_menu() {
         print_header
         
         # Check current service status for header info
-        if systemctl is-active --quiet trmnl-client.service 2>/dev/null; then
+        if systemctl is-active --quiet inkflow-client.service 2>/dev/null; then
             STATUS_STR="${GREEN}🟢 RUNNING (persistent background)${NC}"
         else
             STATUS_STR="${RED}🔴 STOPPED${NC}"

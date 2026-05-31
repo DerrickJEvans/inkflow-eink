@@ -1,5 +1,5 @@
 {
-  "name": "trmnl-pi-server",
+  "name": "inkflow-eink",
   "version": "1.0.0",
   "description": "E-Ink Dashboard and Server for Raspberry Pi with ESP32 and Python clients",
   "main": "server.js",

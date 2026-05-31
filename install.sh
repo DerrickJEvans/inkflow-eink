@@ -37,7 +37,7 @@ echo -e "${CYAN}Setting ownership of project directory to standard user ${SUDO_U
 chown -R "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$PROJECT_DIR"
 
 # Create a convenient symlink in the user's home directory if it doesn't exist
-USER_LINK="${USER_HOME}/trmnl-pi-server"
+USER_LINK="${USER_HOME}/inkflow-eink"
 if [ ! -e "$USER_LINK" ]; then
   echo -e "${CYAN}Creating convenience symbolic link in standard user's home directory...${NC}"
   ln -sf "$PROJECT_DIR" "$USER_LINK"
@@ -96,11 +96,11 @@ fi
 
 # 4. Set up systemd service to run server persistently on startup
 echo -e "${CYAN}[4/5] Configuring systemd background daemon service...${NC}"
-SERVICE_FILE="/etc/systemd/system/trmnl-pi.service"
+SERVICE_FILE="/etc/systemd/system/inkflow-eink.service"
 
 cat <<EOF > "$SERVICE_FILE"
 [Unit]
-Description=TRMNL Pi E-Ink Server Background Daemon
+Description=InkFlow E-Ink Server Background Daemon
 After=network.target
 
 [Service]
@@ -118,15 +118,15 @@ EOF
 
 # Refresh systemd, enable and start service
 systemctl daemon-reload
-systemctl enable trmnl-pi.service
-systemctl restart trmnl-pi.service
+systemctl enable inkflow-eink.service
+systemctl restart inkflow-eink.service
 
 # 5. Summary and Output info
 echo -e "${CYAN}[5/5] Finalizing setup...${NC}"
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 
 echo -e "\n${GREEN}====================================================${NC}"
-echo -e "${GREEN}   🎉 TRMNL Pi Server Successfully Installed! 🎉${NC}"
+echo -e "${GREEN}   🎉 InkFlow E-Ink Server Successfully Installed! 🎉${NC}"
 echo -e "${GREEN}====================================================${NC}"
 echo -e "  • The server is running persistently in the background."
 echo -e "  • It will automatically launch when the Pi boots up."
@@ -135,8 +135,8 @@ echo -e "  📡 Web Control Panel:   ${CYAN}http://${LOCAL_IP}:5000${NC}"
 echo -e "  💾 ESP32 Raw Endpoint:  ${CYAN}http://${LOCAL_IP}:5000/api/display/raw?device=esp32_screen&width=400&height=300${NC}"
 echo -e ""
 echo -e "  💡 Useful Service Commands:"
-echo -e "      • Check status:     sudo systemctl status trmnl-pi"
-echo -e "      • View server logs: sudo journalctl -u trmnl-pi -f"
-echo -e "      • Stop server:      sudo systemctl stop trmnl-pi"
-echo -e "      • Restart server:   sudo systemctl restart trmnl-pi"
+echo -e "      • Check status:     sudo systemctl status inkflow-eink"
+echo -e "      • View server logs: sudo journalctl -u inkflow-eink -f"
+echo -e "      • Stop server:      sudo systemctl stop inkflow-eink"
+echo -e "      • Restart server:   sudo systemctl restart inkflow-eink"
 echo -e "${GREEN}====================================================${NC}\n"
