@@ -30,7 +30,7 @@ graph TD
 
 ### 1. Symmetrical Carousel (Rotation) Mode
 * Seamlessly cycles through all of your active widgets at full-screen resolution. Displays one widget per refresh cycle, ensuring maximum legibility, large premium typography, and 0% text truncation!
-* Core plugins included:
+* Core widgets/plugins included are:
   * **System Stats**: Monitors Raspberry Pi system health (CPU load, memory, disk utilization, uptime, temperature).
   * **Weather Forecast**: Open-Meteo local weather forecasts with daily high/low temperatures, precipitation, and wind.
   * **RSS Feed**: Aggregates headlines from major presets (Tech, UK, World, HN, NYT) or a custom XML RSS feed url.
@@ -43,7 +43,7 @@ graph TD
   * **AI Telemetry Advisor**: Analyzes system logs and load averages, outputting technical administrator recommendations.
   * **Feynman Quotes**: Displays inspiring daily quotes from physicist Richard Feynman.
 
-The sever also features an  * **AI Widget Builder** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
+The sever also features an  **Plugin Studio** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
 
 ### 2. High-Performance E-Ink Processing
 * **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
