@@ -6,16 +6,17 @@
 #define CONFIG_H
 
 // 1. WiFi Settings
-const char* ssid     = "PLUSNET-TQC29S";
-const char* password = "KtYAvLrd4bvuE9";
+// These act as hardcoded defaults if no settings are saved via the setup portal.
+String default_ssid     = "PLUSNET-TQC29S";
+String default_password = "KtYAvLrd4bvuE9";
 
-// 2. Server Settings (Your Raspberry Pi's local IP address)
-const char* serverIp   = "192.168.1.122";
-const int   serverPort = 5000;
+// 2. Server Settings (Your Raspberry Pi's local IP address or DNS name)
+String default_serverIp   = "192.168.1.122";
+int    default_serverPort = 5000;
 
 // 3. Dynamic Device Naming
 // Setting this automatically updates your screen name in the Control Center!
-const char* customDeviceName = "Living Room R4 Panel";
+String default_deviceName = "Living Room R4 Panel";
 
 // 4. E-Paper Screen Selection
 // Simply uncomment your exact Waveshare display screen size model:

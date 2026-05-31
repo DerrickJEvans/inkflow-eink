@@ -109,13 +109,20 @@ To use this sketch successfully on the **Waveshare E-Paper Shield (B)** mounted 
 | **Interface (0 / 1)** | **0** | Selects **4-Wire SPI** communication interface mode |
 | **Display Type (A / B)** | **A** | Provides the cleanest signal path for your specific display panel |
 
-### 🚀 Setup & Flashing Instructions
-1. Mount the **Waveshare E-Paper Shield (B)** firmly onto the Arduino UNO R4 WiFi board header.
-2. Open `arduino_r4_client.ino` inside the Arduino IDE.
-3. In the top **Configuration Settings** block, update:
-   - `ssid` and `password` with your home WiFi router credentials.
-   - `serverIp` with the local IP address of your Raspberry Pi (e.g. `192.168.1.122`).
-   * *Note: The `deviceId` parameter is dynamically resolved from the board's hardware MAC address at boot, eliminating the need to edit unique IDs for multiple screens!*
-4. Select **Arduino UNO R4 WiFi** in the Arduino IDE **Tools** -> **Board** menu.
-5. Click **Upload** to compile and flash the direct zero-buffer streaming code!
-6. Open the **Serial Monitor** at **`115200 baud`** to observe raw HTTP packet counts, real-time stream state transitions, auto-padding safety sequences, and hardware drawing cycles.
+### 🚀 Setup & Flashing Instructions (Zero-Configuration Setup!)
+The UNO R4 WiFi client features an integrated **Web Setup Portal & EEPROM Wifi Manager** out of the box! You do **not** need to hardcode WiFi credentials or server IPs before flashing.
+
+1. **Physical Mount**: Mount the **Waveshare E-Paper Shield (B)** firmly onto the Arduino UNO R4 WiFi board headers and configure the switches as detailed in the matrix above.
+2. **Flash the Code**: 
+   * Open `arduino_r4_client.ino` in the Arduino IDE.
+   * Select **Arduino UNO R4 WiFi** in the **Tools** -> **Board** menu, select your port, and click **Upload**!
+3. **Connect to Setup AP**:
+   * On first boot (or if connection to stored credentials fails), the R4 WiFi will automatically launch a local password-free AP named: **`InkFlow-R4-Setup`**.
+   * Connect your mobile phone or computer to the **`InkFlow-R4-Setup`** WiFi network.
+   * Open a web browser and navigate to: **`http://192.168.4.1`**.
+4. **Submit Configurations**:
+   * The setup page will scan the wireless environment and display a **Scanned WiFi Networks** dropdown containing all locally scanned SSIDs.
+   * Select your WiFi, input your password, define the **InkFlow Server Host/IP** (your Raspberry Pi's local address, e.g. `192.168.1.122`), and click **Save Settings & Connect**!
+   * The R4 will save settings securely to its onboard EEPROM memory, display a success message, perform a hardware-level software reset to clear RAM, connect to your router, and stream your dithered E-Ink images directly to the screen!
+5. **Serial Monitor**:
+   * Open the **Serial Monitor** set to **`115200 baud`** to observe raw HTTP packet counts, AP request handling, and hardware drawing cycles.
