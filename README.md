@@ -411,7 +411,7 @@ Your client is now fully active! You can use `inkflow-client.sh` anytime to mana
 
 ## 🐳 Simplified Deployment & Orchestration
 
-To simplify provisioning and deploying new server and client displays, we have pre-packaged automated orchestration files. 
+To simplify provisioning and deploying both the server backend and the client displays, we have pre-packaged automated orchestration files below (Options 1 & 2 for the Server, Option 3 for the Client). 
 
 > [!NOTE]
 > You can choose **either** a native bare-metal host deployment (Option 2) **or** a containerized sandboxed deployment (Option 1). They are separate paths—choose the one that best fits your server environment!
@@ -427,7 +427,7 @@ cd inkflow-eink
 ```
 
 #### 2. Spin Up Containers
-* Ensure **Docker** and **Docker Compose** are installed on the host.
+* Ensure **Git**, **Docker**, and **Docker Compose** are installed on the host.
 * Run this command in your server's root folder:
   ```bash
   docker compose up -d --build
