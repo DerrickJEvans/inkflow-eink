@@ -50,7 +50,7 @@ graph TD
   * **Multi-Column Alignment**: Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
   * **Spacious bottom settings drawer**: Form controls and the drag-and-drop rotation sequence timeline expand horizontally, giving you maximum width to reorder and calibrate display rotation cycles.
 * **AI Studio & Embedded Configurations**:
-  * **In-Tile Forms**: Obsolete sidebar accordions are removed; each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations.
+  * **In-Tile Forms**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations.
   * **Event Propagation Safety Blocks**: Text inputs, checkboxes, and notice additions intercept mousedown events to prevent catalog re-selections or preview restarts while typing.
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
