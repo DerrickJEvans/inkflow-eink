@@ -109,11 +109,11 @@ void setup() {
   // Load configuration from EEPROM
   loadConfiguration();
 
-  // 2-Second Serial trigger prompt to allow developers to force reset settings
-  Serial.println(F("\n💡 Press 'r' in Serial Monitor within 2 seconds to force clear settings & launch Setup AP Portal..."));
+  // 10-Second Serial trigger prompt to allow developers to force reset settings
+  Serial.println(F("\n💡 Press 'r' in Serial Monitor within 10 seconds to force clear settings & launch Setup AP Portal..."));
   unsigned long promptStart = millis();
   bool resetPressed = false;
-  while (millis() - promptStart < 2000) {
+  while (millis() - promptStart < 10000) {
     if (Serial.available() > 0) {
       char c = Serial.read();
       if (c == 'r' || c == 'R') {

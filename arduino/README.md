@@ -72,7 +72,7 @@ The ESP32 E-Ink client features a premium **E-Ink Setup Wizard & Captive Portal 
    * Open the **Serial Monitor** set to **`115200 baud`** to observe connection logs, web portal requests, raw packet counts, and screen update cycles!
 
 > [!TIP]
-> **Developer Reset Mode**: If your board connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **EN/RST button** on your ESP32 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 2 seconds of boot. The client will instantly wipe all saved preferences and launch the captive portal AP!
+> **Developer Reset Mode**: If your board connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **EN/RST button** on your ESP32 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe all saved preferences and launch the captive portal AP!
 
 ---
 
@@ -131,4 +131,4 @@ The UNO R4 WiFi client features an integrated **Web Setup Portal & EEPROM Wifi M
    * Open the **Serial Monitor** set to **`115200 baud`** to observe raw HTTP packet counts, AP request handling, and hardware drawing cycles.
 
 > [!TIP]
-> **Developer Reset Mode**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 2 seconds of boot. The client will instantly clear the EEPROM database and start the Setup AP Portal!
+> **Developer Reset Mode**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly clear the EEPROM database and start the Setup AP Portal!
