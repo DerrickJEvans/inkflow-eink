@@ -5,7 +5,7 @@
   Architecture: Low-RAM Direct SPI Streaming & EEPROM Wifi Wizard
   ──────────────────────────────────────────────────────────────────
   Bypasses GxEPD2 buffer allocations to stream HTTP raw 1-bit monochrome E-Ink
-  data straight to the screen controller over SPI, fittingLarge screens into 32KB RAM.
+  data straight to the screen controller over SPI, fitting Large screens into 32KB RAM.
   Features a built-in Setup Web AP Portal and EEPROM storage to easily configure
   WiFi networks and server hosts dynamically without code changes.
 
@@ -19,6 +19,7 @@
 
 #include <SPI.h>
 #include <WiFiS3.h>
+#include <WiFiUdp.h>
 #include <EEPROM.h>
 #include "config.h"
 
@@ -42,8 +43,17 @@ struct EEPROMConfig {
 EEPROMConfig activeConfig;
 const uint32_t CONFIG_MAGIC = 0xDEFAEC20;
 
+WiFiUDP dnsUDP;
+const byte DNS_PORT = 53;
+
+#include "font8x8.h"
+
 // Forward declarations
 void startSetupWizard();
+void processDNS();
+void drawSplashDirect(bool isSetup, String ssid, String host, int port);
+void drawSetupSplashDirect();
+void drawConnectingSplashDirect(String ssid, String host, int port);
 String parseUrlParam(String body, String paramName);
 String urlDecode(String str);
 unsigned char h2d(char hex);
@@ -340,6 +350,9 @@ bool connectWiFi() {
   Serial.print(F("Attempting to connect to SSID Network: "));
   Serial.println(activeConfig.wifi_ssid);
   
+  // Show connection status splash screen on the E-Ink display
+  drawConnectingSplashDirect(activeConfig.wifi_ssid, activeConfig.server_host, activeConfig.server_port);
+  
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println(F("[Error] WiFi communication chip missing."));
     return false;
@@ -374,6 +387,9 @@ void startSetupWizard() {
   WiFi.disconnect();
   delay(100);
   
+  // Render setup instructions onto the E-Ink Screen physically
+  drawSetupSplashDirect();
+  
   // Start soft Access Point "InkFlow-R4-Setup"
   if (!WiFi.beginAP("InkFlow-R4-Setup")) {
     Serial.println(F("[Error] AP initialization failed. Restarting board..."));
@@ -385,15 +401,24 @@ void startSetupWizard() {
   Serial.print(F("[Setup AP] AP Started. SSID: InkFlow-R4-Setup, Local Portal IP: "));
   Serial.println(apIP);
   
+  // Launch Captive DNS Responder on UDP Port 53
+  dnsUDP.begin(DNS_PORT);
+  Serial.println(F("[Setup AP] DNS Captive Portal Redirect active on UDP Port 53."));
+  
   WiFiServer server(80);
   server.begin();
   
   Serial.println(F("[Setup AP] Listening for connection requests on Port 80..."));
   
   while (true) {
+    // Process DNS capture queries
+    processDNS();
+    
     WiFiClient client = server.available();
     if (client) {
       Serial.println(F("[Web Server] Client connected."));
+      String reqMethod = "";
+      String reqPath = "";
       String currentLine = "";
       boolean isPost = false;
       int contentLength = 0;
@@ -420,11 +445,24 @@ void startSetupWizard() {
               break;
             }
             
-            // Check request type
-            if (currentLine.startsWith("GET /")) {
-              isPost = false;
-            } else if (currentLine.startsWith("POST /save")) {
-              isPost = true;
+            // Parse Request Line (Method and Path)
+            if (currentLine.startsWith("GET ") || currentLine.startsWith("POST ")) {
+              int firstSpace = currentLine.indexOf(' ');
+              int secondSpace = currentLine.indexOf(' ', firstSpace + 1);
+              if (firstSpace != -1) {
+                reqMethod = currentLine.substring(0, firstSpace);
+                if (secondSpace != -1) {
+                  reqPath = currentLine.substring(firstSpace + 1, secondSpace);
+                } else {
+                  reqPath = currentLine.substring(firstSpace + 1);
+                }
+              }
+              
+              if (reqMethod == "POST" && reqPath.startsWith("/save")) {
+                isPost = true;
+              } else {
+                isPost = false;
+              }
             } else if (currentLine.startsWith("Content-Length:")) {
               int colonIdx = currentLine.indexOf(':');
               if (colonIdx != -1) {
@@ -440,7 +478,7 @@ void startSetupWizard() {
         }
       }
       
-      if (isPost && reqBody.length() > 0) {
+      if (isPost && reqPath.startsWith("/save") && reqBody.length() > 0) {
         Serial.println(F("[Web Server] Handling POST /save settings..."));
         
         // Parse parameters from urldecoded reqBody
@@ -491,7 +529,7 @@ void startSetupWizard() {
         Serial.println(F("[Setup AP] Performing system reset..."));
         delay(500);
         NVIC_SystemReset();
-      } else {
+      } else if (reqPath == "/" || reqPath == "/setup" || reqPath == "/index.html") {
         Serial.println(F("[Web Server] Serving setup page..."));
         
         // WiFi scan networks
@@ -539,10 +577,281 @@ void startSetupWizard() {
         client.println(F("</div></div></body></html>"));
         
         client.stop();
+      } else {
+        // Redirect captive network checks and other requests to /
+        Serial.print(F("[Web Server] Redirecting captive probe path: "));
+        Serial.print(reqPath);
+        Serial.println(F(" to http://192.168.4.1/"));
+        
+        client.println(F("HTTP/1.1 302 Found"));
+        client.println(F("Location: http://192.168.4.1/"));
+        client.println(F("Content-Length: 0"));
+        client.println(F("Connection: close"));
+        client.println();
+        client.stop();
       }
     }
     delay(2);
   }
+}
+
+// Zero-dependency DNS Redirect responder over UDP port 53
+void processDNS() {
+  int packetSize = dnsUDP.parsePacket();
+  if (packetSize > 0) {
+    uint8_t packetBuffer[512];
+    dnsUDP.read(packetBuffer, 512);
+    
+    // Check if it's a valid DNS query (at least a header of 12 bytes)
+    if (packetSize >= 12) {
+      // Modify header for response:
+      // Flags: Set QR (Query Response) to 1, Opcode to 0, AA (Authoritative) to 1, RCODE to 0 -> 0x8400
+      packetBuffer[2] = 0x84; 
+      packetBuffer[3] = 0x00;
+      
+      // Answer RRs: 1 (set high byte to 0, low byte to 1) -> 0x0001
+      packetBuffer[6] = 0x00;
+      packetBuffer[7] = 0x01;
+      
+      // Parse Query Name to find where it ends
+      int nameIdx = 12;
+      while (nameIdx < packetSize && packetBuffer[nameIdx] != 0) {
+        nameIdx += packetBuffer[nameIdx] + 1;
+      }
+      nameIdx++; // skip null byte
+      nameIdx += 4; // skip Query Type (2 bytes) and Query Class (2 bytes)
+      
+      // Construct Response packet:
+      // We will send back the original query part (up to nameIdx) + the Answer record
+      dnsUDP.beginPacket(dnsUDP.remoteIP(), dnsUDP.remotePort());
+      dnsUDP.write(packetBuffer, nameIdx);
+      
+      // Answer Record:
+      // Pointer to Query Name (0xC00C offset) -> 2 bytes
+      dnsUDP.write((uint8_t)0xC0);
+      dnsUDP.write((uint8_t)0x0C);
+      
+      // Type: A record (0x0001) -> 2 bytes
+      dnsUDP.write((uint8_t)0x00);
+      dnsUDP.write((uint8_t)0x01);
+      
+      // Class: IN (0x0001) -> 2 bytes
+      dnsUDP.write((uint8_t)0x00);
+      dnsUDP.write((uint8_t)0x01);
+      
+      // TTL: 10 seconds (0x0000000A) -> 4 bytes
+      dnsUDP.write((uint8_t)0x00);
+      dnsUDP.write((uint8_t)0x00);
+      dnsUDP.write((uint8_t)0x00);
+      dnsUDP.write((uint8_t)0x0A);
+      
+      // Data Length: 4 bytes (0x0004) -> 2 bytes
+      dnsUDP.write((uint8_t)0x00);
+      dnsUDP.write((uint8_t)0x04);
+      
+      // IP Address: 192.168.4.1 -> 4 bytes
+      dnsUDP.write((uint8_t)192);
+      dnsUDP.write((uint8_t)168);
+      dnsUDP.write((uint8_t)4);
+      dnsUDP.write((uint8_t)1);
+      
+      dnsUDP.endPacket();
+      Serial.println(F("[DNS Portal] Captive Redirect standard request routed to 192.168.4.1"));
+    }
+  }
+}
+
+// Direct-SPI Splash screen renderer utilizing zero-RAM buffering (reads font on-the-fly)
+void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
+  Serial.println(F("[Display] Drawing splash screen direct to SPI..."));
+  
+  if (epd.Init() != 0) {
+     Serial.println(F("[Error] Display initialization step failed."));
+     return;
+  }
+
+  // Tell display to prepare for binary pixel input array stream
+  epd.SendCommand(0x24);
+
+  struct TextElement {
+    const char* text;
+    int pixelX;
+    int pixelY;
+    int scale;
+  };
+  
+  char macStr[18];
+  byte mac[6];
+  WiFi.macAddress(mac);
+  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X", mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
+  
+  char macLine[40];
+  snprintf(macLine, sizeof(macLine), "MAC Address: %s", macStr);
+
+  char ssidLine[40];
+  snprintf(ssidLine, sizeof(ssidLine), "SSID: %s", ssid.c_str());
+  char hostLine[40];
+  snprintf(hostLine, sizeof(hostLine), "Host: %s", host.c_str());
+  char portLine[40];
+  snprintf(portLine, sizeof(portLine), "Port: %d", port);
+
+  TextElement elements[15];
+  int numElements = 0;
+
+  if (isSetup) {
+    if (displayWidth >= 800) {
+      elements[numElements++] = {"InkFlow R4 Setup Portal", 40, 40, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
+      elements[numElements++] = {"1. Connect your phone or PC to the setup WiFi network:", 40, 110, 1};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 80, 140, 2};
+      elements[numElements++] = {"(This network is open/password-free, just click to connect)", 80, 175, 1};
+      elements[numElements++] = {"2. The setup wizard should open automatically.", 40, 220, 1};
+      elements[numElements++] = {"   If it does not, open a web browser and visit:", 40, 240, 1};
+      elements[numElements++] = {"http://192.168.4.1", 80, 270, 2};
+      elements[numElements++] = {"3. Choose your WiFi network, enter password, and configure", 40, 320, 1};
+      elements[numElements++] = {"   the InkFlow server IP (e.g. 192.168.1.122) and port.", 40, 340, 1};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
+      elements[numElements++] = {macLine, 40, 420, 1};
+    } else if (displayWidth >= 400) {
+      elements[numElements++] = {"InkFlow R4 Setup", 20, 20, 2};
+      elements[numElements++] = {"----------------------------------------", 20, 45, 1};
+      elements[numElements++] = {"1. Connect phone/PC to WiFi:", 20, 70, 1};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 40, 95, 2};
+      elements[numElements++] = {"2. Open web browser and visit:", 20, 135, 1};
+      elements[numElements++] = {"http://192.168.4.1", 40, 160, 2};
+      elements[numElements++] = {"3. Set home WiFi & server IP.", 20, 200, 1};
+      elements[numElements++] = {"----------------------------------------", 20, 230, 1};
+      elements[numElements++] = {macLine, 20, 260, 1};
+    } else { // 296x128
+      elements[numElements++] = {"InkFlow R4 Setup", 10, 10, 1};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 10, 35, 1};
+      elements[numElements++] = {"Visit: http://192.168.4.1", 10, 60, 1};
+      elements[numElements++] = {"Submit WiFi/Server details!", 10, 85, 1};
+      elements[numElements++] = {macLine, 10, 110, 1};
+    }
+  } else {
+    // Connecting Splash
+    if (displayWidth >= 800) {
+      elements[numElements++] = {"InkFlow Dashboard Connecting...", 40, 40, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
+      elements[numElements++] = {"Attempting to connect to WiFi & InkFlow server...", 40, 110, 1};
+      elements[numElements++] = {ssidLine, 60, 150, 1};
+      elements[numElements++] = {hostLine, 60, 180, 1};
+      elements[numElements++] = {portLine, 60, 210, 1};
+      elements[numElements++] = {"Please wait, the screen will refresh once connected.", 40, 260, 1};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
+      elements[numElements++] = {macLine, 40, 420, 1};
+    } else if (displayWidth >= 400) {
+      elements[numElements++] = {"Connecting...", 20, 20, 2};
+      elements[numElements++] = {"----------------------------------------", 20, 45, 1};
+      elements[numElements++] = {ssidLine, 20, 80, 1};
+      elements[numElements++] = {hostLine, 20, 110, 1};
+      elements[numElements++] = {portLine, 20, 140, 1};
+      elements[numElements++] = {"Refreshing shortly...", 20, 180, 1};
+      elements[numElements++] = {"----------------------------------------", 20, 230, 1};
+      elements[numElements++] = {macLine, 20, 260, 1};
+    } else { // 296x128
+      elements[numElements++] = {"Connecting...", 10, 10, 1};
+      elements[numElements++] = {ssidLine, 10, 35, 1};
+      elements[numElements++] = {hostLine, 10, 60, 1};
+      elements[numElements++] = {portLine, 10, 85, 1};
+      elements[numElements++] = {macLine, 10, 110, 1};
+    }
+  }
+
+  // Row and column bounds for border spacing
+  int border1 = 5;
+  int border2 = 10;
+  if (displayWidth < 800) {
+    border1 = 3;
+    border2 = 6;
+  }
+  if (displayWidth < 400) {
+    border1 = 2;
+    border2 = 4;
+  }
+
+  for (int y = 0; y < displayHeight; y++) {
+    for (int bx = 0; bx < displayWidth / 8; bx++) {
+      uint8_t outByte = 0xFF; // Start with all white (1)
+
+      for (int bit = 0; bit < 8; bit++) {
+        int x = (bx * 8) + bit;
+        bool isBlack = false;
+
+        // 1. Draw elegant double borders
+        if ((y >= border1 && y <= border1 + 1) || (y >= displayHeight - (border1 + 2) && y <= displayHeight - border1)) {
+          if (x >= border1 && x <= displayWidth - (border1 + 1)) isBlack = true;
+        }
+        if ((x >= border1 && x <= border1 + 1) || (x >= displayWidth - (border1 + 2) && x <= displayWidth - border1)) {
+          if (y >= border1 && y <= displayHeight - border1) isBlack = true;
+        }
+
+        if ((y >= border2 && y <= border2 + 1) || (y >= displayHeight - (border2 + 2) && y <= displayHeight - border2)) {
+          if (x >= border2 && x <= displayWidth - (border2 + 1)) isBlack = true;
+        }
+        if ((x >= border2 && x <= border2 + 1) || (x >= displayWidth - (border2 + 2) && x <= displayWidth - border2)) {
+          if (y >= border2 && y <= displayHeight - border2) isBlack = true;
+        }
+
+        // 2. Render Text elements
+        if (!isBlack) {
+          for (int e = 0; e < numElements; e++) {
+            TextElement& elem = elements[e];
+            int scale = elem.scale;
+            int charHeight = 8 * scale;
+
+            if (y >= elem.pixelY && y < elem.pixelY + charHeight) {
+              int yOffset = y - elem.pixelY;
+              int fontRow = yOffset / scale;
+
+              int textLen = strlen(elem.text);
+              int charWidth = 8 * scale;
+              int totalWidth = textLen * charWidth;
+
+              if (x >= elem.pixelX && x < elem.pixelX + totalWidth) {
+                int xOffset = x - elem.pixelX;
+                int charIndex = xOffset / charWidth;
+                int fontCol = (xOffset / scale) % 8;
+
+                char c = elem.text[charIndex];
+                // In font8x8_basic: LSB (bit 0) represents the first pixel in the row
+                uint8_t fontByte = font8x8_basic[(uint8_t)c][fontRow];
+
+                if ((fontByte >> fontCol) & 1) {
+                  isBlack = true;
+                }
+              }
+            }
+          }
+        }
+
+        if (isBlack) {
+          outByte &= ~(0x80 >> bit); // Clear bit (0 = black)
+        }
+      }
+
+      epd.SendData(outByte);
+    }
+  }
+
+  // Trigger global physical E-Paper refresh sequence
+  Serial.println(F("[Display] Triggering global hardware refresh transitions..."));
+  epd.SendCommand(0x22); 
+  epd.SendData(0xF7); 
+  epd.SendCommand(0x20); 
+  epd.ReadBusy();
+  epd.Sleep();
+  
+  Serial.println(F("[Display] Splash drawn successfully."));
+}
+
+void drawSetupSplashDirect() {
+  drawSplashDirect(true, "", "", 0);
+}
+
+void drawConnectingSplashDirect(String ssid, String host, int port) {
+  drawSplashDirect(false, ssid, host, port);
 }
 
 // Helper function to extract URL-encoded form parameters
