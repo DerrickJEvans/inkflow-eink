@@ -109,6 +109,28 @@ void setup() {
   // Load configuration from EEPROM
   loadConfiguration();
 
+  // 2-Second Serial trigger prompt to allow developers to force reset settings
+  Serial.println(F("\n💡 Press 'r' in Serial Monitor within 2 seconds to force clear settings & launch Setup AP Portal..."));
+  unsigned long promptStart = millis();
+  bool resetPressed = false;
+  while (millis() - promptStart < 2000) {
+    if (Serial.available() > 0) {
+      char c = Serial.read();
+      if (c == 'r' || c == 'R') {
+        resetPressed = true;
+        break;
+      }
+    }
+    delay(10);
+  }
+
+  if (resetPressed) {
+    Serial.println(F("[Config] Reset key detected! Clearing EEPROM storage..."));
+    memset(&activeConfig, 0, sizeof(EEPROMConfig));
+    EEPROM.put(0, activeConfig);
+    startSetupWizard();
+  }
+
   // Initialize WiFi connection
   if (connectWiFi()) {
     // Connect to server and stream incoming byte data directly to e-Paper RAM
