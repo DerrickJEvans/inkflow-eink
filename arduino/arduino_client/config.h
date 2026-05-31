@@ -6,16 +6,17 @@
 #define CONFIG_H
 
 // 1. WiFi Settings
-const char* ssid     = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+// These act as hardcoded defaults if no settings are saved via the E-Ink Setup Wizard.
+String default_ssid     = "YOUR_WIFI_SSID";
+String default_password = "YOUR_WIFI_PASSWORD";
 
-// 2. Server Settings (Change to your Raspberry Pi's local IP address)
-const char* serverIp   = "192.168.1.100";
-const int   serverPort = 5000;
+// 2. Server Settings (Change to your Raspberry Pi's local IP address or DNS name)
+String default_serverIp   = "192.168.1.100";
+int    default_serverPort = 5000;
 
 // 3. Dynamic Device Naming
 // Setting this automatically updates your screen name in the Control Center!
-const char* customDeviceName = "Living Room ESP32 Panel";
+String default_deviceName = "Living Room ESP32 Panel";
 
 // 4. E-Paper Screen Selection
 // Simply uncomment your exact Waveshare display screen size:

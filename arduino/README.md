@@ -50,19 +50,26 @@ On the official **Waveshare Arduino E-Paper Shield or HAT**, there is an onboard
 
 ## 🚀 Setup & Flashing Instructions
 
-1. Open `arduino_client.ino` in the Arduino IDE.
-2. In the top **Configuration Settings** block, update:
-   - `ssid` and `password` to match your home WiFi router credentials.
-   - `serverIp` to match the local IP address of your Raspberry Pi (e.g. `192.168.1.50`).
-   * *Note: The `deviceId` variable is removed! The sketch dynamically reads the board's hardwired MAC address at startup. This means you can flash the **exact same code** across multiple microcontrollers, and they will automatically auto-provision unique consoles on your server dashboard!*
-   - `displayWidth` and `displayHeight` to match your screen resolution (e.g. `400` and `300` for a 4.2" screen).
-3. Scroll down to the **GxEPD2 Display Driver Selection** section:
-   - By default, the 4.2" Black & White display driver is active.
-   - If you are using a different size display (e.g., 7.5" Version 2 or 2.9" Version 1), **comment out** the default line and **uncomment** the line matching your specific physical Waveshare panel model.
-4. Connect your ESP32 to your computer via USB.
-5. Select your ESP32 board in **Tools** -> **Board** (e.g. `ESP32 Dev Module` or `NodeMCU-32S`).
-6. Click **Upload** to compile and flash.
-7. Open the **Serial Monitor** set to **`115200 baud`** to observe connection logs, HTTP raw packet counts, and screen update cycles!
+### ⚡ ESP32 Setup Wizard (Zero-Configuration Flashing!)
+The ESP32 E-Ink client features a premium **E-Ink Setup Wizard & Captive Portal WiFi Manager** out of the box! You do **not** need to hardcode your WiFi SSID, passwords, or server addresses inside the code before flashing.
+
+1. **Configure Screen Size**:
+   * Open `config.h` in the `arduino_client/` folder.
+   * By default, the 4.2" screen is uncommented. If you use a different size (e.g. 7.5", 2.9", or 2.7"), simply comment out the 4.2" line and uncomment your exact screen selection.
+2. **Flash the Code**:
+   * Connect your ESP32 board to your computer via USB.
+   * Open `arduino_client.ino` in the Arduino IDE, select your ESP32 board and port under **Tools**, and click **Upload**!
+3. **Connect to Setup Portal**:
+   * On first boot (or if it fails to connect to any stored networks), the E-Ink screen will automatically refresh to show the **InkFlow Setup Wizard** instructions and spawn a password-free WiFi network: **`InkFlow-Setup`**.
+   * Connect your mobile phone or computer to the **`InkFlow-Setup`** WiFi network.
+   * A captive portal settings page will slide open automatically. If it doesn't, open a browser and go to: **`http://192.168.4.1`**.
+4. **Submit Configurations**:
+   * The setup page will automatically display a **Scanned WiFi Networks** dropdown containing all locally scanned SSIDs.
+   * Select your Wi-Fi, enter your password, input the **InkFlow Server Host/IP** (your Raspberry Pi's local address, e.g. `192.168.1.122`), and customize your screen name.
+   * Click **Save Settings & Connect**! The ESP32 will store these configurations securely in non-volatile flash memory, connect to your router, fetch your E-Ink display raw data, and enter its low-power refresh cycles automatically.
+
+5. **Serial Monitoring**:
+   * Open the **Serial Monitor** set to **`115200 baud`** to observe connection logs, web portal requests, raw packet counts, and screen update cycles!
 
 ---
 

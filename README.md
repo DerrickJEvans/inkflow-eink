@@ -345,7 +345,7 @@ InkFlow includes a state-of-the-art **🧠 AI & Ollama Admin** administration po
 ## 📟 Connecting Screens & Clients
 
 ### 1. Arduino C++ (ESP32 + Waveshare E-Paper)
-Navigate to the [`arduino/`](arduino) directory, open `arduino_client.ino` in the Arduino IDE, install `GxEPD2` and `Adafruit GFX`, adjust your WiFi configurations, select your exact driver chip, and upload!
+Navigate to the [`arduino/`](arduino) directory, open `arduino_client.ino` in the Arduino IDE, install `GxEPD2` and `Adafruit GFX`, select your display driver chip in `config.h`, compile and upload! Once booted, simply connect your phone or computer to the password-free **`InkFlow-Setup`** WiFi Access Point to configure WiFi credentials, your server IP address, port, and display name dynamically via the captive portal!
 
 ### 2. Python Client (Raspberry Pi Zero 2 W + Waveshare 4.26" 800x480 Display)
 Designed to run on a headless Raspberry Pi Zero 2 W equipped with a **Waveshare E-Paper Driver HAT Rev 2.3** and a **4.26" e-Paper Display (800x480)**.
