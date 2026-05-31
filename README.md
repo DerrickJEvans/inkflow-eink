@@ -201,9 +201,54 @@ sudo ./install.sh
 > [!TIP]
 > **GitHub Authentication Issues**: If your repository is set to private, Git will prompt you for your credentials on `git pull`. Because GitHub **no longer supports standard account passwords** for CLI operations, you must generate and enter a **Personal Access Token (PAT)** classic (from GitHub Settings -> Developer settings -> Personal access tokens with the `repo` scope enabled) as your password. Alternatively, you can use your SSH key credentials by changing the remote origin to the SSH address: `git remote set-url origin git@github.com:DerrickJEvans/inkflow-eink.git`.
 
+## 🛠️ Master Server Manager Utility (`inkflow.sh`)
+
+To make managing your E-Ink server as seamless as possible, we have developed a master control utility bash script: **[`inkflow.sh`](inkflow.sh)** located in the root of your repository. 
+
+This utility acts as your server command center, providing a comprehensive, user-friendly interactive terminal menu as well as quick CLI shortcut commands to run diagnostics, start/stop services, view live log streams, and safely execute system updates.
+
+### 🕹️ 1. Interactive Terminal Console
+Run the script without arguments in your server terminal to launch a clean, colorful menu dashboard:
+```bash
+cd ~/inkflow-eink
+./inkflow.sh
+```
+
+The console displays real-time system states (running/stopped), active host IP addresses, and provides instant navigation options:
+* `[1] Start InkFlow E-Ink Server`
+* `[2] Stop InkFlow E-Ink Server`
+* `[3] Restart InkFlow E-Ink Server`
+* `[4] View Real-Time Live Logs`
+* `[5] Run System Diagnostics & Network Check`
+* `[6] Pull Core Codebase Updates`
+* `[7] Exit`
+
 ---
 
+### 🚀 2. Quick Command CLI Shortcuts
+You can bypass the menu and execute operations directly from the command line by passing an action argument:
 
+| Command | Privileges | Action / Description |
+|:---|:---|:---|
+| **`./inkflow.sh start`** | `Sudo` | Escalates privileges and starts the background `inkflow-eink.service` daemon. |
+| **`./inkflow.sh stop`** | `Sudo` | Stops the persistent background server daemon safely. |
+| **`./inkflow.sh restart`** | `Sudo` | Restarts the background server daemon. |
+| **`./inkflow.sh logs`** | None | Opens a live scroll feed of active server logs (`journalctl -u inkflow-eink -f`). |
+| **`./inkflow.sh status`** | None | Performs a **Comprehensive Diagnostics Scan** (see below). |
+| **`./inkflow.sh update`** | None | Performs a safe config backup, pulls latest Git code, updates npm dependencies, and restarts services. |
+
+---
+
+### 🔍 3. Comprehensive Diagnostics Scan (`./inkflow.sh status`)
+Running status diagnostics initiates a deep scan of your host environment, rendering a structured readout detailing:
+1. **Service Status**: Checks if the background `inkflow-eink.service` is active, enabled, or stopped in systemd.
+2. **Listener Port Binding**: Scans TCP port `5000` to confirm that the Node.js Express server is listening properly.
+3. **Primary IP Address**: Automatically resolves and displays your host's local IP address to make it easy to find your web dashboard URL.
+4. **Ollama Local AI Engine Status**: Detects whether Ollama is running and verifies if the lightweight `llama3.2:1b` model has been successfully pulled.
+5. **Disk Capacity Check**: Verifies active host storage capacity to ensure your server doesn't run out of space for widget logs or image caches.
+6. **Active E-Ink Screens**: Reads and details all registered screens, custom names, and carousel rotation states directly from your database config.
+
+---
 
 ## 🧠 Multi-Provider AI Integration (Gemini, Groq, & Local Ollama)
 
