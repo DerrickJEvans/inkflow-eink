@@ -411,7 +411,7 @@ Your client is now fully active! You can use `inkflow-client.sh` anytime to mana
 
 ## 🐳 Simplified Deployment & Orchestration
 
-To simplify provisioning and deploying both the server backend and the client displays, we have pre-packaged automated orchestration files below (Options 1 & 2 for the Server, Option 3 for the Client). 
+To simplify provisioning and deploying both the server backend and the client displays on linux systems, we have pre-packaged automated orchestration files below (Options 1 & 2 for the Server, Option 3 for the Client). 
 
 > [!NOTE]
 > You can choose **either** a native bare-metal host deployment (Option 2) **or** a containerized sandboxed deployment (Option 1). They are separate paths—choose the one that best fits your server environment!
@@ -419,7 +419,7 @@ To simplify provisioning and deploying both the server backend and the client di
 ### 1. Multi-Container Dockerized Server & Local AI Deployment
 You can deploy a new InkFlow E-Ink Server **and** a local, fully dedicated Ollama instance anywhere with a single command—no manual model downloading, Node.js installations, or compilation required!
 
-* **Prerequisite:** Ensure **Git**, **Docker**, and **Docker Compose** are installed on the host.
+**Prerequisite:** Ensure **Git**, **Docker**, and **Docker Compose** are installed on the host.
 
 #### 1. Clone the Repository
 First, clone the codebase to your server host and navigate into the root directory:
