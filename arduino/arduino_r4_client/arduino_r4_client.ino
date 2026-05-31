@@ -390,8 +390,8 @@ void startSetupWizard() {
   // Render setup instructions onto the E-Ink Screen physically
   drawSetupSplashDirect();
   
-  // Start soft Access Point "InkFlow-R4-Setup"
-  if (!WiFi.beginAP("InkFlow-R4-Setup")) {
+  // Start soft Access Point "InkFlow-R4-Setup" with WPA2 security for absolute visibility & stability
+  if (!WiFi.beginAP("InkFlow-R4-Setup", "12345678")) {
     Serial.println(F("[Error] AP initialization failed. Restarting board..."));
     delay(2000);
     NVIC_SystemReset();
@@ -704,7 +704,7 @@ void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
       elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
       elements[numElements++] = {"1. Connect your phone or PC to the setup WiFi network:", 40, 110, 1};
       elements[numElements++] = {"SSID: InkFlow-R4-Setup", 80, 140, 2};
-      elements[numElements++] = {"(This network is open/password-free, just click to connect)", 80, 175, 1};
+      elements[numElements++] = {"WiFi Password: 12345678", 80, 175, 1};
       elements[numElements++] = {"2. The setup wizard should open automatically.", 40, 220, 1};
       elements[numElements++] = {"   If it does not, open a web browser and visit:", 40, 240, 1};
       elements[numElements++] = {"http://192.168.4.1", 80, 270, 2};
@@ -716,17 +716,19 @@ void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
       elements[numElements++] = {"InkFlow R4 Setup", 20, 20, 2};
       elements[numElements++] = {"----------------------------------------", 20, 45, 1};
       elements[numElements++] = {"1. Connect phone/PC to WiFi:", 20, 70, 1};
-      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 40, 95, 2};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 40, 90, 2};
+      elements[numElements++] = {"Password: 12345678", 40, 115, 1};
       elements[numElements++] = {"2. Open web browser and visit:", 20, 135, 1};
-      elements[numElements++] = {"http://192.168.4.1", 40, 160, 2};
+      elements[numElements++] = {"http://192.168.4.1", 40, 155, 2};
       elements[numElements++] = {"3. Set home WiFi & server IP.", 20, 200, 1};
       elements[numElements++] = {"----------------------------------------", 20, 230, 1};
       elements[numElements++] = {macLine, 20, 260, 1};
     } else { // 296x128
       elements[numElements++] = {"InkFlow R4 Setup", 10, 10, 1};
       elements[numElements++] = {"SSID: InkFlow-R4-Setup", 10, 35, 1};
-      elements[numElements++] = {"Visit: http://192.168.4.1", 10, 60, 1};
-      elements[numElements++] = {"Submit WiFi/Server details!", 10, 85, 1};
+      elements[numElements++] = {"Password: 12345678", 10, 50, 1};
+      elements[numElements++] = {"Visit: http://192.168.4.1", 10, 70, 1};
+      elements[numElements++] = {"Submit WiFi/Server details!", 10, 90, 1};
       elements[numElements++] = {macLine, 10, 110, 1};
     }
   } else {
