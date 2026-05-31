@@ -1,6 +1,8 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins, compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
+Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients.
+Designed for in home LAN deployments with plug and play features for automatic client registration.
 
 ---
 
