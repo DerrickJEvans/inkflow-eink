@@ -120,12 +120,11 @@ The UNO R4 WiFi client features an integrated **Web Setup Portal & EEPROM Wifi M
    * Open `arduino_r4_client.ino` in the Arduino IDE.
    * Select **Arduino UNO R4 WiFi** in the **Tools** -> **Board** menu, select your port, and click **Upload**!
 3. **Connect to Setup AP**:
-   * On first boot (or if connection to stored credentials fails), the R4 WiFi will automatically launch a local password-free AP named: **`InkFlow-R4-Setup`**.
-   * Connect your mobile phone or computer to the **`InkFlow-R4-Setup`** WiFi network.
-   * Open a web browser and navigate to: **`http://192.168.4.1`**.
+   * On first boot (or if connection to stored credentials fails), the R4 WiFi will automatically launch a WPA2-secured setup AP named: **`InkFlow-R4-Setup`**.
+   * Connect your mobile phone or computer to the **`InkFlow-R4-Setup`** WiFi network using the password **`12345678`**.
+   * The captive setup portal will pop open automatically. If it doesn't, open a web browser and navigate to: **`http://192.168.4.1`**.
 4. **Submit Configurations**:
-   * The setup page will scan the wireless environment and display a **Scanned WiFi Networks** dropdown containing all locally scanned SSIDs.
-   * Select your WiFi, input your password, define the **InkFlow Server Host/IP** (your Raspberry Pi's local address, e.g. `192.168.1.122`), and click **Save Settings & Connect**!
+   * Enter your Wi-Fi SSID, input your password, define the **InkFlow Server Host/IP** (your Raspberry Pi's local address, e.g. `192.168.1.122`), and click **Save Settings & Connect**!
    * The R4 will save settings securely to its onboard EEPROM memory, display a success message, perform a hardware-level software reset to clear RAM, connect to your router, and stream your dithered E-Ink images directly to the screen!
 5. **Serial Monitor**:
    * Open the **Serial Monitor** set to **`115200 baud`** to observe raw HTTP packet counts, AP request handling, and hardware drawing cycles.
