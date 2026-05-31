@@ -359,7 +359,7 @@ void startSetupWizard() {
     NVIC_SystemReset();
   }
   
-  IPAddress apIP = WiFi.apIP();
+  IPAddress apIP(192, 168, 4, 1);
   Serial.print(F("[Setup AP] AP Started. SSID: InkFlow-R4-Setup, Local Portal IP: "));
   Serial.println(apIP);
   
