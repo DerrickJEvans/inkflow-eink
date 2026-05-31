@@ -54,9 +54,25 @@ else
 fi
 
 # 4. Pull fresh updates from GitHub
-echo -e "\n${BLUE}[4/5] Pulling latest codebase from origin/main...${NC}"
-git pull
-if [ $? -eq 0 ]; then
+echo -e "\n${BLUE}[4/5] Pulling latest codebase from GitHub...${NC}"
+PULL_SUCCESS=false
+
+# Try standard pull first (uses tracking branch if configured)
+if git pull; then
+    PULL_SUCCESS=true
+else
+    echo -e "${YELLOW}⚠️ Standard git pull failed (no tracking branch configured). Trying origin main...${NC}"
+    if git pull origin main; then
+        PULL_SUCCESS=true
+    else
+        echo -e "${YELLOW}⚠️ Pull from origin main failed. Trying origin master...${NC}"
+        if git pull origin master; then
+            PULL_SUCCESS=true
+        fi
+    fi
+fi
+
+if [ "$PULL_SUCCESS" = true ]; then
     echo -e "${GREEN}✅ Codebase updated successfully!${NC}"
 else
     echo -e "${RED}❌ Git pull failed. Please check network connection or credentials.${NC}"
