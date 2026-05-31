@@ -25,6 +25,7 @@
 
 Epd epd;
 WiFiClient client;
+WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
 
 // Total bytes needed for a full horizontal 1-bit screen transmission frame
@@ -406,7 +407,6 @@ void startSetupWizard() {
   dnsUDP.begin(DNS_PORT);
   Serial.println(F("[Setup AP] DNS Captive Portal Redirect active on UDP Port 53."));
   
-  WiFiServer server(80);
   server.begin();
   
   Serial.println(F("[Setup AP] Listening for connection requests on Port 80..."));
@@ -577,6 +577,7 @@ void startSetupWizard() {
         client.print(macStr);
         client.println(F("</div></div></body></html>"));
         
+        delay(50); // Give the browser time to receive the HTML page
         client.stop();
       } else {
         // Redirect captive network checks and other requests to /
@@ -589,6 +590,8 @@ void startSetupWizard() {
         client.println(F("Content-Length: 0"));
         client.println(F("Connection: close"));
         client.println();
+        
+        delay(50); // Give the browser time to receive the redirect headers
         client.stop();
       }
     }
