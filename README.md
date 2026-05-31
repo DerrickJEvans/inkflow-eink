@@ -2,7 +2,7 @@
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins/widgets , compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
 
-Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients.
+Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients supporting serving of png files as well as memory efficient streaming of image data for memory constrained clients such as Arduino.
 
 Designed for in home LAN deployments with plug and play features for automatic client registration.
 
