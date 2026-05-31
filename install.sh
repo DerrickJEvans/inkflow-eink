@@ -62,21 +62,31 @@ sudo -u "$SUDO_USER_NAME" -i bash -c "cd ${PROJECT_DIR} && npm install"
 
 # 3.5. Install and configure Ollama for Option B Local AI
 echo -e "${CYAN}[3.5/5] Provisioning local Ollama AI engine (Option B)...${NC}"
+OLLAMA_INSTALLED=true
 if ! command -v ollama &> /dev/null; then
   echo -e "${YELLOW}Ollama not detected. Running official Ollama automated installer...${NC}"
-  curl -fsSL https://ollama.com/install.sh | sh
+  if curl -fsSL https://ollama.com/install.sh | sh; then
+    echo -e "${GREEN}[✓] Ollama installed successfully.${NC}"
+  else
+    echo -e "${RED}⚠️ Ollama installation failed (Ollama's download server may be offline). Skipping Ollama installation.${NC}"
+    OLLAMA_INSTALLED=false
+  fi
 else
   echo -e "${GREEN}[✓] Ollama is already installed.${NC}"
 fi
 
-echo -e "${CYAN}Ensuring Ollama daemon service is active and enabled...${NC}"
-systemctl daemon-reload || true
-systemctl enable ollama || true
-systemctl start ollama || true
+if [ "$OLLAMA_INSTALLED" = true ]; then
+  echo -e "${CYAN}Ensuring Ollama daemon service is active and enabled...${NC}"
+  systemctl daemon-reload || true
+  systemctl enable ollama || true
+  systemctl start ollama || true
 
-echo -e "${CYAN}Pulling lightweight Llama 3.2 1B local model (be patient, ~1.2GB download)...${NC}"
-ollama pull llama3.2:1b || true
-echo -e "${GREEN}[✓] Local model llama3.2:1b is ready.${NC}"
+  echo -e "${CYAN}Pulling lightweight Llama 3.2 1B local model (be patient, ~1.2GB download)...${NC}"
+  ollama pull llama3.2:1b || true
+  echo -e "${GREEN}[✓] Local model llama3.2:1b is ready.${NC}"
+else
+  echo -e "${YELLOW}⚠️ Local Ollama AI Engine was skipped. You can configure and run Ollama manually later if desired.${NC}"
+fi
 
 # Configure .env file automatically
 ENV_FILE="${PROJECT_DIR}/.env"
