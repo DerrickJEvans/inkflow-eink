@@ -419,6 +419,14 @@ To simplify provisioning and deploying new server and client displays, we have p
 ### 1. Multi-Container Dockerized Server & Local AI Deployment
 You can deploy a new InkFlow E-Ink Server **and** a local, fully dedicated Ollama instance anywhere with a single command—no manual model downloading, Node.js installations, or compilation required!
 
+#### 1. Clone the Repository
+First, clone the codebase to your server host and navigate into the root directory:
+```bash
+git clone https://github.com/DerrickJEvans/inkflow-eink.git
+cd inkflow-eink
+```
+
+#### 2. Spin Up Containers
 * Ensure **Docker** and **Docker Compose** are installed on the host.
 * Run this command in your server's root folder:
   ```bash
