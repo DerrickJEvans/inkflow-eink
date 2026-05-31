@@ -175,7 +175,8 @@ Once the installer completes, the server will be running persistently in the bac
 #### 💡 Alternative: Direct Git Sparse Checkout (Cleanest, Server-Only Installation)
 If your Pi 5 has direct internet access, you can run a **Git Sparse Checkout** directly on your server Pi. This will download only the server files and configurations, entirely omitting the `client/` and `arduino/` subdirectories to keep your server installation clean, lightweight, and clutter-free:
 ```bash
-# 1. Create a sparse repository folder on the Pi
+# 1. Install Git and create a sparse repository folder on the Pi
+sudo apt update && sudo apt install -y git
 mkdir -p ~/inkflow-eink && cd ~/inkflow-eink
 git init
 
@@ -316,7 +317,8 @@ sudo raspi-config
 #### 2. Get the Client Code (Git Sparse Checkout)
 To download *only* the client code on your standalone client Pi Zero without downloading server code or large node packages, run these commands in your client Pi's SSH terminal to perform a highly efficient sparse checkout:
 ```bash
-# Initialize a sparse repository locally on the client Pi
+# Install Git and initialize a sparse repository locally on the client Pi
+sudo apt update && sudo apt install -y git
 mkdir -p ~/inkflow-client && cd ~/inkflow-client
 git init
 
