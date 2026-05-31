@@ -1,8 +1,6 @@
-# 🚀 InkFlow E-Ink Server — Custom Dashboard & OS Builder
+# 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins, compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
-
-Includes a complete **automated GitHub Actions CI/CD E-Ink OS Image compiler** supporting plug-and-play role configurations natively inside Windows Explorer.
 
 ---
 
