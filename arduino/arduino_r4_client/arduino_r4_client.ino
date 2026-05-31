@@ -239,6 +239,7 @@ bool fetchAndStreamDisplay() {
   Serial.println(F("Parsing HTTP Headers..."));
   String currentLine = "";
   uint8_t headerState = 0;
+  bool hasRefreshRateHeader = false;
   timeout = millis();
   
   while (client.connected() || client.available() > 0) {
@@ -255,7 +256,7 @@ bool fetchAndStreamDisplay() {
       if (headerState == 0 && c == '\r') headerState = 1;
       else if (headerState == 1 && c == '\n') {
         // Line complete, check for custom refresh rate headers
-        if (currentLine.startsWith("X-Refresh-Rate:") || currentLine.startsWith("X-Trmnl-Deep-Sleep:")) {
+        if (currentLine.startsWith("X-Refresh-Rate:")) {
           int colonIdx = currentLine.indexOf(':');
           if (colonIdx != -1) {
             String valStr = currentLine.substring(colonIdx + 1);
@@ -263,9 +264,25 @@ bool fetchAndStreamDisplay() {
             int parsedRate = valStr.toInt();
             if (parsedRate > 0) {
               nextRefreshSeconds = parsedRate;
-              Serial.print(F("[Header] Server set refresh rate: "));
+              hasRefreshRateHeader = true;
+              Serial.print(F("[Header] Server set refresh rate (carousel): "));
               Serial.print(nextRefreshSeconds);
               Serial.println(F(" seconds"));
+            }
+          }
+        } else if (currentLine.startsWith("X-Trmnl-Deep-Sleep:")) {
+          if (!hasRefreshRateHeader) {
+            int colonIdx = currentLine.indexOf(':');
+            if (colonIdx != -1) {
+              String valStr = currentLine.substring(colonIdx + 1);
+              valStr.trim();
+              int parsedRate = valStr.toInt();
+              if (parsedRate > 0) {
+                nextRefreshSeconds = parsedRate;
+                Serial.print(F("[Header] Server set refresh rate (fallback): "));
+                Serial.print(nextRefreshSeconds);
+                Serial.println(F(" seconds"));
+              }
             }
           }
         }
