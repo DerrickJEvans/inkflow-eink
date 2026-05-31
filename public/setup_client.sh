@@ -15,9 +15,9 @@ echo "  📟 InkFlow E-Ink Client Automated Installer  📟"
 echo "===================================================="
 
 # 1. Update package list and install system dependencies
-echo "📦 Installing system dependencies (SPI, Git, PIL, NumPy)..."
+echo "📦 Installing system dependencies (SPI, Git, PIL, NumPy, Requests)..."
 apt-get update
-apt-get install -y python3-pip python3-pil python3-numpy python3-spidev git
+apt-get install -y python3-pip python3-pil python3-numpy python3-spidev python3-requests git
 
 # 2. Enable SPI interface in Pi config
 echo "🔌 Enabling hardware SPI interface..."
@@ -79,7 +79,19 @@ EOF
   echo "✅ Created config.py with server address: ${SERVER_HOST}"
 fi
 
-# 5. Create and register the Systemd persistent background service
+# 5. Download client executable and manager script from GitHub if not present
+if [ ! -f "client.py" ]; then
+  echo "📥 Downloading client.py from GitHub..."
+  curl -sSL -o client.py https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/client.py
+fi
+
+if [ ! -f "inkflow-client.sh" ]; then
+  echo "📥 Downloading inkflow-client.sh utility..."
+  curl -sSL -o inkflow-client.sh https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/inkflow-client.sh
+  chmod +x inkflow-client.sh
+fi
+
+# 6. Create and register the Systemd persistent background service
 echo "⚙️ Creating Systemd background service daemon..."
 CLIENT_DIR=$(pwd)
 USER_NAME=$(logname 2>/dev/null || awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")

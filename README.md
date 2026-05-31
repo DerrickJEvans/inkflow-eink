@@ -470,12 +470,16 @@ Provisioning new Raspberry Pi Zero 2 W clients has been consolidated into a sing
   ```bash
   curl -sSL http://<server-ip>:5000/setup_client.sh | sudo bash
   ```
+* **Prerequisites:** 
+  * The **InkFlow Server** must be deployed and running on your network (as it hosts this setup script).
+  * The client Pi must have internet access to fetch the driver libraries and latest executable scripts.
 * **What it does automatically:**
-  1. Installs all prerequisite system packages (SPI drivers, python3-pip, Git, PIL, NumPy).
+  1. Installs all prerequisite system packages (SPI drivers, python3-pip, Git, PIL, NumPy, and Requests).
   2. Enables hardware SPI interfaces in `/boot/config.txt` or `/boot/firmware/config.txt`.
   3. Orchestrates a memory-safe partial Git checkout of the Waveshare Python libraries to prevent 512MB RAM client crashes.
-  4. Prompts you for the target server's address and updates `config.py`.
-  5. Registers, enables, and boots up a persistent `inkflow-client.service` daemon background service.
+  4. Automatically downloads the latest client runtime components (`client.py` and `inkflow-client.sh`) directly from the GitHub repository into the local directory.
+  5. Prompts you for the target server's address and generates/updates `config.py`.
+  6. Registers, enables, and boots up a persistent `inkflow-client.service` daemon background service.
 
 ---
 
