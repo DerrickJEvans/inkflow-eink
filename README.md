@@ -59,7 +59,9 @@ The sever also features an  **Plugin Studio** which Hot-loads natural language d
 * **AI Plugin Studio**:
   * **In-Tile Forms**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations.
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
-
+* **AI & Ollama Admin**:
+  * **Local and Cloud AI**: AI LLMs are used both to produce AI summaries of plugin data to display and also design additional plugins. The admin console allows one to chose the AI models used for various tasks.
+  
 ---
 
 ## 📁 Repository Structure
