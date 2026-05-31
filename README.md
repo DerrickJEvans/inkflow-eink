@@ -1,8 +1,12 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins, compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins/widgets , compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
+
 Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients.
+
 Designed for in home LAN deployments with plug and play features for automatic client registration.
+
+Each registered device can be configured to display a selection of the available widgets in a defined order with a display duration for each one.
 
 ---
 
@@ -37,8 +41,9 @@ graph TD
   * **World Sun & Moon Clock**: Day/night solar and lunar maps overlaying daylight terminator curves onto dot-matrix/solid projections.
   * **Daily AI Briefing**: Synthesizes custom RSS feeds and weather coordinates using Google Gemini into an elegant broadsheet.
   * **AI Telemetry Advisor**: Analyzes system logs and load averages, outputting technical administrator recommendations.
-  * **AI Widget Builder**: Hot-loads natural language descriptions into verified Javascript display plugins on-the-fly.
   * **Feynman Quotes**: Displays inspiring daily quotes from physicist Richard Feynman.
+
+The sever also features an  * **AI Widget Builder** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
 
 ### 2. High-Performance E-Ink Processing
 * **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
@@ -47,13 +52,12 @@ graph TD
 
 ### 3. 🎨 Premium Glassmorphic Web Control Center
 * **Three-Tab Interface**: Separates day-to-day E-Ink management (**Device Console**), custom plugin coding (**AI Studio**), and system keys/local hardware settings (**AI & Ollama Admin**).
-* **Restructured Device Console**:
-  * **Pi Host Metrics Banner**: Real-time server telemetry dashboard (CPU circle chart, temperature, RAM gauges) is docked in a horizontal bar spanning full-width across the top of the console.
+* **Device Console**:
+  * **Host Metrics Banner**: Real-time server telemetry dashboard (CPU circle chart, temperature, RAM gauges) is docked in a horizontal bar spanning full-width across the top of the console.
   * **Multi-Column Alignment**: Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
-  * **Spacious bottom settings drawer**: Form controls and the drag-and-drop rotation sequence timeline expand horizontally, giving you maximum width to reorder and calibrate display rotation cycles.
-* **AI Studio & Embedded Configurations**:
+  * **Spacious bottom settings drawer**: Form controls and the drag-and-drop of the rotation sequence timeline expand horizontally, giving you maximum width to reorder and calibrate display rotation cycles.
+* **AI Plugin Studio**:
   * **In-Tile Forms**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations.
-  * **Event Propagation Safety Blocks**: Text inputs, checkboxes, and notice additions intercept mousedown events to prevent catalog re-selections or preview restarts while typing.
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
 ---
