@@ -59,7 +59,30 @@ if [ -z "$SERVER_HOST" ]; then
   SERVER_HOST="inkflow.local"
 fi
 
-# Write configurations to config.py
+# 5. Download client executable and manager script from the local server
+if [ ! -f "client.py" ]; then
+  echo "📥 Downloading client.py from local server http://${SERVER_HOST}:5000/client.py..."
+  if ! curl -sSL -f -o client.py "http://${SERVER_HOST}:5000/client.py"; then
+    echo "⚠️  Failed to download from local server. Trying public GitHub fallback..."
+    curl -sSL -f -o client.py "https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/client.py" || {
+      echo "❌ Error: Could not download client.py from local server or GitHub. (Repository might be private)."
+      exit 1
+    }
+  fi
+fi
+
+if [ ! -f "inkflow-client.sh" ]; then
+  echo "📥 Downloading inkflow-client.sh utility from local server http://${SERVER_HOST}:5000/inkflow-client.sh..."
+  if ! curl -sSL -f -o inkflow-client.sh "http://${SERVER_HOST}:5000/inkflow-client.sh"; then
+    echo "⚠️  Failed to download from local server. Trying public GitHub fallback..."
+    curl -sSL -f -o inkflow-client.sh "https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/inkflow-client.sh" || {
+      echo "⚠️  Could not download inkflow-client.sh."
+    }
+  fi
+  [ -f "inkflow-client.sh" ] && chmod +x inkflow-client.sh
+fi
+
+# 6. Write configurations to config.py
 CONFIG_PY="config.py"
 if [ -f "$CONFIG_PY" ]; then
   sed -i "s/SERVER_IP = .*/SERVER_IP = '${SERVER_HOST}'/" "$CONFIG_PY"
@@ -77,18 +100,6 @@ INVERT_COLORS = False
 DEFAULT_POLL_INTERVAL = 1800
 EOF
   echo "✅ Created config.py with server address: ${SERVER_HOST}"
-fi
-
-# 5. Download client executable and manager script from GitHub if not present
-if [ ! -f "client.py" ]; then
-  echo "📥 Downloading client.py from GitHub..."
-  curl -sSL -o client.py https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/client.py
-fi
-
-if [ ! -f "inkflow-client.sh" ]; then
-  echo "📥 Downloading inkflow-client.sh utility..."
-  curl -sSL -o inkflow-client.sh https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/inkflow-client.sh
-  chmod +x inkflow-client.sh
 fi
 
 # 6. Create and register the Systemd persistent background service

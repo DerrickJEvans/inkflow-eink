@@ -1077,6 +1077,25 @@ app.post('/api/log', (req, res) => {
   res.json({ status: 0 });
 });
 
+// Serve client scripts to standalone displays for zero-friction provisioning
+app.get('/client.py', (req, res) => {
+  const filePath = path.join(__dirname, 'client', 'client.py');
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("client.py not found on server. Ensure the client/ folder is checked out.");
+  }
+});
+
+app.get('/inkflow-client.sh', (req, res) => {
+  const filePath = path.join(__dirname, 'client', 'inkflow-client.sh');
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("inkflow-client.sh not found on server. Ensure the client/ folder is checked out.");
+  }
+});
+
 // Force manual refresh endpoint (called from control panel)
 app.post('/api/display/refresh', async (req, res) => {
   try {

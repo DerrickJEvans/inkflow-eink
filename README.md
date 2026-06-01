@@ -173,7 +173,7 @@ sudo ./install.sh
 Once the installer completes, the server will be running persistently in the background. Open your browser and navigate to `http://<your-pi-ip>:5000` to manage your server!
 
 #### 💡 Alternative: Direct Git Sparse Checkout (Cleanest, Server-Only Installation)
-If your Pi 5 has direct internet access, you can run a **Git Sparse Checkout** directly on your server Pi. This will download only the server files and configurations, entirely omitting the `client/` and `arduino/` subdirectories to keep your server installation clean, lightweight, and clutter-free:
+If your Pi 5 has direct internet access, you can run a **Git Sparse Checkout** directly on your server Pi. This will download only the server and client files, entirely omitting the `arduino/` subdirectory (since it is only for microcontrollers) to keep your server installation clean, lightweight, and clutter-free while still allowing it to serve client setup files locally:
 ```bash
 # 1. Install Git and create a sparse repository folder on the Pi
 sudo apt update && sudo apt install -y git
@@ -183,13 +183,12 @@ git init
 # 2. Add remote repository upstream
 git remote add origin https://github.com/DerrickJEvans/inkflow-eink.git
 
-# 3. Enable sparse-checkout and exclude client/ and arduino/ folders
+# 3. Enable sparse-checkout and exclude only the arduino/ folder (to keep client scripts available)
 git config core.sparseCheckout true
 echo '/*' >> .git/info/sparse-checkout
-echo '!/client/' >> .git/info/sparse-checkout
 echo '!/arduino/' >> .git/info/sparse-checkout
 
-# 4. Pull origin/main (this will only fetch server files and configs!)
+# 4. Pull origin/main (this will fetch all server and client files!)
 git pull origin main
 
 # 5. Strip Windows line endings (if git configured it) and run the installer
