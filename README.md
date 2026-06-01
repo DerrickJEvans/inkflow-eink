@@ -99,13 +99,13 @@ graph TD
         %% Python Client
         J -->|image/png| L[Python Client Pipeline]
         L -->|Memory Cache Key| L_Cache["image_cache:[normalized_device_id]:png"]
-        L_Cache -->|Endpoint| L_API["GET /api/display/image.png?device=[id]&width=[w]"]
+        L_Cache -->|Endpoint| L_API["GET /api/display/image.png?device=[id]&width=[w]&height=[h]"]
         
         %% Arduino Client
         J -->|1-Bit Packed Binary| M[Arduino SPI Pipeline]
         M -->|Bit-Packing: 8 px/byte| M_Pack[MSB Packed Bytes]
         M_Pack -->|Memory Cache Key| M_Cache["image_cache:[normalized_device_id]:raw"]
-        M_Cache -->|Endpoint| M_API["GET /api/display/raw?device=[id]&width=[w]"]
+        M_Cache -->|Endpoint| M_API["GET /api/display/raw?device=[id]&width=[w]&height=[h]"]
     end
 ```
 
