@@ -157,7 +157,10 @@ const generateSVG = async (device, settings) => {
       }
       if (!data) {
         console.log(`[Renderer] Cache miss for [${pluginId}] on device [${device.id}]. Fetching on-the-fly...`);
-        data = await PLUGINS[pluginId].fetchData(settings[pluginId] || {}, device);
+        const globalPluginSettings = settings[pluginId] || {};
+        const devicePluginSettings = (device.settings && device.settings[pluginId]) || {};
+        const mergedSettings = { ...globalPluginSettings, ...devicePluginSettings };
+        data = await PLUGINS[pluginId].fetchData(mergedSettings, device);
       }
       fetchedData[pluginId] = data;
     } catch (err) {
