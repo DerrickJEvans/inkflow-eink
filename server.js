@@ -1087,6 +1087,15 @@ app.get('/client.py', (req, res) => {
   }
 });
 
+app.get('/setup_client.sh', (req, res) => {
+  const filePath = path.join(__dirname, 'client', 'setup_client.sh');
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("setup_client.sh not found on server. Ensure the client/ folder is checked out.");
+  }
+});
+
 app.get('/inkflow-client.sh', (req, res) => {
   const filePath = path.join(__dirname, 'client', 'inkflow-client.sh');
   if (fs.existsSync(filePath)) {

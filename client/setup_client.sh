@@ -107,6 +107,10 @@ echo "⚙️ Creating Systemd background service daemon..."
 CLIENT_DIR=$(pwd)
 USER_NAME=$(logname 2>/dev/null || awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
 
+# Add client user to spi and gpio groups so they can access hardware interfaces
+echo "👤 Configuring hardware permissions for user $USER_NAME..."
+usermod -aG spi,gpio "$USER_NAME" || echo "⚠️  Warning: Could not add $USER_NAME to spi/gpio groups."
+
 SERVICE_FILE="/etc/systemd/system/inkflow-client.service"
 cat <<EOF > "$SERVICE_FILE"
 [Unit]
@@ -134,8 +138,25 @@ systemctl daemon-reload
 systemctl enable inkflow-client.service
 systemctl restart inkflow-client.service
 
+# 7. Check if SPI hardware is active
+echo "🔍 Verifying hardware SPI interface..."
+SPI_WARNING=false
+if [ ! -e "/dev/spidev0.0" ]; then
+  SPI_WARNING=true
+fi
+
 echo "===================================================="
 echo "  🎉 Installation Complete! 🎉"
-echo "  Status: inkflow-client service started successfully."
-echo "  Run 'journalctl -u inkflow-client.service -f' to see live logs."
+echo "  Status: inkflow-client service registered."
+if [ "$SPI_WARNING" = true ]; then
+  echo ""
+  echo "  ⚠️  CRITICAL WARNING: SPI hardware interface is NOT active yet (/dev/spidev0.0 not found)!"
+  echo "  👉 Since this is a new operating system, you MUST REBOOT your Raspberry Pi"
+  echo "     for the SPI interface configuration to take effect."
+  echo "  👉 Run: sudo reboot"
+  echo ""
+else
+  echo "  Status: inkflow-client service started successfully."
+  echo "  Run 'journalctl -u inkflow-client.service -f' to see live logs."
+fi
 echo "===================================================="
