@@ -54,7 +54,7 @@ graph TD
   * **AI Telemetry Advisor**: Analyzes system logs and load averages, outputting technical administrator recommendations.
   * **Feynman Quotes**: Displays inspiring daily quotes from physicist Richard Feynman.
 
-The sever also features an  **Plugin Studio** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
+The server console  also features an  **Plugin Studio** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
 
 ### 2. High-Performance E-Ink Processing
 * **Advanced E-Paper Dithering Suite**:
