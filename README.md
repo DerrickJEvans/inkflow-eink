@@ -117,42 +117,44 @@ graph TD
 
 #### 📟 Client-Side Image Decoding & Rendering Pipeline
 
-The following flowchart and reference table detail how each of the three client architectures handles the received image file or raw bitstream dynamically, from local memory storage to physical SPI bus transmissions:
+The following flowcharts and reference table detail how each of the three client architectures handles the received image file or raw bitstream dynamically, from local memory storage to physical SPI bus transmissions. 
 
+To ensure maximum legibility on both desktop and mobile screens, each client's sequential processing steps are displayed vertically, one under the other:
+
+##### 1. Official TRMNL Client (reTerminal)
 ```mermaid
 graph TD
-    %% 1. TRMNL BYOS Client
-    subgraph Sub1 ["1. Official TRMNL Client (reTerminal)"]
-        A[Receive PNG Binary Stream] --> B[Decode PNG locally via C++ lib]
-        B --> C[Convert to 1-Bit Framebuffer]
-        C --> D[Stream to EPD controller via SPI]
-        D --> E[Trigger Hardware Panel Refresh]
-        E --> F[Enter Deep Sleep for JSON refresh_rate]
-    end
+    A[Receive PNG Binary Stream] --> B[Decode PNG locally via C++ lib]
+    B --> C[Convert to 1-Bit Framebuffer]
+    C --> D[Stream to EPD controller via SPI]
+    D --> E[Trigger Hardware Panel Refresh]
+    E --> F[Enter Deep Sleep for JSON refresh_rate]
+```
 
-    %% 2. Python Client
-    subgraph Sub2 ["2. InkFlow Python Client (Pi Zero)"]
-        G[Receive PNG Binary Stream] --> H[PIL Image.open from memory bytes]
-        H --> I[Grayscale Conversion & Dimension Check]
-        I --> J{Color Inversion Enabled?}
-        J -->|Yes| K[ImageOps.invert]
-        J -->|No| L[Convert to 1-Bit PIL Image]
-        K --> L
-        L --> M[Compile Packed Buffer: epd.getbuffer]
-        M --> N[Stream buffer over SPI]
-        N --> O[Power off display & enter EPD sleep]
-        O --> P[Pause loop for dynamic X-Refresh-Rate]
-    end
+##### 2. InkFlow Python Client (Pi Zero)
+```mermaid
+graph TD
+    G[Receive PNG Binary Stream] --> H[PIL Image.open from memory bytes]
+    H --> I[Grayscale Conversion & Dimension Check]
+    I --> J{Color Inversion Enabled?}
+    J -->|Yes| K[ImageOps.invert]
+    J -->|No| L[Convert to 1-Bit PIL Image]
+    K --> L
+    L --> M[Compile Packed Buffer: epd.getbuffer]
+    M --> N[Stream buffer over SPI]
+    N --> O[Power off display & enter EPD sleep]
+    O --> P[Pause loop for dynamic X-Refresh-Rate]
+```
 
-    %% 3. Arduino Client
-    subgraph Sub3 ["3. InkFlow Arduino Client (ESP32 / UNO R4)"]
-        Q[Receive 1-Bit Packed Binary Stream] --> R[Parse X-Refresh-Rate Header]
-        R --> S{Memory-Safe Byte Stream}
-        S -->|Bypasses SRAM Buffer| T[Read socket byte-by-byte]
-        T --> U[Stream directly to EPD registers over SPI]
-        U --> V[Trigger EPD panel refresh command]
-        V --> W[Disable WiFi radio & Enter Deep Sleep MCU]
-    end
+##### 3. InkFlow Arduino Client (ESP32 / UNO R4)
+```mermaid
+graph TD
+    Q[Receive 1-Bit Packed Binary Stream] --> R[Parse X-Refresh-Rate Header]
+    R --> S{Memory-Safe Byte Stream}
+    S -->|Bypasses SRAM Buffer| T[Read socket byte-by-byte]
+    T --> U[Stream directly to EPD registers over SPI]
+    U --> V[Trigger EPD panel refresh command]
+    V --> W[Disable WiFi radio & Enter Deep Sleep MCU]
 ```
 
 | Client Type | Rendering Mode | Local Memory Buffer Allocation | Sleep Mechanism |
@@ -242,36 +244,36 @@ graph TD
 
 ## 🔄 Client Registration & Update Flows
 
-This flowchart illustrates the step-by-step communication process, API endpoints, headers, and responses for each of the three supported client types. By placing their vertical steps side-by-side, you can easily compare their network requests and local handling mechanisms:
+These flowcharts illustrate the step-by-step communication process, API endpoints, headers, and responses for each of the three supported client types. To ensure maximum legibility, each client's steps are displayed vertically, one under the other:
 
+##### 1. Official TRMNL Client (reTerminal)
 ```mermaid
 graph TD
-    %% 1. Official TRMNL Client
-    subgraph Sub1 ["1. Official TRMNL Client (reTerminal)"]
-        T1[Wake up from Sleep] --> T2["GET /api/display<br/>(ID in header)"]
-        T2 --> T3["Receive JSON payload<br/>(status: 0, image_url, refresh_rate)"]
-        T3 --> T4["GET /api/display/image.png<br/>(device ID in query)"]
-        T4 --> T5["Receive Binary PNG Image Data"]
-        T5 --> T6["Draw E-Ink Screen<br/>& Hardware Deep Sleep (1800s)"]
-    end
+    T1[Wake up from Sleep] --> T2["GET /api/display<br/>(ID in header)"]
+    T2 --> T3["Receive JSON payload<br/>(status: 0, image_url, refresh_rate)"]
+    T3 --> T4["GET /api/display/image.png<br/>(device ID in query)"]
+    T4 --> T5["Receive Binary PNG Image Data"]
+    T5 --> T6["Draw E-Ink Screen<br/>& Hardware Deep Sleep (1800s)"]
+```
 
-    %% 2. InkFlow Python Client
-    subgraph Sub2 ["2. InkFlow Python Client (Pi Zero)"]
-        P1["Resolve MAC & Wi-Fi RSSI (dBm)"] --> P2["GET /api/display/image.png<br/>(headers: RSSI, Name, ID)"]
-        P2 --> P3["Receive Binary PNG Image Data<br/>& X-Refresh-Rate Header"]
-        P3 --> P4["Pillow: Grayscale & Invert & 1-Bit"]
-        P4 --> P5["Generate Buffer & Stream over SPI"]
-        P5 --> P6["Pause loop based on X-Refresh-Rate"]
-    end
+##### 2. InkFlow Python Client (Pi Zero)
+```mermaid
+graph TD
+    P1["Resolve MAC & Wi-Fi RSSI (dBm)"] --> P2["GET /api/display/image.png<br/>(headers: RSSI, Name, ID)"]
+    P2 --> P3["Receive Binary PNG Image Data<br/>& X-Refresh-Rate Header"]
+    P3 --> P4["Pillow: Grayscale & Invert & 1-Bit"]
+    P4 --> P5["Generate Buffer & Stream over SPI"]
+    P5 --> P6["Pause loop based on X-Refresh-Rate"]
+```
 
-    %% 3. InkFlow Arduino Client
-    subgraph Sub3 ["3. InkFlow Arduino Client (ESP32 / UNO R4)"]
-        A1["Wake up & Read metrics (battery/RSSI)"] --> A2["GET /api/display/raw<br/>(headers: RSSI, Battery, ID)"]
-        A2 --> A3["Receive 1-bit Raw octet-stream<br/>& X-Refresh-Rate Header"]
-        A3 --> A4["Stream socket bytes directly over SPI<br/>(Zero local SRAM buffer)"]
-        A4 --> A5["Trigger panel refresh command"]
-        A5 --> A6["Disable WiFi radio & Enter Deep Sleep MCU"]
-    end
+##### 3. InkFlow Arduino Client (ESP32 / UNO R4)
+```mermaid
+graph TD
+    A1["Wake up & Read metrics (battery/RSSI)"] --> A2["GET /api/display/raw<br/>(headers: RSSI, Battery, ID)"]
+    A2 --> A3["Receive 1-bit Raw octet-stream<br/>& X-Refresh-Rate Header"]
+    A3 --> A4["Stream socket bytes directly over SPI<br/>(Zero local SRAM buffer)"]
+    A4 --> A5["Trigger panel refresh command"]
+    A5 --> A6["Disable WiFi radio & Enter Deep Sleep MCU"]
 ```
 
 ---
