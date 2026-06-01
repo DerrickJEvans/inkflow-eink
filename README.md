@@ -119,6 +119,13 @@ graph TD
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 * **AI & Ollama Admin**:
   * **Local and Cloud AI**: AI LLMs are used both to produce AI summaries of plugin data to display and also design additional plugins. The admin console allows one to chose the AI models used for various tasks.
+
+<img width="1564" height="1866" alt="inkflow console 1" src="https://github.com/user-attachments/assets/fcd15dd6-2733-4923-865c-eaf0c2e529d4" />
+
+<img width="1540" height="1881" alt="inkflow console 2" src="https://github.com/user-attachments/assets/c0027084-9bf1-4faf-abeb-41d63419f44e" />
+
+<img width="1616" height="1462" alt="inkflow console 3" src="https://github.com/user-attachments/assets/daf37b78-39ce-495c-9afa-e1a470b9e610" />
+
   
 ---
 
