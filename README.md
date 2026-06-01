@@ -129,7 +129,10 @@ graph TD
         D --> E[Trigger Hardware Panel Refresh]
         E --> F[Enter Deep Sleep for JSON refresh_rate]
     end
+```
 
+```mermaid
+graph TD
     %% 2. Python Client
     subgraph Sub2 ["2. InkFlow Python Client (Pi Zero)"]
         G[Receive PNG Binary Stream] --> H[PIL Image.open from memory bytes]
@@ -143,7 +146,10 @@ graph TD
         N --> O[Power off display & enter EPD sleep]
         O --> P[Pause loop for dynamic X-Refresh-Rate]
     end
+```
 
+```mermaid
+graph TD
     %% 3. Arduino Client
     subgraph Sub3 ["3. InkFlow Arduino Client (ESP32 / UNO R4)"]
         Q[Receive 1-Bit Packed Binary Stream] --> R[Parse X-Refresh-Rate Header]
