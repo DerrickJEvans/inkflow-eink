@@ -1300,6 +1300,51 @@ function drawTelemetryGraph() {
   drawLine('temp', '#ff3d57', 100);
   drawLine('ramFree', '#00e676', 100);
   drawLine('cpu', '#00f0ff', 100);
+
+  // Draw Vertical Axis Range Labels (top/bottom)
+  ctx.fillStyle = 'rgba(255,255,255,0.38)';
+  ctx.font = '8px monospace';
+  
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('100% / 100°C', paddingX + 2, paddingY + 2);
+  
+  ctx.textBaseline = 'bottom';
+  ctx.fillText('0% / 0°C', paddingX + 2, height - paddingY - 2);
+
+  // Draw Legend horizontally aligned at top-right
+  const drawLegend = () => {
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    
+    const items = [
+      { label: 'CPU Load', color: '#00f0ff' },
+      { label: 'RAM Free', color: '#00e676' },
+      { label: 'Temp', color: '#ff3d57' }
+    ];
+    
+    let currentX = width - paddingX;
+    const y = paddingY + 2;
+    
+    items.forEach(item => {
+      // Print text label
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillText(item.label, currentX, y);
+      const textWidth = ctx.measureText(item.label).width;
+      
+      // Draw indicator colored dot
+      ctx.beginPath();
+      ctx.fillStyle = item.color;
+      ctx.arc(currentX - textWidth - 6, y + 4.5, 3.5, 0, 2 * Math.PI);
+      ctx.fill();
+      
+      // Shift currentX for the next item
+      currentX -= (textWidth + 20);
+    });
+  };
+  
+  drawLegend();
 }
 
 // Host Pi Metrics fetching loop
