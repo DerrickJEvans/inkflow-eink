@@ -215,7 +215,7 @@ module.exports = {
     { key: "timezone", label: "Local Timezone", type: "text", default: "Europe/London" },
     { key: "latitude", label: "Station Latitude", type: "number", default: 51.5074 },
     { key: "longitude", label: "Station Longitude", type: "number", default: -0.1278 },
-    { key: "mapStyle", label: "Map Render Style", type: "select", default: "hires", options: ["hires", "solid", "dots"] },
+    { key: "mapStyle", label: "Map Render Style", type: "select", default: "dots", options: ["hires", "solid", "dots"] },
     { key: "label", label: "Clock Title", type: "text", default: "Greenwich Meridian Clock" }
   ],
 
