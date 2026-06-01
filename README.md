@@ -8,6 +8,11 @@ Designed for in home LAN deployments with plug and play features for automatic c
 
 Each registered device can be configured to display a selection of the available widgets in a defined order with a display duration for each one.
 
+The image below shows the reTeminal E1001 running trmnl firmware (left), Raspberry Pi Zero 2W running Inkflow python client (middle) and an Arduino Uno R4 Wifi running the Inkflow C++ client (right).
+These are all served from a single Raspberry Pi 5 Server (middle rear).
+
+<img width="4065" height="1923" alt="inkflow" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
+
 ---
 
 ## 🏗️ Architecture & Features
