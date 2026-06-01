@@ -1,17 +1,23 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins/widgets , compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images then rasterizes them, applying high-contrast **dithering** techniques to produce pseudo grey scales on monochrome images, to produce png files and bitstreams of images in various resloutions, for display on several registered physical **E-Ink Displays** of differing sizes.
 
-Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients supporting serving of png files as well as memory efficient streaming of image data for memory constrained clients such as Arduino.
+Plugins are server side javascript apps which produce svg images for rasterization and display on various dashboard clients. Typically these plugins include web calls to gather information from APIs, RSS feeds and the like to include in the widget image.
+
+Widgets are representations of these plugins on the server web console so that the plugins can configured and their images selected for inclusion in individual device carousels in various cycles.
+
+The server supports trmnl firmware clients using plublished trmnl APIs  as well as inkflow python/debian and arduino/ESP32 C++ clients using inkflow APIs. Images are returned to polling clients either as png files for local storage and display or. for memory constrained Arduino clients, as bit streams which can be passed to the flash memory of the e-Paper controller.
 
 Designed for in home LAN deployments with plug and play features for automatic client registration.
 
-Each registered device can be configured to display a selection of the available widgets in a defined order with a display duration for each one.
+Each registered client device can be configured on the web console to indicate how images are to be produced and which widgets are to be used in the device carousel and in what order and duration.
+
+A default virtual client device is registered in the web server console so that the various  widgets can be configured and prevued without any physical devices being connected.
 
 The image below shows the reTeminal E1001 running trmnl firmware (left), Raspberry Pi Zero 2W running Inkflow python client (middle) and an Arduino Uno R4 Wifi running the Inkflow C++ client (right).
 These are all served from a single Raspberry Pi 5 Server (middle rear).
 
-<img width="4065" height="1923" alt="inkflow" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
+<img width="4065" height="1923" alt="Inkflow clients and server" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
 
 ---
 
@@ -48,7 +54,8 @@ graph TD
   * **AI Telemetry Advisor**: Analyzes system logs and load averages, outputting technical administrator recommendations.
   * **Feynman Quotes**: Displays inspiring daily quotes from physicist Richard Feynman.
 
-The sever also features an  **Plugin Studio** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
+The server console  also features an  **AI Studio** which Hot-loads natural language descriptions into verified Javascript display plugins on-the-fly.
+The studio also features a list of the core and AI build widgets and their global configurations.
 
 ### 2. High-Performance E-Ink Processing
 * **Advanced E-Paper Dithering Suite**:
@@ -92,13 +99,13 @@ graph TD
         %% Python Client
         J -->|image/png| L[Python Client Pipeline]
         L -->|Memory Cache Key| L_Cache["image_cache:[normalized_device_id]:png"]
-        L_Cache -->|Endpoint| L_API["GET /api/display/image.png?device=[id]&width=[w]"]
+        L_Cache -->|Endpoint| L_API["GET /api/display/image.png?device=[id]&width=[w]&height=[h]"]
         
         %% Arduino Client
         J -->|1-Bit Packed Binary| M[Arduino SPI Pipeline]
         M -->|Bit-Packing: 8 px/byte| M_Pack[MSB Packed Bytes]
         M_Pack -->|Memory Cache Key| M_Cache["image_cache:[normalized_device_id]:raw"]
-        M_Cache -->|Endpoint| M_API["GET /api/display/raw?device=[id]&width=[w]"]
+        M_Cache -->|Endpoint| M_API["GET /api/display/raw?device=[id]&width=[w]&height=[h]"]
     end
 ```
 
@@ -165,6 +172,13 @@ graph TD
   * **Dedicated AI Preview Bezel**: Saving inline options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 * **AI & Ollama Admin**:
   * **Local and Cloud AI**: AI LLMs are used both to produce AI summaries of plugin data to display and also design additional plugins. The admin console allows one to chose the AI models used for various tasks.
+
+<img width="1564" height="1866" alt="inkflow web console showing Device Console" src="https://github.com/user-attachments/assets/fcd15dd6-2733-4923-865c-eaf0c2e529d4" />
+
+<img width="1540" height="1881" alt="inkflow web console showing Plugin Studio" src="https://github.com/user-attachments/assets/c0027084-9bf1-4faf-abeb-41d63419f44e" />
+
+<img width="1616" height="1462" alt="inkflow console showing AI and Ollama Admin console" src="https://github.com/user-attachments/assets/daf37b78-39ce-495c-9afa-e1a470b9e610" />
+
   
 ---
 
