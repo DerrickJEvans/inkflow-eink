@@ -1,6 +1,10 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins/widgets , compiles them into responsive full-screen carousel cycles, rasterizes them to grayscale, and applies high-contrast **Floyd-Steinberg dithering** for physical **E-Ink / E-Paper Displays**.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images,  rasterizes them to grayscale, applying high-contrast **dithering** techniques to produce png files and bitstreams of images in various resloutions for display on multiple registered physical **E-Ink Displays**.
+
+Plugins are server side javascript apps which produce SVG images for rasterization and display on various dashboard clients. Typically these plugins include web calls to gather information from APIs, RSS feeds and the like to include in the widget image.
+
+Widgets are representations of these plugins on the server web console so that the plugins can configured and their images selected for inclusion in individual device carousels in various cycles.
 
 Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients supporting serving of png files as well as memory efficient streaming of image data for memory constrained clients such as Arduino.
 
