@@ -511,7 +511,7 @@ chmod +x inkflow-client.sh
 ./inkflow-client.sh
 ```
 * **Select Option `[1]` (Run Automated Client Setup/Installer)**.
-* When prompted, enter your main TRMNL Server IP address (e.g. `192.168.1.122`).
+* When prompted, enter your main TRMNL Server IP address (e.g. `192.168.1.100`).
 * The installer will handle all package updates, enable SPI in `/boot/firmware/config.txt`, perform a low-RAM sparse install of Waveshare python drivers to prevent crashes, create a secure local `.env` configuration file, and spawn a persistent background service daemon (`inkflow-client.service`).
 
 #### 4. Managing and Upgrading the Client
