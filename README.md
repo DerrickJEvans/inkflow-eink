@@ -1,16 +1,16 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images, rasterizes them to grayscale, applying high-contrast **dithering** techniques to produce png files and bitstreams of images in various resloutions, for display on multiple registered physical **E-Ink Displays**.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images then rasterizes them, applying high-contrast **dithering** techniques to produce pseudo grey scales on monochrome images, to produce png files and bitstreams of images in various resloutions, for display on multiple registered physical **E-Ink Displays** of various resolutions and sizes.
 
 Plugins are server side javascript apps which produce svg images for rasterization and display on various dashboard clients. Typically these plugins include web calls to gather information from APIs, RSS feeds and the like to include in the widget image.
 
 Widgets are representations of these plugins on the server web console so that the plugins can configured and their images selected for inclusion in individual device carousels in various cycles.
 
-Supports trmnl firmware clients as well as inkflow python/debian and arduino/ESP32 C++ clients supporting serving of png files as well as memory efficient streaming of image data for memory constrained clients such as Arduino.
+The server supports trmnl firmware clients using plublished trmnl APIs  as well as inkflow python/debian and arduino/ESP32 C++ clients using inkflow APIs. Images are returned to polling clients either as png files for local storage and display or. for memory constrained Arduino clients, as bit streams which can be passed to the flash memory of the e-Paper controller.
 
 Designed for in home LAN deployments with plug and play features for automatic client registration.
 
-Each registered client device can be configured to display a selection of the available widgets in a defined order with a display duration for each one.
+Each registered client device can be configured on the web console to indicate how images are to be produced and which widgets are to be used in the device carousel and in what order and duration.
 
 A default virtual client device is registered in the web server console so that the various  widgets can be configured and prevued without any physical devices being connected.
 
