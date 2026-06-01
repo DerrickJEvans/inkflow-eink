@@ -12,20 +12,23 @@ const runCmd = (cmd) => {
 };
 
 // Calculate CPU Usage by reading /proc/stat
-let lastCpuStats = { idle: 0, total: 0 };
+// Persist CPU stats on Node's global object to survive hot-reloads of system.js
+if (!global.lastCpuStats) {
+  global.lastCpuStats = { idle: 0, total: 0 };
+}
 const getCpuUsage = async () => {
   try {
     if (process.platform !== 'linux') {
       return Math.floor(10 + Math.random() * 15); // Mock usage
     }
     const statStr = fs.readFileSync('/proc/stat', 'utf8').split('\n')[0];
-    const parts = statStr.split(/\s+/).slice(1).map(Number);
+    const parts = statStr.trim().split(/\s+/).slice(1).map(Number).filter(n => !isNaN(n));
     const idle = parts[3];
     const total = parts.reduce((sum, val) => sum + val, 0);
 
-    const idleDiff = idle - lastCpuStats.idle;
-    const totalDiff = total - lastCpuStats.total;
-    lastCpuStats = { idle, total };
+    const idleDiff = idle - global.lastCpuStats.idle;
+    const totalDiff = total - global.lastCpuStats.total;
+    global.lastCpuStats = { idle, total };
 
     if (totalDiff === 0) return 0;
     return Math.floor(100 * (1 - idleDiff / totalDiff));
