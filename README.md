@@ -1,16 +1,18 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images,  rasterizes them to grayscale, applying high-contrast **dithering** techniques to produce png files and bitstreams of images in various resloutions for display on multiple registered physical **E-Ink Displays**.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images, rasterizes them to grayscale, applying high-contrast **dithering** techniques to produce png files and bitstreams of images in various resloutions, for display on multiple registered physical **E-Ink Displays**.
 
-Plugins are server side javascript apps which produce SVG images for rasterization and display on various dashboard clients. Typically these plugins include web calls to gather information from APIs, RSS feeds and the like to include in the widget image.
+Plugins are server side javascript apps which produce svg images for rasterization and display on various dashboard clients. Typically these plugins include web calls to gather information from APIs, RSS feeds and the like to include in the widget image.
 
 Widgets are representations of these plugins on the server web console so that the plugins can configured and their images selected for inclusion in individual device carousels in various cycles.
 
-Supports trmnl and trmnl BYOD devices as well as inkflow python/debian and arduino/ESP32 C++ clients supporting serving of png files as well as memory efficient streaming of image data for memory constrained clients such as Arduino.
+Supports trmnl firmware clients as well as inkflow python/debian and arduino/ESP32 C++ clients supporting serving of png files as well as memory efficient streaming of image data for memory constrained clients such as Arduino.
 
 Designed for in home LAN deployments with plug and play features for automatic client registration.
 
-Each registered device can be configured to display a selection of the available widgets in a defined order with a display duration for each one.
+Each registered client device can be configured to display a selection of the available widgets in a defined order with a display duration for each one.
+
+A default virtual client device is registered in the web server console so that the various  widgets can be configured and prevued without any physical devices being connected.
 
 The image below shows the reTeminal E1001 running trmnl firmware (left), Raspberry Pi Zero 2W running Inkflow python client (middle) and an Arduino Uno R4 Wifi running the Inkflow C++ client (right).
 These are all served from a single Raspberry Pi 5 Server (middle rear).
