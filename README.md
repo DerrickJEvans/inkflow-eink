@@ -46,9 +46,62 @@ graph TD
 The sever also features an  **Plugin Studio** which Hot-loads natural language descriptions into verified Javascript display widgets on-the-fly.
 
 ### 2. High-Performance E-Ink Processing
-* **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
+* **Advanced E-Paper Dithering Suite**:
+  * **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
+  * **Atkinson Dithering**: Crisp, high-contrast dithering algorithm (classic Apple E-Ink standard) which distributes only 3/8 of quantization errors. Confining error distribution completely prevents high-frequency pixel clusters and electrical charge leakages, avoiding the common "faded" look on physical panels.
+  * **Thresholded Dot-Matrix / Solid Outline (`dots` / `solid` / `none`)**: Bypasses dithering to perform pure mathematical thresholding, resulting in perfectly crisp black-and-white vectors.
 * **1-Bit Raw Bit-Packing**: Packs dithered pixels (8 pixels per byte, MSB-first) into a tight binary buffer suitable for lightweight transmission.
 * **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like ESP32) to sleep at **~10µA current draw** and run on batteries for months.
+
+#### 🔄 Image Compilation & Naming Pipeline
+
+The following flowchart and reference table detail the end-to-end rendering pipeline, detailing the output format, naming/caching keys, and REST endpoints for each supported client type:
+
+```mermaid
+graph TD
+    %% 1. Source compilation
+    subgraph 1. Source Generation
+        A[Active Carousel Widget] -->|Load Plugin| B[plugins/*.js]
+        B --> C[Generate Dynamic SVG Markup]
+    end
+
+    %% 2. Processing and dithering
+    subgraph 2. Rasterization & Processing Pipeline
+        C --> D[Sharp Graphics Engine]
+        D -->|Resize & Convert| E[Grayscale Buffer]
+        E --> F{Dithering Mode Selection}
+        F -->|floyd-steinberg| G[Floyd-Steinberg Engine]
+        F -->|atkinson| H[Atkinson Engine]
+        F -->|dots / solid / none| I[Thresholding Engine]
+    end
+
+    %% 3. Format compilation & Caching
+    subgraph 3. Client Caching & Naming Pipeline
+        G & H & I --> J{Target Output Format}
+        
+        %% TRMNL BYOS
+        J -->|image/png| K[TRMNL BYOS Pipeline]
+        K -->|Generate Cache Filename| K_Cache["screen-[device_id]-[timestamp].png"]
+        K_Cache -->|Endpoint| K_API["GET /api/display/image.png?device=[id]"]
+        
+        %% Python Client
+        J -->|image/png| L[Python Client Pipeline]
+        L -->|Memory Cache Key| L_Cache["image_cache:[normalized_device_id]:png"]
+        L_Cache -->|Endpoint| L_API["GET /api/display/image.png?device=[id]&width=[w]"]
+        
+        %% Arduino Client
+        J -->|1-Bit Packed Binary| M[Arduino SPI Pipeline]
+        M -->|Bit-Packing: 8 px/byte| M_Pack[MSB Packed Bytes]
+        M_Pack -->|Memory Cache Key| M_Cache["image_cache:[normalized_device_id]:raw"]
+        M_Cache -->|Endpoint| M_API["GET /api/display/raw?device=[id]&width=[w]"]
+    end
+```
+
+| Client Type | Output Format | Cache Key/Naming Convention | Active REST Endpoint |
+| :--- | :--- | :--- | :--- |
+| **Official TRMNL BYOS** | `image/png` | `screen-[normalized_device_id]-[timestamp].png` | `GET /api/display/image.png?device=[id]` |
+| **InkFlow Python Client** | `image/png` | `image_cache:[normalized_device_id]:png` | `GET /api/display/image.png?device=[id]&width=[w]&height=[h]` |
+| **InkFlow Arduino Client** | `application/octet-stream` (1-bit packed) | `image_cache:[normalized_device_id]:raw` | `GET /api/display/raw?device=[id]&width=[w]&height=[h]` |
 
 ### 3. 🎨 Premium Glassmorphic Web Control Center
 * **Three-Tab Interface**: Separates day-to-day E-Ink management (**Device Console**), custom plugin coding (**AI Studio**), and system keys/local hardware settings (**AI & Ollama Admin**).
