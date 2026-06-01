@@ -667,7 +667,7 @@ app.get('/api/ai/env', (req, res) => {
       hasGroqKey: !!groqKey,
       widgetBuilderProvider: envVars.WIDGET_BUILDER_AI_PROVIDER || 'gemini',
       dynamicWidgetsProvider: envVars.DYNAMIC_WIDGETS_AI_PROVIDER || 'gemini',
-      ollamaHost: envVars.OLLAMA_HOST || 'http://localhost:11434',
+      ollamaHost: envVars.OLLAMA_HOST || 'http://127.0.0.1:11434',
       ollamaModel: envVars.OLLAMA_MODEL || 'llama3.2:1b'
     });
   } catch (err) {
@@ -706,7 +706,7 @@ app.post('/api/ai/env', (req, res) => {
       GROQ_API_KEY: finalGroqKey,
       WIDGET_BUILDER_AI_PROVIDER: widgetBuilderProvider || 'gemini',
       DYNAMIC_WIDGETS_AI_PROVIDER: dynamicWidgetsProvider || 'gemini',
-      OLLAMA_HOST: ollamaHost || 'http://localhost:11434',
+      OLLAMA_HOST: ollamaHost || 'http://127.0.0.1:11434',
       OLLAMA_MODEL: ollamaModel || 'llama3.2:1b'
     };
 
@@ -736,7 +736,7 @@ app.post('/api/ai/env', (req, res) => {
 // GET Local Ollama Status & Downloaded Models
 app.get('/api/ai/ollama/status', async (req, res) => {
   try {
-    const ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    const ollamaHost = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
     
     // Asynchronously ping Ollama tags API
     const response = await fetch(`${ollamaHost}/api/tags`, { signal: AbortSignal.timeout(3000) });
@@ -764,7 +764,7 @@ app.get('/api/ai/ollama/status', async (req, res) => {
   } catch (err) {
     res.json({
       online: false,
-      host: process.env.OLLAMA_HOST || 'http://localhost:11434',
+      host: process.env.OLLAMA_HOST || 'http://127.0.0.1:11434',
       error: `Local Ollama instance unreachable: ${err.message}`
     });
   }
@@ -778,7 +778,7 @@ app.post('/api/ai/ollama/pull', async (req, res) => {
       return res.status(400).json({ error: "Model name is required" });
     }
     
-    const ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
+    const ollamaHost = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
     
     // Check if a download is already in progress
     if (ollamaPullState.active && ollamaPullState.status !== 'completed' && ollamaPullState.status !== 'failed') {

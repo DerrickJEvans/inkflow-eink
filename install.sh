@@ -98,7 +98,7 @@ fi
 if ! grep -q "OLLAMA_ENABLED" "$ENV_FILE"; then
   echo -e "\n# Ollama Local Offline AI Engine (Option B)" >> "$ENV_FILE"
   echo "OLLAMA_ENABLED=true" >> "$ENV_FILE"
-  echo "OLLAMA_HOST=http://localhost:11434" >> "$ENV_FILE"
+  echo "OLLAMA_HOST=http://127.0.0.1:11434" >> "$ENV_FILE"
   echo "OLLAMA_MODEL=llama3.2:1b" >> "$ENV_FILE"
   echo -e "${GREEN}✅ Configured local Ollama engine parameters inside .env file.${NC}"
 fi

@@ -120,7 +120,7 @@ const generateWithGroq = async (prompt, systemInstruction = null) => {
  * Ollama local REST client
  */
 const generateWithOllama = async (prompt, systemInstruction = null) => {
-  const ollamaHost = process.env.OLLAMA_HOST || "http://localhost:11434";
+  const ollamaHost = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
   const modelName = process.env.OLLAMA_MODEL || "llama3.2:1b";
   console.log(`[AI Core] Requesting Local Ollama instance (${ollamaHost}) using model: ${modelName}...`);
 
