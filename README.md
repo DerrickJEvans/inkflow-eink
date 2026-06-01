@@ -108,6 +108,52 @@ graph TD
 | **InkFlow Python Client** | `image/png` | `image_cache:[normalized_device_id]:png` | `GET /api/display/image.png?device=[id]&width=[w]&height=[h]` |
 | **InkFlow Arduino Client** | `application/octet-stream` (1-bit packed) | `image_cache:[normalized_device_id]:raw` | `GET /api/display/raw?device=[id]&width=[w]&height=[h]` |
 
+#### 📟 Client-Side Image Decoding & Rendering Pipeline
+
+The following flowchart and reference table detail how each of the three client architectures handles the received image file or raw bitstream dynamically, from local memory storage to physical SPI bus transmissions:
+
+```mermaid
+graph TD
+    %% 1. TRMNL BYOS Client
+    subgraph 1. Official TRMNL Client (reTerminal)
+        A[Receive PNG Binary Stream] --> B[Decode PNG locally via C++ lib]
+        B --> C[Convert to 1-Bit Framebuffer]
+        C --> D[Stream to EPD controller via SPI]
+        D --> E[Trigger Hardware Panel Refresh]
+        E --> F[Enter Deep Sleep for JSON refresh_rate]
+    end
+
+    %% 2. Python Client
+    subgraph 2. InkFlow Python Client (Pi Zero)
+        G[Receive PNG Binary Stream] --> H[PIL Image.open from memory bytes]
+        H --> I[Grayscale Conversion & Dimension Check]
+        I --> J{Color Inversion Enabled?}
+        J -->|Yes| K[ImageOps.invert]
+        J -->|No| L[Convert to 1-Bit PIL Image]
+        K --> L
+        L --> M[Compile Packed Buffer: epd.getbuffer]
+        M --> N[Stream buffer over SPI]
+        N --> O[Power off display & enter EPD sleep]
+        O --> P[Pause loop for dynamic X-Refresh-Rate]
+    end
+
+    %% 3. Arduino Client
+    subgraph 3. InkFlow Arduino Client (ESP32 / UNO R4)
+        Q[Receive 1-Bit Packed Binary Stream] --> R[Parse X-Refresh-Rate Header]
+        R --> S{Memory-Safe Byte Stream}
+        S -->|Bypasses SRAM Buffer| T[Read socket byte-by-byte]
+        T --> U[Stream directly to EPD registers over SPI]
+        U --> V[Trigger EPD panel refresh command]
+        V --> W[Disable WiFi radio & Enter Deep Sleep MCU]
+    end
+```
+
+| Client Type | Rendering Mode | Local Memory Buffer Allocation | Sleep Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Official TRMNL BYOS** | Client-Side PNG Decode | Decodes PNG to standard C++ image structures in memory. | Hardware Deep Sleep parsed dynamically from JSON `refresh_rate` payload (default: 1800s). |
+| **InkFlow Python Client** | Local PIL Transformation | Loads PNG to a Pillow `Image` object, performing grayscale, inversion, and 1-bit rasterization in local RAM. | Soft process delay via `time.sleep()` based on custom `X-Refresh-Rate` HTTP header (default: 30s). |
+| **InkFlow Arduino Client** | Bypassed Zero-SRAM Stream | **Bypasses local SRAM buffer entirely!** Reads incoming socket bytes and streams them natively byte-by-byte directly to the physical screen controller over SPI. | Hardware Deep Sleep (ESP32 draws ~10µA) or low-power delay loop & hardware reset (UNO R4) based on `X-Refresh-Rate` HTTP header. |
+
 ### 3. 🎨 Premium Glassmorphic Web Control Center
 * **Three-Tab Interface**: Separates day-to-day E-Ink management (**Device Console**), custom plugin coding (**AI Studio**), and system keys/local hardware settings (**AI & Ollama Admin**).
 * **Device Console**:
