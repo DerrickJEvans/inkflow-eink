@@ -129,10 +129,7 @@ graph TD
         D --> E[Trigger Hardware Panel Refresh]
         E --> F[Enter Deep Sleep for JSON refresh_rate]
     end
-```
 
-```mermaid
-graph TD
     %% 2. Python Client
     subgraph Sub2 ["2. InkFlow Python Client (Pi Zero)"]
         G[Receive PNG Binary Stream] --> H[PIL Image.open from memory bytes]
@@ -146,10 +143,7 @@ graph TD
         N --> O[Power off display & enter EPD sleep]
         O --> P[Pause loop for dynamic X-Refresh-Rate]
     end
-```
 
-```mermaid
-graph TD
     %% 3. Arduino Client
     subgraph Sub3 ["3. InkFlow Arduino Client (ESP32 / UNO R4)"]
         Q[Receive 1-Bit Packed Binary Stream] --> R[Parse X-Refresh-Rate Header]
@@ -248,64 +242,36 @@ graph TD
 
 ## 🔄 Client Registration & Update Flows
 
-These sequence diagrams illustrate the step-by-step communication process, API endpoints, headers, and responses for each of the three supported client types.
-
-### 1. Official TRMNL Firmware Client (BYOS Protocol)
-The official Seeed reTerminal E1001 or standard TRMNL BYOS hardware utilizes a two-step poll: first fetching a JSON control payload, then downloading the compiled PNG image.
+This flowchart illustrates the step-by-step communication process, API endpoints, headers, and responses for each of the three supported client types. By placing their vertical steps side-by-side, you can easily compare their network requests and local handling mechanisms:
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as TRMNL E1001 Display
-    participant Server as InkFlow Server
-    
-    Note over Client: Wake up from Sleep
-    Client->>Server: GET /api/display<br/>Headers: { ID: "DC:B4:D9:0E:B6:F8" }
-    Note over Server: Normalize ID to uppercase (DCB4D90EB6F8)<br/>Auto-registers device if new
-    Server-->>Client: HTTP 200 OK (application/json)<br/>{ "status": 0, "image_url": "http://[server-ip]:5000/api/display/image.png?device=DCB4D90EB6F8", "refresh_rate": 1800, ... }
-    
-    Note over Client: Validate JSON status == 0
-    Client->>Server: GET /api/display/image.png?device=DCB4D90EB6F8
-    Note over Server: Render/dither current carousel widget<br/>Cache compiled PNG
-    Server-->>Client: HTTP 200 OK (image/png)<br/>[Binary PNG Data]
-    
-    Note over Client: Draw image on EPD panel<br/>Enter deep sleep for 1800s
-```
+graph TD
+    %% 1. Official TRMNL Client
+    subgraph Sub1 ["1. Official TRMNL Client (reTerminal)"]
+        T1[Wake up from Sleep] --> T2["GET /api/display<br/>(ID in header)"]
+        T2 --> T3["Receive JSON payload<br/>(status: 0, image_url, refresh_rate)"]
+        T3 --> T4["GET /api/display/image.png<br/>(device ID in query)"]
+        T4 --> T5["Receive Binary PNG Image Data"]
+        T5 --> T6["Draw E-Ink Screen<br/>& Hardware Deep Sleep (1800s)"]
+    end
 
-### 2. InkFlow Python Client
-The standalone Python client script (`client.py`) performs a single-step fetch, directly pulling the rasterized and dithered PNG image while providing dynamic system telemetry.
+    %% 2. InkFlow Python Client
+    subgraph Sub2 ["2. InkFlow Python Client (Pi Zero)"]
+        P1["Resolve MAC & Wi-Fi RSSI (dBm)"] --> P2["GET /api/display/image.png<br/>(headers: RSSI, Name, ID)"]
+        P2 --> P3["Receive Binary PNG Image Data<br/>& X-Refresh-Rate Header"]
+        P3 --> P4["Pillow: Grayscale & Invert & 1-Bit"]
+        P4 --> P5["Generate Buffer & Stream over SPI"]
+        P5 --> P6["Pause loop based on X-Refresh-Rate"]
+    end
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client as Python Client (client.py)
-    participant Server as InkFlow Server
-    
-    Note over Client: Resolve physical MAC address<br/>Read Wi-Fi signal RSSI (dBm)
-    Client->>Server: GET /api/display/image.png?device=B827EBAABBCC&width=800&height=480<br/>Headers: { ID: "B827EBAABBCC", Device-Name: "Living Room Pi", FW-Version: "InkFlow-Python-v1.2.0", RSSI: "-42" }
-    
-    Note over Server: Auto-registers / updates database<br/>Persists live RSSI & dynamic name telemetry<br/>Render and dither current widget in carousel
-    Server-->>Client: HTTP 200 OK (image/png)<br/>Headers: { X-Refresh-Rate: "30" }<br/>[Binary PNG Data]
-    
-    Note over Client: Load image with Pillow<br/>Push pixels via SPI to Waveshare/Inky display<br/>Sleep for 30 seconds (dynamic X-Refresh-Rate)
-```
-
-### 3. InkFlow Arduino Client (ESP32 / UNO R4)
-The memory-constrained C++ microcontroller client pulls a raw, dithered 1-bit packed binary stream to fit within limited SRAM boundaries, entering hard deep sleep between frames.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant MCU as Arduino Client (ESP32 / UNO R4)
-    participant Server as InkFlow Server
-    
-    Note over MCU: Wake up / Initialize SPI<br/>Read Battery Voltage & Wi-Fi RSSI
-    MCU->>Server: GET /api/display/raw?device=7C9EBD123456&width=800&height=480<br/>Headers: { ID: "7C9EBD123456", Device-Name: "Bedroom E-Paper", FW-Version: "InkFlow-ESP32", RSSI: "-55", Battery-Voltage: "4150" }
-    
-    Note over Server: Auto-registers / updates database<br/>Persists battery & signal telemetry<br/>Dither and pack to 1-Bit raw buffer (8 px/byte)
-    Server-->>MCU: HTTP 200 OK (application/octet-stream)<br/>Headers: { X-Refresh-Rate: "30" }<br/>[Raw 1-Bit Packed Binary Payload]
-    
-    Note over MCU: Stream raw bytes directly to EPD over SPI (no buffer)<br/>Shutdown Wi-Fi radio<br/>Enter hardware Deep Sleep / software delay for 30s
+    %% 3. InkFlow Arduino Client
+    subgraph Sub3 ["3. InkFlow Arduino Client (ESP32 / UNO R4)"]
+        A1["Wake up & Read metrics (battery/RSSI)"] --> A2["GET /api/display/raw<br/>(headers: RSSI, Battery, ID)"]
+        A2 --> A3["Receive 1-bit Raw octet-stream<br/>& X-Refresh-Rate Header"]
+        A3 --> A4["Stream socket bytes directly over SPI<br/>(Zero local SRAM buffer)"]
+        A4 --> A5["Trigger panel refresh command"]
+        A5 --> A6["Disable WiFi radio & Enter Deep Sleep MCU"]
+    end
 ```
 
 ---
