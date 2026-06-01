@@ -47,6 +47,7 @@ module.exports = {
     let diskUsage = 28; // %
     let diskText = "16GB / 64GB";
     let uptime = "3d 4h 12m";
+    let uptimeRaw = 274320; // Default mock uptime in seconds (3d 4h 12m)
 
     try {
       if (process.platform === 'linux') {
@@ -83,7 +84,7 @@ module.exports = {
 
         // Uptime
         if (fs.existsSync('/proc/uptime')) {
-          const uptimeRaw = parseFloat(fs.readFileSync('/proc/uptime', 'utf8').split(' ')[0]);
+          uptimeRaw = parseFloat(fs.readFileSync('/proc/uptime', 'utf8').split(' ')[0]);
           const days = Math.floor(uptimeRaw / 86400);
           const hours = Math.floor((uptimeRaw % 86400) / 3600);
           const mins = Math.floor((uptimeRaw % 3600) / 60);
@@ -103,7 +104,8 @@ module.exports = {
       ramText,
       diskUsage,
       diskText,
-      uptime
+      uptime,
+      uptimeRaw
     };
   },
 

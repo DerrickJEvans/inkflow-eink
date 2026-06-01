@@ -68,6 +68,12 @@ const cpuText = document.getElementById('telemetry-cpu-text');
 const telemetryTemp = document.getElementById('telemetry-temp');
 const telemetryRam = document.getElementById('telemetry-ram');
 const telemetryUptime = document.getElementById('telemetry-uptime');
+const telemetryGraph = document.getElementById('telemetry-graph');
+
+const telemetryHistory = [];
+const maxTelemetryPoints = 40; // ~2 minutes of history
+let uptimeSeconds = 0;
+let uptimeInterval = null;
 
 
 
@@ -1218,6 +1224,84 @@ function showToast(message, isError = false) {
   }, 3000);
 }
 
+// Premium Dynamic Graph Renderer
+function drawTelemetryGraph() {
+  if (!telemetryGraph) return;
+  const ctx = telemetryGraph.getContext('2d');
+  
+  // Set display resolution to match container styling perfectly
+  const dpr = window.devicePixelRatio || 1;
+  const rect = telemetryGraph.getBoundingClientRect();
+  telemetryGraph.width = rect.width * dpr;
+  telemetryGraph.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  
+  const width = rect.width;
+  const height = rect.height;
+  
+  // Clear the canvas
+  ctx.clearRect(0, 0, width, height);
+  
+  if (telemetryHistory.length < 2) {
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Compiling Live Stream Graphs...', width / 2, height / 2);
+    return;
+  }
+  
+  const paddingX = 8;
+  const paddingY = 8;
+  const graphWidth = width - 2 * paddingX;
+  const graphHeight = height - 2 * paddingY;
+  
+  // Draw grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) {
+    const yLine = paddingY + (i / 4) * graphHeight;
+    ctx.beginPath();
+    ctx.moveTo(paddingX, yLine);
+    ctx.lineTo(width - paddingX, yLine);
+    ctx.stroke();
+  }
+  
+  // Helper to draw a glowing line
+  const drawLine = (key, color, maxVal) => {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.5;
+    
+    // Add glowing line shadows
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = color;
+    
+    for (let i = 0; i < telemetryHistory.length; i++) {
+      const val = telemetryHistory[i][key];
+      const pct = Math.min(100, Math.max(0, val)) / maxVal;
+      
+      const x = paddingX + (i / (maxTelemetryPoints - 1)) * graphWidth;
+      const y = height - paddingY - pct * graphHeight;
+      
+      if (i === 0) {
+        ctx.moveTo(x, y);
+      } else {
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+    
+    // Reset shadow for next operations
+    ctx.shadowBlur = 0;
+  };
+  
+  // Draw 3 layers: CPU Temp (Red), Free RAM (Green), CPU Usage (Cyan)
+  drawLine('temp', '#ff3d57', 100);
+  drawLine('ramFree', '#00e676', 100);
+  drawLine('cpu', '#00f0ff', 100);
+}
+
 // Host Pi Metrics fetching loop
 async function startTelemetryLoop() {
   const updateStats = async () => {
@@ -1234,7 +1318,43 @@ async function startTelemetryLoop() {
       // Update metadata text
       telemetryTemp.innerText = `${data.cpuTemp}°C`;
       telemetryRam.innerText = data.ramText || '--';
-      telemetryUptime.innerText = data.uptime || '--';
+      
+      // Calculate Free RAM percentage
+      const ramFreePct = 100 - (data.ramUsage || 0);
+      const rawTemp = parseFloat(data.cpuTemp) || 40.0;
+      
+      // Push and cap history points
+      telemetryHistory.push({
+        temp: rawTemp,
+        ramFree: ramFreePct,
+        cpu: val
+      });
+      if (telemetryHistory.length > maxTelemetryPoints) {
+        telemetryHistory.shift();
+      }
+      
+      // Render the glowing graph
+      drawTelemetryGraph();
+
+      // Reset smooth seconds counter
+      clearInterval(uptimeInterval);
+      uptimeSeconds = Math.floor(data.uptimeRaw || 0);
+      
+      const formatUptime = (totalSeconds) => {
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const mins = Math.floor((totalSeconds % 3600) / 60);
+        const secs = Math.floor(totalSeconds % 60);
+        return `${days > 0 ? days + 'd ' : ''}${hours}h ${mins}m ${secs}s`;
+      };
+      
+      telemetryUptime.innerText = formatUptime(uptimeSeconds);
+      
+      uptimeInterval = setInterval(() => {
+        uptimeSeconds++;
+        telemetryUptime.innerText = formatUptime(uptimeSeconds);
+      }, 1000);
+
     } catch (e) {
       console.warn("Telemetry offline (disconnected from live Pi telemetry)");
     }
@@ -1242,6 +1362,9 @@ async function startTelemetryLoop() {
   
   await updateStats();
   setInterval(updateStats, 3000);
+  
+  // Handle resize events to redraw canvas correctly
+  window.addEventListener('resize', drawTelemetryGraph);
 }
 
 // Background sync loop to auto-discover registered screens
