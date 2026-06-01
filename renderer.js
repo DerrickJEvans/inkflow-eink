@@ -66,7 +66,49 @@ const applyFloydSteinbergDither = (grayscaleBuffer, width, height, ditherMode = 
   }
 
   const temp = new Int16Array(grayscaleBuffer);
+  
+  if (ditherMode === 'atkinson') {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        const oldVal = temp[idx];
+        const newVal = oldVal < 128 ? 0 : 255;
+        dithered[idx] = newVal;
+        const err = (oldVal - newVal) >> 3; // Atkinson uses 1/8 error diffusion (shift by 3)
+        if (err === 0) continue;
 
+        // Diffuse to 6 neighbors:
+        // (x+1, y)
+        if (x + 1 < width) {
+          temp[idx + 1] += err;
+        }
+        // (x+2, y)
+        if (x + 2 < width) {
+          temp[idx + 2] += err;
+        }
+        if (y + 1 < height) {
+          const nextRowIdx = (y + 1) * width;
+          // (x-1, y+1)
+          if (x > 0) {
+            temp[nextRowIdx + (x - 1)] += err;
+          }
+          // (x, y+1)
+          temp[nextRowIdx + x] += err;
+          // (x+1, y+1)
+          if (x + 1 < width) {
+            temp[nextRowIdx + (x + 1)] += err;
+          }
+        }
+        // (x, y+2)
+        if (y + 2 < height) {
+          temp[(y + 2) * width + x] += err;
+        }
+      }
+    }
+    return dithered;
+  }
+
+  // Fallback to standard Floyd-Steinberg
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = y * width + x;
