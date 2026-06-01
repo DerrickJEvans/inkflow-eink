@@ -85,7 +85,7 @@ install_client() {
         else
             cat <<EOF > .env
 # --- InkFlow Python Client Configurations ---
-TRMNL_SERVER_IP=192.168.1.122
+TRMNL_SERVER_IP=192.168.1.100
 TRMNL_SERVER_PORT=5000
 TRMNL_DEVICE_NAME=Living Room Pi
 TRMNL_DEVICE_ID=dynamic_mac
@@ -103,7 +103,7 @@ EOF
 
     # Prompt user to adjust server IP live during installer (only if running interactively)
     if [ -t 0 ]; then
-        read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.122): " SERVER_IP
+        read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.100): " SERVER_IP
         if [ -n "$SERVER_IP" ]; then
             sed -i "s/TRMNL_SERVER_IP=.*/TRMNL_SERVER_IP=${SERVER_IP}/" .env 2>/dev/null || sed -i "s/SERVER_HOST=.*/SERVER_HOST=${SERVER_IP}/" .env
             echo -e "${GREEN}✅ Server IP address saved to .env.${NC}"

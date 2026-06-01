@@ -7,11 +7,11 @@
 
 // 1. WiFi Settings
 // These act as hardcoded defaults if no settings are saved via the setup portal.
-String default_ssid     = "PLUSNET-TQC29S";
-String default_password = "KtYAvLrd4bvuE9";
+String default_ssid     = "YOUR_WIFI_SSID";
+String default_password = "YOUR_WIFI_PASSWORD";
 
 // 2. Server Settings (Your Raspberry Pi's local IP address or DNS name)
-String default_serverIp   = "192.168.1.122";
+String default_serverIp   = "192.168.1.100";
 int    default_serverPort = 5000;
 
 // 3. Dynamic Device Naming

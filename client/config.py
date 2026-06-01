@@ -43,7 +43,7 @@ def parse_int(val):
 # ==============================================================================
 
 # 1. Server Settings
-SERVER_IP = os.environ.get('TRMNL_SERVER_IP', '192.168.1.122')
+SERVER_IP = os.environ.get('TRMNL_SERVER_IP', '192.168.1.100')
 SERVER_PORT = os.environ.get('TRMNL_SERVER_PORT', '5000')
 
 # 2. Device Settings
