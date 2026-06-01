@@ -1,6 +1,6 @@
 # 🚀 InkFlow E-Ink Server — Custom E-Paper Dashboard Server
 
-An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images then rasterizes them, applying high-contrast **dithering** techniques to produce pseudo grey scales on monochrome images, to produce png files and bitstreams of images in various resloutions, for display on severak registered physical **E-Ink Displays** of differing sizes.
+An optimized, premium Node.js Express server that aggregates data from multiple plugins as svg images then rasterizes them, applying high-contrast **dithering** techniques to produce pseudo grey scales on monochrome images, to produce png files and bitstreams of images in various resloutions, for display on several registered physical **E-Ink Displays** of differing sizes.
 
 Plugins are server side javascript apps which produce svg images for rasterization and display on various dashboard clients. Typically these plugins include web calls to gather information from APIs, RSS feeds and the like to include in the widget image.
 
