@@ -16,7 +16,7 @@ Each registered device can be configured to display a selection of the available
 graph TD
     A[Plugins: Weather, RSS, Notes, System] --> B[renderer.js: SVG Assembler]
     B --> C[Sharp Grayscale Rasterization]
-    C --> D[Floyd-Steinberg Dither Engine]
+    C --> D[Dither Engine]
     
     D --> E[PNG Stream: /api/display/image.png]
     D --> F[1-Bit Packed Raw Stream: /api/display/raw]
