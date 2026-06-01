@@ -11,7 +11,7 @@ Each registered device can be configured to display a selection of the available
 The image below shows the reTeminal E1001 running trmnl firmware (left), Raspberry Pi Zero 2W running Inkflow python client (middle) and an Arduino Uno R4 Wifi running the Inkflow C++ client (right).
 These are all served from a single Raspberry Pi 5 Server (middle rear).
 
-<img width="4065" height="1923" alt="inkflow" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
+<img width="4065" height="1923" alt="Inkflow clients and server" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
 
 ---
 
@@ -120,11 +120,11 @@ graph TD
 * **AI & Ollama Admin**:
   * **Local and Cloud AI**: AI LLMs are used both to produce AI summaries of plugin data to display and also design additional plugins. The admin console allows one to chose the AI models used for various tasks.
 
-<img width="1564" height="1866" alt="inkflow console 1" src="https://github.com/user-attachments/assets/fcd15dd6-2733-4923-865c-eaf0c2e529d4" />
+<img width="1564" height="1866" alt="inkflow web console showing Device Console" src="https://github.com/user-attachments/assets/fcd15dd6-2733-4923-865c-eaf0c2e529d4" />
 
-<img width="1540" height="1881" alt="inkflow console 2" src="https://github.com/user-attachments/assets/c0027084-9bf1-4faf-abeb-41d63419f44e" />
+<img width="1540" height="1881" alt="inkflow web console showing Plugin Studio" src="https://github.com/user-attachments/assets/c0027084-9bf1-4faf-abeb-41d63419f44e" />
 
-<img width="1616" height="1462" alt="inkflow console 3" src="https://github.com/user-attachments/assets/daf37b78-39ce-495c-9afa-e1a470b9e610" />
+<img width="1616" height="1462" alt="inkflow console showing AI and Ollama Admin console" src="https://github.com/user-attachments/assets/daf37b78-39ce-495c-9afa-e1a470b9e610" />
 
   
 ---
