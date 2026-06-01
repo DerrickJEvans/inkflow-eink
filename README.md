@@ -72,13 +72,13 @@ The following flowchart and reference table detail the end-to-end rendering pipe
 ```mermaid
 graph TD
     %% 1. Source compilation
-    subgraph 1. Source Generation
+    subgraph Serv1 ["1. Source Generation"]
         A[Active Carousel Widget] -->|Load Plugin| B[plugins/*.js]
         B --> C[Generate Dynamic SVG Markup]
     end
 
     %% 2. Processing and dithering
-    subgraph 2. Rasterization & Processing Pipeline
+    subgraph Serv2 ["2. Rasterization & Processing Pipeline"]
         C --> D[Sharp Graphics Engine]
         D -->|Resize & Convert| E[Grayscale Buffer]
         E --> F{Dithering Mode Selection}
@@ -88,7 +88,7 @@ graph TD
     end
 
     %% 3. Format compilation & Caching
-    subgraph 3. Client Caching & Naming Pipeline
+    subgraph Serv3 ["3. Client Caching & Naming Pipeline"]
         G & H & I --> J{Target Output Format}
         
         %% TRMNL BYOS
@@ -122,7 +122,7 @@ The following flowchart and reference table detail how each of the three client 
 ```mermaid
 graph TD
     %% 1. TRMNL BYOS Client
-    subgraph 1. Official TRMNL Client (reTerminal)
+    subgraph Sub1 ["1. Official TRMNL Client (reTerminal)"]
         A[Receive PNG Binary Stream] --> B[Decode PNG locally via C++ lib]
         B --> C[Convert to 1-Bit Framebuffer]
         C --> D[Stream to EPD controller via SPI]
@@ -131,7 +131,7 @@ graph TD
     end
 
     %% 2. Python Client
-    subgraph 2. InkFlow Python Client (Pi Zero)
+    subgraph Sub2 ["2. InkFlow Python Client (Pi Zero)"]
         G[Receive PNG Binary Stream] --> H[PIL Image.open from memory bytes]
         H --> I[Grayscale Conversion & Dimension Check]
         I --> J{Color Inversion Enabled?}
@@ -145,7 +145,7 @@ graph TD
     end
 
     %% 3. Arduino Client
-    subgraph 3. InkFlow Arduino Client (ESP32 / UNO R4)
+    subgraph Sub3 ["3. InkFlow Arduino Client (ESP32 / UNO R4)"]
         Q[Receive 1-Bit Packed Binary Stream] --> R[Parse X-Refresh-Rate Header]
         R --> S{Memory-Safe Byte Stream}
         S -->|Bypasses SRAM Buffer| T[Read socket byte-by-byte]
