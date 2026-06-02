@@ -150,6 +150,10 @@ Once the server is running, configure your physical displays to retrieve rendere
        ```cmd
        "C:\Program Files\Raspberry Pi Ltd\Imager\rpi-imager.exe" --repo "C:\path\to\inkflow-imager-repo.json"
        ```
+     * **Linux Bash**:
+       ```bash
+       rpi-imager --repo /path/to/inkflow-imager-repo.json
+       ```
    * Select the **Inkflow OS** -> **Inkflow Headless OS** option, select your target SD card, configure your Wi-Fi SSID and login details within the Imager settings dialog, and flash!
 2. **Edit Boot Configuration**: Once flashing is complete, do not boot yet. Insert the SD card back into your computer and open its FAT boot partition. Open the text file named **`inkflow-setup.txt`** and configure your parameters:
    ```ini
