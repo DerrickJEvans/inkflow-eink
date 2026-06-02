@@ -40,18 +40,22 @@ const int fallbackSleepSeconds = 30;
   #include "epd4in26.h"
   #define DISPLAY_WIDTH  800
   #define DISPLAY_HEIGHT 480
+  #define EPD_WAIT_BUSY(epdInstance) (epdInstance).ReadBusy()
 #elif defined(SCREEN_TYPE_7_50)
   #include "epd7in5_V2.h"
   #define DISPLAY_WIDTH  800
   #define DISPLAY_HEIGHT 480
+  #define EPD_WAIT_BUSY(epdInstance) (epdInstance).WaitUntilIdle()
 #elif defined(SCREEN_TYPE_4_20)
   #include "epd4in2.h"
   #define DISPLAY_WIDTH  400
   #define DISPLAY_HEIGHT 300
+  #define EPD_WAIT_BUSY(epdInstance) (epdInstance).ReadBusy()
 #elif defined(SCREEN_TYPE_2_90)
   #include "epd2in9.h"
   #define DISPLAY_WIDTH  296
   #define DISPLAY_HEIGHT 128
+  #define EPD_WAIT_BUSY(epdInstance) (epdInstance).ReadBusy()
 #else
   #error "No valid SCREEN_TYPE defined! Please uncomment one of the screen options in config.h."
 #endif

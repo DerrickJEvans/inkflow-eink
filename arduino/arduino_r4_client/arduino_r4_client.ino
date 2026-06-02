@@ -370,7 +370,7 @@ bool fetchAndStreamDisplay() {
   epd.SendData(0xF7); 
   epd.SendCommand(0x20); 
   
-  epd.ReadBusy();
+  EPD_WAIT_BUSY(epd);
   epd.Sleep();
   
   return true;
@@ -868,7 +868,7 @@ void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
   epd.SendCommand(0x22); 
   epd.SendData(0xF7); 
   epd.SendCommand(0x20); 
-  epd.ReadBusy();
+  EPD_WAIT_BUSY(epd);
   epd.Sleep();
   
   Serial.println(F("[Display] Splash drawn successfully."));
