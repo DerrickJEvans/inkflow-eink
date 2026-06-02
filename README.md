@@ -33,6 +33,8 @@ graph TD
     I[JSON BYOS: /api/display] -->|1. Polls JSON| J[Official TRMNL BYOS Firmware]
     J -->|2. Fetches PNG| E
 ```
+The trmnl client uses the trmnl API to fetch JSON status information which includes the image to fetch separately. 
+Inkflow clients Python and C++ fetch images in a single API call.
 
 ---
 
