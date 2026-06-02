@@ -28,6 +28,9 @@ WiFiClient client;
 WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
 
+String scannedSSIDs[20];
+int scannedSSIDCount = 0;
+
 // Total bytes needed for a full horizontal 1-bit screen transmission frame
 const uint32_t totalImageBytes = (displayWidth * displayHeight) / 8; 
 
@@ -53,9 +56,11 @@ const byte DNS_PORT = 53;
 // Forward declarations
 void startSetupWizard();
 void processDNS();
-void drawSplashDirect(bool isSetup, String ssid, String host, int port);
+void drawSplashDirect(int mode, String param1 = "", String param2 = "", String param3 = "");
 void drawSetupSplashDirect();
 void drawConnectingSplashDirect(String ssid, String host, int port);
+void drawScanSplashDirect();
+void drawErrorSplashDirect(String errorMsg, String detail1, String detail2);
 String parseUrlParam(String body, String paramName);
 String urlDecode(String str);
 unsigned char h2d(char hex);
@@ -199,6 +204,7 @@ bool fetchAndStreamDisplay() {
 
   if (!client.connect(activeConfig.server_host, activeConfig.server_port)) {
     Serial.println(F("[Error] Web Server connection failed."));
+    drawErrorSplashDirect("Server Offline", "Host: " + String(activeConfig.server_host), "Port: " + String(activeConfig.server_port));
     return false;
   }
 
@@ -239,6 +245,7 @@ bool fetchAndStreamDisplay() {
   while (client.available() == 0) {
     if (millis() - timeout > 5000) {
       Serial.println(F("[Error] Client HTTP connection timeout."));
+      drawErrorSplashDirect("HTTP Timeout", "No response from server", "within 5 seconds.");
       client.stop();
       return false;
     }
@@ -309,6 +316,7 @@ bool fetchAndStreamDisplay() {
     }
     if (millis() - timeout > 3000) {
       Serial.println(F("[Error] Timeout waiting for header boundary."));
+      drawErrorSplashDirect("HTTP Header Error", "Failed to parse response", "headers from server.");
       client.stop();
       return false;
     }
@@ -318,6 +326,7 @@ bool fetchAndStreamDisplay() {
   Serial.println(F("Initializing E-Paper controller lines..."));
   if (epd.Init() != 0) {
      Serial.println(F("[Error] Display initialization step failed."));
+     drawErrorSplashDirect("Display Init Failed", "Cannot communicate with", "E-Paper shield over SPI.");
      client.stop();
      return false;
   }
@@ -343,6 +352,7 @@ bool fetchAndStreamDisplay() {
     }
     else if (millis() - timeout > 4000) {
       Serial.println(F("[Error] Stream timed out mid-frame."));
+      drawErrorSplashDirect("Stream Timeout", "Connection lost while", "downloading display data.");
       break;
     }
   }
@@ -390,6 +400,7 @@ bool connectWiFi() {
   
   if (WiFi.status() == WL_NO_SHIELD) {
     Serial.println(F("[Error] WiFi communication chip missing."));
+    drawErrorSplashDirect("WiFi Shield Missing", "UNO R4 WiFi coprocessor", "failed to initialize!");
     return false;
   }
 
@@ -408,6 +419,8 @@ bool connectWiFi() {
     return true;
   } else {
     Serial.println(F("\n[Error] Unable to connect. Launching Setup AP Portal..."));
+    drawErrorSplashDirect("WiFi Connection Failed", "SSID: " + String(activeConfig.wifi_ssid), "Check network or credentials!");
+    delay(5000); // Give user time to read the error screen
     startSetupWizard(); // Endless AP soft loop
     return false;
   }
@@ -418,6 +431,27 @@ bool connectWiFi() {
 // ==============================================================================
 
 void startSetupWizard() {
+  // Show SSID scanning feedback immediately
+  drawScanSplashDirect();
+
+  Serial.println(F("[Setup AP] Scanning for nearby WiFi networks first..."));
+  scannedSSIDCount = 0;
+  
+  // Perform network scan in station mode
+  int n = WiFi.scanNetworks();
+  if (n > 0) {
+    scannedSSIDCount = n;
+    if (scannedSSIDCount > 20) {
+      scannedSSIDCount = 20;
+    }
+    for (int i = 0; i < scannedSSIDCount; i++) {
+      scannedSSIDs[i] = WiFi.SSID(i);
+      Serial.print(F("Found SSID: ")); Serial.println(scannedSSIDs[i]);
+    }
+  } else {
+    Serial.println(F("[Setup AP] No networks found or scan failed."));
+  }
+
   Serial.println(F("[Setup AP] Starting soft AP mode..."));
   WiFi.disconnect();
   WiFi.end(); // Completely reset the co-processor firmware state
@@ -584,9 +618,27 @@ void startSetupWizard() {
         client.println(F(".form-group input:focus,.form-group select:focus{border-color:var(--primary);}.btn-submit{width:100%;padding:14px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;}"));
         client.println(F(".btn-submit:hover{background:var(--primary-hover);}.footer{text-align:center;margin-top:25px;font-size:12px;color:var(--text-muted);}</style></head>"));
         client.println(F("<body><div class=\"container\"><div class=\"header\"><h1>InkFlow R4 Setup</h1><p>Configure wireless networks & InkFlow server</p></div>"));
-        client.println(F("<form action=\"/save\" method=\"POST\"><div class=\"form-group\"><label>WiFi SSID</label><input type=\"text\" id=\"manual_ssid\" name=\"manual_ssid\" placeholder=\"WiFi name\" required></div>"));
-        client.println(F("<div class=\"form-group\"><label>WiFi Password</label><input type=\"password\" name=\"password\" placeholder=\"Password\"></div>"));
-        client.println(F("<div class=\"form-group\"><label>InkFlow Server Host / IP</label><input type=\"text\" name=\"server\" placeholder=\"e.g. 192.168.1.122 or mypi.local\" required></div>"));
+        client.println(F("<form action=\"/save\" method=\"POST\"><div class=\"form-group\"><label>WiFi SSID</label>"));
+        client.println(F("<select onchange=\"document.getElementById('manual_ssid').value = this.value;\" style=\"width:100%;padding:12px 16px;background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;outline:none;margin-bottom:10px;\">"));
+        client.println(F("<option value=\"\">-- Select Scanned Network --</option>"));
+        for (int i = 0; i < scannedSSIDCount; i++) {
+          client.print(F("<option value=\""));
+          client.print(scannedSSIDs[i]);
+          client.print(F("\">"));
+          client.print(scannedSSIDs[i]);
+          client.println(F("</option>"));
+        }
+        client.println(F("</select>"));
+        client.println(F("<input type=\"text\" id=\"manual_ssid\" name=\"manual_ssid\" placeholder=\"Or type SSID manually\" required></div>"));
+        
+        client.println(F("<div class=\"form-group\"><label>WiFi Password</label>"));
+        client.println(F("<input type=\"password\" id=\"wifi_pass\" name=\"password\" placeholder=\"Password\" style=\"margin-bottom:8px;\">"));
+        client.println(F("<div style=\"display:flex;align-items:center;font-size:13px;color:#94a3b8;cursor:pointer;user-select:none;\">"));
+        client.println(F("<input type=\"checkbox\" id=\"show_pass\" onclick=\"var p=document.getElementById('wifi_pass');p.type=p.type=='password'?'text':'password';\" style=\"width:auto;margin-right:8px;cursor:pointer;\">"));
+        client.println(F("<label for=\"show_pass\" style=\"display:inline;text-transform:none;font-weight:normal;margin-bottom:0;cursor:pointer;\">Show Password</label>"));
+        client.println(F("</div></div>"));
+        
+        client.println(F("<div class=\"form-group\"><label>InkFlow Server Host / IP</label><input type=\"text\" name=\"server\" value=\"inkflow.local\" placeholder=\"e.g. inkflow.local or IP address\" required></div>"));
         client.println(F("<div class=\"form-group\"><label>Port Bind</label><input type=\"number\" name=\"port\" value=\"5000\" required></div>"));
         client.println(F("<div class=\"form-group\"><label>Device custom name</label><input type=\"text\" name=\"devicename\" value=\"Living Room R4 Panel\"></div>"));
         client.println(F("<button type=\"submit\" class=\"btn-submit\">Save Settings & Connect</button></form>"));
@@ -688,7 +740,7 @@ void processDNS() {
 }
 
 // Direct-SPI Splash screen renderer utilizing zero-RAM buffering (reads font on-the-fly)
-void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
+void drawSplashDirect(int mode, String param1, String param2, String param3) {
   Serial.println(F("[Display] Drawing splash screen direct to SPI..."));
   
   if (epd.Init() != 0) {
@@ -714,17 +766,14 @@ void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
   char macLine[40];
   snprintf(macLine, sizeof(macLine), "MAC Address: %s", macStr);
 
-  char ssidLine[40];
-  snprintf(ssidLine, sizeof(ssidLine), "SSID: %s", ssid.c_str());
-  char hostLine[40];
-  snprintf(hostLine, sizeof(hostLine), "Host: %s", host.c_str());
-  char portLine[40];
-  snprintf(portLine, sizeof(portLine), "Port: %d", port);
+  char line1[65] = {0};
+  char line2[65] = {0};
+  char line3[65] = {0};
 
   TextElement elements[15];
   int numElements = 0;
 
-  if (isSetup) {
+  if (mode == 0) {
     if (displayWidth >= 800) {
       elements[numElements++] = {"InkFlow R4 Setup Portal", 40, 40, 2};
       elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
@@ -757,32 +806,90 @@ void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
       elements[numElements++] = {"Submit WiFi/Server details!", 10, 90, 1};
       elements[numElements++] = {macLine, 10, 110, 1};
     }
-  } else {
-    // Connecting Splash
+  } else if (mode == 1) {
+    snprintf(line1, sizeof(line1), "SSID: %s", param1.c_str());
+    snprintf(line2, sizeof(line2), "Host: %s", param2.c_str());
+    snprintf(line3, sizeof(line3), "Port: %s", param3.c_str());
+
     if (displayWidth >= 800) {
       elements[numElements++] = {"InkFlow Dashboard Connecting...", 40, 40, 2};
       elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
       elements[numElements++] = {"Attempting to connect to WiFi & InkFlow server...", 40, 110, 1};
-      elements[numElements++] = {ssidLine, 60, 150, 1};
-      elements[numElements++] = {hostLine, 60, 180, 1};
-      elements[numElements++] = {portLine, 60, 210, 1};
+      elements[numElements++] = {line1, 60, 150, 1};
+      elements[numElements++] = {line2, 60, 180, 1};
+      elements[numElements++] = {line3, 60, 210, 1};
       elements[numElements++] = {"Please wait, the screen will refresh once connected.", 40, 260, 1};
       elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
       elements[numElements++] = {macLine, 40, 420, 1};
     } else if (displayWidth >= 400) {
       elements[numElements++] = {"Connecting...", 20, 20, 2};
       elements[numElements++] = {"----------------------------------------", 20, 45, 1};
-      elements[numElements++] = {ssidLine, 20, 80, 1};
-      elements[numElements++] = {hostLine, 20, 110, 1};
-      elements[numElements++] = {portLine, 20, 140, 1};
+      elements[numElements++] = {line1, 20, 80, 1};
+      elements[numElements++] = {line2, 20, 110, 1};
+      elements[numElements++] = {line3, 20, 140, 1};
       elements[numElements++] = {"Refreshing shortly...", 20, 180, 1};
       elements[numElements++] = {"----------------------------------------", 20, 230, 1};
       elements[numElements++] = {macLine, 20, 260, 1};
     } else { // 296x128
       elements[numElements++] = {"Connecting...", 10, 10, 1};
-      elements[numElements++] = {ssidLine, 10, 35, 1};
-      elements[numElements++] = {hostLine, 10, 60, 1};
-      elements[numElements++] = {portLine, 10, 85, 1};
+      elements[numElements++] = {line1, 10, 35, 1};
+      elements[numElements++] = {line2, 10, 60, 1};
+      elements[numElements++] = {line3, 10, 85, 1};
+      elements[numElements++] = {macLine, 10, 110, 1};
+    }
+  } else if (mode == 2) {
+    if (displayWidth >= 800) {
+      elements[numElements++] = {"InkFlow Setup Wizard", 40, 40, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
+      elements[numElements++] = {"Scanning for local WiFi SSIDs...", 40, 130, 2};
+      elements[numElements++] = {"Please wait, searching for available networks...", 40, 180, 1};
+      elements[numElements++] = {"This will take a few seconds.", 40, 210, 1};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
+      elements[numElements++] = {macLine, 40, 420, 1};
+    } else if (displayWidth >= 400) {
+      elements[numElements++] = {"WiFi Scan", 20, 20, 2};
+      elements[numElements++] = {"----------------------------------------", 20, 45, 1};
+      elements[numElements++] = {"Scanning local SSIDs...", 20, 80, 2};
+      elements[numElements++] = {"Please wait a moment...", 20, 120, 1};
+      elements[numElements++] = {"Starting setup portal...", 20, 150, 1};
+      elements[numElements++] = {"----------------------------------------", 20, 230, 1};
+      elements[numElements++] = {macLine, 20, 260, 1};
+    } else { // 296x128
+      elements[numElements++] = {"WiFi Scan...", 10, 10, 1};
+      elements[numElements++] = {"Scanning local SSIDs", 10, 35, 1};
+      elements[numElements++] = {"Please wait...", 10, 55, 1};
+      elements[numElements++] = {"Launching portal...", 10, 75, 1};
+      elements[numElements++] = {macLine, 10, 110, 1};
+    }
+  } else if (mode == 3) {
+    snprintf(line1, sizeof(line1), "%s", param1.c_str());
+    snprintf(line2, sizeof(line2), "%s", param2.c_str());
+    snprintf(line3, sizeof(line3), "%s", param3.c_str());
+
+    if (displayWidth >= 800) {
+      elements[numElements++] = {"InkFlow Connection Error", 40, 40, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
+      elements[numElements++] = {"DIAGNOSTICS:", 40, 110, 2};
+      elements[numElements++] = {line1, 40, 150, 1};
+      elements[numElements++] = {line2, 40, 180, 1};
+      elements[numElements++] = {line3, 40, 210, 1};
+      elements[numElements++] = {"Check network settings or launch Serial Monitor.", 40, 260, 1};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
+      elements[numElements++] = {macLine, 40, 420, 1};
+    } else if (displayWidth >= 400) {
+      elements[numElements++] = {"Error!", 20, 20, 2};
+      elements[numElements++] = {"----------------------------------------", 20, 45, 1};
+      elements[numElements++] = {line1, 20, 80, 1};
+      elements[numElements++] = {line2, 20, 110, 1};
+      elements[numElements++] = {line3, 20, 140, 1};
+      elements[numElements++] = {"Check configurations.", 20, 180, 1};
+      elements[numElements++] = {"----------------------------------------", 20, 230, 1};
+      elements[numElements++] = {macLine, 20, 260, 1};
+    } else { // 296x128
+      elements[numElements++] = {"Error Occurred!", 10, 10, 1};
+      elements[numElements++] = {line1, 10, 35, 1};
+      elements[numElements++] = {line2, 10, 55, 1};
+      elements[numElements++] = {line3, 10, 75, 1};
       elements[numElements++] = {macLine, 10, 110, 1};
     }
   }
@@ -875,11 +982,19 @@ void drawSplashDirect(bool isSetup, String ssid, String host, int port) {
 }
 
 void drawSetupSplashDirect() {
-  drawSplashDirect(true, "", "", 0);
+  drawSplashDirect(0);
 }
 
 void drawConnectingSplashDirect(String ssid, String host, int port) {
-  drawSplashDirect(false, ssid, host, port);
+  drawSplashDirect(1, ssid, host, String(port));
+}
+
+void drawScanSplashDirect() {
+  drawSplashDirect(2);
+}
+
+void drawErrorSplashDirect(String errorMsg, String detail1, String detail2) {
+  drawSplashDirect(3, errorMsg, detail1, detail2);
 }
 
 // Helper function to extract URL-encoded form parameters

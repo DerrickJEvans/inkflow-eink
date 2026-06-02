@@ -11,7 +11,7 @@ String default_ssid     = "YOUR_WIFI_SSID";
 String default_password = "YOUR_WIFI_PASSWORD";
 
 // 2. Server Settings (Your Raspberry Pi's local IP address or DNS name)
-String default_serverIp   = "192.168.1.100";
+String default_serverIp   = "inkflow.local";
 int    default_serverPort = 5000;
 
 // 3. Dynamic Device Naming
