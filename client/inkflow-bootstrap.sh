@@ -61,8 +61,8 @@ TRMNL_DEFAULT_POLL_INTERVAL=1800
 EOF
 
     # Execute client-only installer autonomously
-    chmod +x trmnl-client.sh
-    ./trmnl-client.sh install
+    chmod +x inkflow-client.sh
+    ./inkflow-client.sh install
 fi
 
 # --- CLEAN UP & PURGE BOOTSTRAPPER ---
