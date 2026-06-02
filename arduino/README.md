@@ -11,6 +11,7 @@ This subfolder houses highly optimized **Arduino C++ clients** designed to turn 
 * **Features**: Uses a custom **Zero-Buffer Direct SPI Streaming** pipeline that bypasses library buffering. 
 * **RAM Optimization**: Streams incoming raw image bytes directly from the network socket (`client.read()`) to the screen controller (`epd.SendData()`) over SPI. Avoids RAM buffer allocations entirely, allowing the 32 KB SRAM UNO R4 to drive large 800x480 displays!
 * **Hardware Controls**: Integrates custom Dip switches and voltage configurations on the Waveshare E-Paper Shield (B).
+* **E-Ink Diagnostics & Progress**: Integrates a programmatic, zero-buffer direct-SPI feedback engine using an embedded flash-based font (`font8x8.h`) to render real-time WiFi scanning status, setup AP instructions, and detailed diagnostic error screens (WiFi Failed, Server Offline, HTTP Timeout) directly on the screen without needing a serial monitor!
 
 ---
 
@@ -120,14 +121,17 @@ The UNO R4 WiFi client features an integrated **Web Setup Portal & EEPROM Wifi M
    * Open `arduino_r4_client.ino` in the Arduino IDE.
    * Select **Arduino UNO R4 WiFi** in the **Tools** -> **Board** menu, select your port, and click **Upload**!
 3. **Connect to Setup AP**:
-   * On first boot (or if connection to stored credentials fails), the R4 WiFi will automatically launch a WPA2-secured setup AP named: **`InkFlow-R4-Setup`**.
+   * On first boot (or if connection to stored credentials fails), the R4 WiFi will instantly flash the E-Ink panel to display **`WiFi Scan... Scanning local SSIDs`** while it runs its environment survey.
+   * Once the survey completes, the R4 launches a WPA2-secured setup AP named: **`InkFlow-R4-Setup`** and updates the E-Ink display to show step-by-step connection instructions and its hardware MAC address.
    * Connect your mobile phone or computer to the **`InkFlow-R4-Setup`** WiFi network using the password **`12345678`**.
    * The captive setup portal will pop open automatically. If it doesn't, open a web browser and navigate to: **`http://192.168.4.1`**.
 4. **Submit Configurations**:
-   * Enter your Wi-Fi SSID, input your password, define the **InkFlow Server Host/IP** (your Raspberry Pi's local address, e.g. `192.168.1.122`), and click **Save Settings & Connect**!
-   * The R4 will save settings securely to its onboard EEPROM memory, display a success message, perform a hardware-level software reset to clear RAM, connect to your router, and stream your dithered E-Ink images directly to the screen!
-5. **Serial Monitor**:
-   * Open the **Serial Monitor** set to **`115200 baud`** to observe raw HTTP packet counts, AP request handling, and hardware drawing cycles.
+   * The configuration page will automatically display a **Select Scanned Network** dropdown containing all locally scanned Wi-Fi SSIDs with signal strengths. Select your network (or type one manually), enter the password, review the pre-filled server target (defaults to `inkflow.local`), and click **Save Settings & Connect**!
+   * The R4 will save settings securely to its onboard EEPROM memory, display a success page, perform a hardware-level software reset to clear RAM, connect to your router, and stream your dithered E-Ink images directly to the screen!
+5. **Visual Diagnostics**:
+   * If a connection or server fetch fails, the R4 will immediately render a beautiful, highly detailed **Connection Error / Diagnostics** screen directly on the physical E-Ink panel showing what failed (e.g. *WiFi Connection Failed*, *Server Offline*, *HTTP Timeout*, or *Display Init Failed*) and the specific settings attempted, allowing you to troubleshoot completely offline without any serial cable!
+6. **Serial Monitor**:
+   * You can still open the **Serial Monitor** set to **`115200 baud`** to observe raw HTTP packet counts, AP request handling, and hardware drawing cycles.
 
 > [!TIP]
-> **Developer Reset Mode**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly clear the EEPROM database and start the Setup AP Portal!
+> **Developer Reset Mode**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe the EEPROM database and restart the Setup AP Portal!
