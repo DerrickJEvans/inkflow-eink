@@ -140,7 +140,7 @@ Once the server is running, configure your physical displays to retrieve rendere
 > If you are using an older 32-bit Pi Zero W, please skip this option and use **[Option B: Pi Python Client](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)** instead, running on a standard 32-bit Raspberry Pi OS Lite image.
 
 
-1. **Flash Your SD Card**: Download the custom `inkflow.img.xz` OS image and its accompanying `inkflow-imager-repo.json` index. Open the official **Raspberry Pi Imager**, select your downloaded repository JSON, write it to your SD card, and configure your Wi-Fi SSID and credentials within the imager options.
+1. **Flash Your SD Card**: Download the custom `inkflow.img.xz` OS image and its accompanying `inkflow-imager-repo.json` index from the **[GitHub Releases](https://github.com/DerrickJEvans/inkflow-eink/releases)** page of the repository. Open the official **Raspberry Pi Imager**, select your downloaded repository JSON, write it to your SD card, and configure your Wi-Fi SSID and credentials within the imager options.
 2. **Edit Boot Configuration**: Once flashing is complete, do not boot yet. Insert the SD card back into your computer and open its FAT boot partition. Open the text file named **`inkflow-setup.txt`** and configure your parameters:
    ```ini
    ROLE=client
