@@ -134,6 +134,12 @@ Once the server is running, configure your physical displays to retrieve rendere
 ### Option A: Headless OS Image (Automatic Firstboot Setup)
 *For a plug-and-play experience, flash a preconfigured OS image onto your client micro-SD card. It resizes itself and connects to your server automatically on boot.*
 
+> [!WARNING]
+> **64-Bit OS Image Requirement**: The custom pre-built OS image is compiled for 64-bit architectures (`arm64`). It is **incompatible** with first-generation Raspberry Pi Zero W (v1.1 / v1.3) hardware, which uses a 32-bit ARMv6 CPU. 
+> 
+> If you are using an older 32-bit Pi Zero W, please skip this option and use **[Option B: Pi Python Client](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)** instead, running on a standard 32-bit Raspberry Pi OS Lite image.
+
+
 1. **Flash Your SD Card**: Download the custom `inkflow.img.xz` OS image and its accompanying `inkflow-imager-repo.json` index. Open the official **Raspberry Pi Imager**, select your downloaded repository JSON, write it to your SD card, and configure your Wi-Fi SSID and credentials within the imager options.
 2. **Edit Boot Configuration**: Once flashing is complete, do not boot yet. Insert the SD card back into your computer and open its FAT boot partition. Open the text file named **`inkflow-setup.txt`** and configure your parameters:
    ```ini
