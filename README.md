@@ -155,14 +155,29 @@ Once the server is running, configure your physical displays to retrieve rendere
        rpi-imager --repo /path/to/inkflow-imager-repo.json
        ```
    * Select the **Inkflow OS** -> **Inkflow Headless OS** option, select your target SD card, configure your Wi-Fi SSID and login details within the Imager settings dialog, and flash!
-2. **Edit Boot Configuration**: Once flashing is complete, do not boot yet. Insert the SD card back into your computer and open its FAT boot partition. Open the text file named **`inkflow-setup.txt`** and configure your parameters:
-   ```ini
-   ROLE=client
-   SERVER_IP=192.168.1.100    # Point this to your Raspberry Pi 5 Server IP
-   SCREEN_TYPE=4in26           # Options: '4in26', '7in5', '4in2', '2in9'
-   DEVICE_NAME=Kitchen E-Ink  # Friendly label for your control panel
-   ```
-3. **Boot and Connect**: Insert the SD card into your client Pi (e.g., Pi Zero 2W) and power it on. The filesystem expands instantly, registers systemd display drivers, and pulls E-Ink frames from the server automatically within moments!
+ 2. **Edit Boot Configuration**: Once flashing is complete, do not boot yet. Insert the SD card back into your computer and open its FAT boot partition. Open the text file named **`inkflow-setup.txt`** to configure the device's role.
+    * *By default, the image is set up to act as a **Server** (`ROLE=server` is active, and client lines are commented out).*
+    * **To configure a Client**, comment out the server section and uncomment the client section (remove the `#` prefix) to fill out your details:
+      ```ini
+      # SERVER MODE (Comment out if configuring a Client)
+      # ROLE=server
+      # DEVICE_NAME=Living Room Pi
+
+      # CLIENT MODE (Uncomment and configure)
+      ROLE=client
+      SERVER_IP=192.168.1.100    # Point this to your Raspberry Pi 5 Server IP
+      SCREEN_TYPE=4in26           # Options: '4in26', '7in5', '4in2', '2in9'
+      DEVICE_NAME=Kitchen E-Ink  # Friendly label for your control panel
+      ```
+ 3. **Boot and Connect**: Insert the SD card into your client Pi (e.g., Pi Zero 2W) and power it on. The filesystem expands instantly, registers systemd display drivers, and pulls E-Ink frames from the server automatically within moments!
+
+> [!NOTE]
+> **Filesystem Installation Location**: Unlike standard user accounts that begin with an empty home directory, the automated bootstrap installer places the entire codebase under `/opt/trmnl-pi-server`. 
+> 
+> To manage files, view settings, or execute utilities, navigate there after logging in:
+> ```bash
+> cd /opt/trmnl-pi-server
+> ```
 
 ---
 
