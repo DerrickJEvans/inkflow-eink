@@ -6,7 +6,7 @@ Designed for self-hosted home LAN environments, InkFlow supports a wide variety 
 
 ---
 
-## 📸 Client & Server Mockup Setup
+## 📸 Example Client & Server Setup
 
 The image below shows the **reTerminal E1001** running TRMNL firmware (left), **Raspberry Pi Zero 2W** running the InkFlow Python client (middle), and an **Arduino Uno R4 WiFi** running the InkFlow C++ client (right). These are all served dynamically from a single **Raspberry Pi 5 Server** (middle rear).
 
@@ -16,7 +16,7 @@ The image below shows the **reTerminal E1001** running TRMNL firmware (left), **
 
 ## 🏗️ Architectural Flow
 
-InkFlow decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, sleep, and draw:
+InkFlow decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, draw, and sleep:
 
 ```mermaid
 graph TD
