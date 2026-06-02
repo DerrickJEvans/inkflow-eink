@@ -15,6 +15,14 @@
       ],
       "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_4.png",
       "description": "Raspberry Pi 4"
+    },
+    {
+      "name": "Raspberry Pi Zero 2 W",
+      "tags": [
+        "pi02w"
+      ],
+      "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_Zero_2_W.png",
+      "description": "Raspberry Pi Zero 2 W"
     }
   ],
   "os_list": [
@@ -30,7 +38,8 @@
           "url": "file:///C:/Users/derri/Downloads/inkflow.img.xz",
           "devices": [
             "pi4",
-            "pi5"
+            "pi5",
+            "pi02w"
           ],
           "extract_size": 2755657728,
           "extract_sha256": "cb9b870477405f8daa4afc5116b6115415bab883389b70ebaa9859148f6a2272",
