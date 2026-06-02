@@ -101,13 +101,35 @@ EOF
         fi
     fi
 
-    # Prompt user to adjust server IP live during installer (only if running interactively)
+    # Prompt user to adjust server IP, name, and screen type during installer (only if running interactively)
     if [ -t 0 ]; then
-        read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.100): " SERVER_IP
-        if [ -n "$SERVER_IP" ]; then
-            sed -i "s/TRMNL_SERVER_IP=.*/TRMNL_SERVER_IP=${SERVER_IP}/" .env 2>/dev/null || sed -i "s/SERVER_HOST=.*/SERVER_HOST=${SERVER_IP}/" .env
-            echo -e "${GREEN}✅ Server IP address saved to .env.${NC}"
+        read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.100) [192.168.1.100]: " SERVER_IP
+        if [ -z "$SERVER_IP" ]; then
+            SERVER_IP="192.168.1.100"
         fi
+        sed -i "s/TRMNL_SERVER_IP=.*/TRMNL_SERVER_IP=${SERVER_IP}/" .env 2>/dev/null || sed -i "s/SERVER_HOST=.*/SERVER_HOST=${SERVER_IP}/" .env
+
+        read -p "📝 Enter a friendly name for this device [Living Room Pi]: " DEVICE_NAME
+        if [ -z "$DEVICE_NAME" ]; then
+            DEVICE_NAME="Living Room Pi"
+        fi
+        sed -i "s/TRMNL_DEVICE_NAME=.*/TRMNL_DEVICE_NAME=${DEVICE_NAME}/" .env
+
+        echo -e "📺 Select your E-Paper display panel size:"
+        echo -e "   [1] 4.26\" (800x480) - recommended"
+        echo -e "   [2] 7.5\"  (800x480)"
+        echo -e "   [3] 4.2\"  (400x300)"
+        echo -e "   [4] 2.9\"  (296x128)"
+        read -p "👉 Selection (1-4) [1]: " SCREEN_OPT
+
+        case "$SCREEN_OPT" in
+            2) SCREEN_TYPE="7in5" ;;
+            3) SCREEN_TYPE="4in2" ;;
+            4) SCREEN_TYPE="2in9" ;;
+            *) SCREEN_TYPE="4in26" ;;
+        esac
+        sed -i "s/TRMNL_SCREEN_TYPE=.*/TRMNL_SCREEN_TYPE=${SCREEN_TYPE}/" .env
+        echo -e "${GREEN}✅ Client configurations saved successfully to .env.${NC}"
     fi
 
     # 5. Create Systemd Service

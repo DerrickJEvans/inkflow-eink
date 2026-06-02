@@ -51,13 +51,31 @@ cd "$WORK_DIR"
 rm -rf "$TEMP_DIR"
 echo "✅ Waveshare hardware driver installed successfully!"
 
-# 4. Prompt for server address configuration
+# 4. Prompt for server and screen configurations
 echo "----------------------------------------------------"
-read -p "📡 Enter the InkFlow server address (e.g. inkflow.local or 192.168.1.100): " SERVER_HOST
-
+read -p "📡 Enter the InkFlow server address (e.g. inkflow.local or 192.168.1.100) [inkflow.local]: " SERVER_HOST
 if [ -z "$SERVER_HOST" ]; then
   SERVER_HOST="inkflow.local"
 fi
+
+read -p "📝 Enter a friendly name for this device [Living Room Pi]: " DEVICE_NAME
+if [ -z "$DEVICE_NAME" ]; then
+  DEVICE_NAME="Living Room Pi"
+fi
+
+echo "📺 Select your E-Paper display panel size:"
+echo "   [1] 4.26\" (800x480) - recommended"
+echo "   [2] 7.5\"  (800x480)"
+echo "   [3] 4.2\"  (400x300)"
+echo "   [4] 2.9\"  (296x128)"
+read -p "👉 Selection (1-4) [1]: " SCREEN_OPT
+
+case "$SCREEN_OPT" in
+  2) SCREEN_TYPE="7in5" ;;
+  3) SCREEN_TYPE="4in2" ;;
+  4) SCREEN_TYPE="2in9" ;;
+  *) SCREEN_TYPE="4in26" ;;
+esac
 
 # 5. Download client executable and manager script from the local server
 if [ ! -f "client.py" ]; then
@@ -82,24 +100,52 @@ if [ ! -f "inkflow-client.sh" ]; then
   [ -f "inkflow-client.sh" ] && chmod +x inkflow-client.sh
 fi
 
-# 6. Write configurations to config.py
-CONFIG_PY="config.py"
-if [ -f "$CONFIG_PY" ]; then
-  sed -i "s/SERVER_IP = .*/SERVER_IP = '${SERVER_HOST}'/" "$CONFIG_PY"
-  echo "✅ Updated config.py with server address: ${SERVER_HOST}"
-else
-  cat <<EOF > "$CONFIG_PY"
-# config.py - Configuration settings for the Python E-Ink Client
-SERVER_IP = '${SERVER_HOST}'
-SERVER_PORT = '5000'
-DEVICE_NAME = 'Living Room Pi'
-DEVICE_ID = 'dynamic_mac'
-SCREEN_TYPE = '4in26'
-DISPLAY_TYPE = 'waveshare'
-INVERT_COLORS = False
-DEFAULT_POLL_INTERVAL = 1800
+# 6. Write configurations to .env file
+ENV_FILE=".env"
+cat <<EOF > "$ENV_FILE"
+TRMNL_SERVER_IP=${SERVER_HOST}
+TRMNL_SERVER_PORT=5000
+TRMNL_DEVICE_NAME=${DEVICE_NAME}
+TRMNL_DEVICE_ID=dynamic_mac
+TRMNL_SCREEN_TYPE=${SCREEN_TYPE}
+TRMNL_DISPLAY_TYPE=waveshare
+TRMNL_INVERT_COLORS=false
+TRMNL_DEFAULT_POLL_INTERVAL=1800
 EOF
-  echo "✅ Created config.py with server address: ${SERVER_HOST}"
+echo "✅ Created .env configurations file!"
+
+# Ensure a config.py is present as fallback driver runner
+CONFIG_PY="config.py"
+if [ ! -f "$CONFIG_PY" ]; then
+  cat <<EOF > "$CONFIG_PY"
+# config.py - Configuration settings loader for the Python E-Ink Client
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+env_path = os.path.join(current_dir, '.env')
+if os.path.exists(env_path):
+    with open(env_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'): continue
+            if '=' in line:
+                key, val = line.split('=', 1)
+                key, val = key.strip(), val.strip()
+                if (val.startswith('"') and val.endswith('"')) or (val.startswith("'") and val.endswith("'")):
+                    val = val[1:-1]
+                if key not in os.environ: os.environ[key] = val
+SERVER_IP = os.environ.get('TRMNL_SERVER_IP', '192.168.1.100')
+SERVER_PORT = os.environ.get('TRMNL_SERVER_PORT', '5000')
+DEVICE_NAME = os.environ.get('TRMNL_DEVICE_NAME', 'Living Room Pi')
+DEVICE_ID = os.environ.get('TRMNL_DEVICE_ID', 'dynamic_mac')
+SCREEN_TYPE = os.environ.get('TRMNL_SCREEN_TYPE', '4in26')
+DISPLAY_TYPE = os.environ.get('TRMNL_DISPLAY_TYPE', 'waveshare')
+INVERT_COLORS = os.environ.get('TRMNL_INVERT_COLORS', 'false').lower() == 'true'
+DEFAULT_POLL_INTERVAL = int(os.environ.get('TRMNL_DEFAULT_POLL_INTERVAL', '1800'))
+WIDTH = None
+HEIGHT = None
+WAVESHARE_MODEL = None
+EOF
+  echo "✅ Created fallback config.py loader!"
 fi
 
 # 6. Create and register the Systemd persistent background service
