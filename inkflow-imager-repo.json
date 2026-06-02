@@ -1,0 +1,45 @@
+{
+  "devices": [
+    {
+      "name": "Raspberry Pi 5",
+      "tags": [
+        "pi5"
+      ],
+      "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_5.png",
+      "description": "Raspberry Pi 5"
+    },
+    {
+      "name": "Raspberry Pi 4",
+      "tags": [
+        "pi4"
+      ],
+      "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_4.png",
+      "description": "Raspberry Pi 4"
+    }
+  ],
+  "os_list": [
+    {
+      "name": "Inkflow OS",
+      "description": "Custom Raspberry Pi OS for E-Ink Dashboard Server and Client",
+      "icon": "https://raspberrypi.org",
+      "subitems": [
+        {
+          "name": "Inkflow Headless OS",
+          "description": "Raspberry Pi OS Bookworm Lite (64-bit) with Inkflow pre-installed",
+          "icon": "https://raspberrypi.org",
+          "url": "file:///C:/Users/derri/Downloads/inkflow.img.xz",
+          "devices": [
+            "pi4",
+            "pi5"
+          ],
+          "extract_size": 2755657728,
+          "extract_sha256": "cb9b870477405f8daa4afc5116b6115415bab883389b70ebaa9859148f6a2272",
+          "image_download_size": 2755657728,
+          "image_download_sha256": "cb9b870477405f8daa4afc5116b6115415bab883389b70ebaa9859148f6a2272",
+          "release_date": "2026-05-30",
+          "init_format": "systemd"
+        }
+      ]
+    }
+  ]
+}

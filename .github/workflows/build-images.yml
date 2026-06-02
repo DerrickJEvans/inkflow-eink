@@ -1,0 +1,140 @@
+name: 🛠️ Build custom E-Ink OS Images
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚙️ Install system packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y kpartx unzip wget xz-utils coreutils jq
+
+      - name: 💾 Download official Raspberry Pi OS Bookworm Lite
+        run: |
+          # Fetch the latest official 64-bit Lite image link
+          wget -O pi-os-lite.img.xz https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2024-10-28/2024-10-22-raspios-bookworm-arm64-lite.img.xz
+          xz -d pi-os-lite.img.xz
+
+      - name: 🔧 Mount Image & Inject Customizations
+        run: |
+          IMAGE_FILE="pi-os-lite.img"
+          
+          # Create loopback devices for partitions
+          LOOP_DEV=$(sudo losetup -fP --show "$IMAGE_FILE")
+          echo "Loop device created at: $LOOP_DEV"
+          
+          # Create directories for mounting
+          mkdir -p mnt/boot mnt/root
+          
+          # Mount Boot (FAT) and Root (Ext4) partitions using native loop partitions
+          sudo mount "${LOOP_DEV}p1" mnt/boot
+          sudo mount "${LOOP_DEV}p2" mnt/root
+          
+          # --- Injection Phase ---
+          # 1. Copy repository files into /opt/trmnl-pi-server (excluding loopback images and git metadata)
+          sudo mkdir -p mnt/root/opt/trmnl-pi-server
+          sudo rsync -av --exclude="node_modules" --exclude="*.img" --exclude="*.img.xz" --exclude=".git" --exclude=".github" --exclude="cache" --exclude="mnt" ./ mnt/root/opt/trmnl-pi-server/
+          
+          # 2. Inject our bootstrap script
+          sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-bootstrap.sh mnt/root/usr/local/bin/inkflow-bootstrap
+          
+          # 2.5. Inject default inkflow-setup.txt configuration template into the FAT boot partition from repo
+          sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-setup.txt mnt/boot/inkflow-setup.txt
+          
+          # 3. Inject our systemd bootstrap service from repo
+          sudo cp mnt/root/opt/trmnl-pi-server/client/inkflow-bootstrap.service mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          
+          # CRITICAL: Clean up CRLF (Windows carriage returns) from injected files to prevent kernel shebang and systemd parser errors!
+          sudo sed -i 's/\r$//' mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo sed -i 's/\r$//' mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          sudo sed -i 's/\r$//' mnt/boot/inkflow-setup.txt
+          
+          # CRITICAL: Harden execution permissions and transfer file ownership to root:root for systemd security requirements!
+          sudo chmod 755 mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo chown root:root mnt/root/usr/local/bin/inkflow-bootstrap
+          sudo chmod 644 mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          sudo chown root:root mnt/root/etc/systemd/system/inkflow-bootstrap.service
+          
+          # 4. Enable bootstrap service to execute on next boot (ensure parent wants folder exists)
+          sudo mkdir -p mnt/root/etc/systemd/system/multi-user.target.wants
+          sudo ln -sf /etc/systemd/system/inkflow-bootstrap.service mnt/root/etc/systemd/system/multi-user.target.wants/inkflow-bootstrap.service
+          
+          # Sync all buffered writes to the image block device
+          sync
+          
+          # Cleanup mounts safely
+          sudo umount mnt/boot
+          sudo umount mnt/root
+          
+          # Perform standard e2fsck verification scan to replay journal and mark partition clean
+          echo "⚙️ Performing final e2fsck verification scan..."
+          sudo e2fsck -fy "${LOOP_DEV}p2"
+          
+          # Flush all loopback caches and sync buffers directly to the raw image file
+          echo "⚙️ Flushing loopback buffers and syncing to disk..."
+          sudo blockdev --flushbufs "$LOOP_DEV"
+          sync
+          
+          # Detach loop device safely
+          sudo losetup -d "$LOOP_DEV"
+
+      - name: 📦 Compress and Package custom E-Ink OS
+        run: |
+          mv pi-os-lite.img inkflow.img
+          
+          # 1. Calculate uncompressed metrics
+          EXTRACT_SIZE=$(stat -c%s inkflow.img)
+          EXTRACT_SHA=$(sha256sum inkflow.img | awk '{print $1}')
+          echo "Raw image size: $EXTRACT_SIZE"
+          echo "Raw image SHA256: $EXTRACT_SHA"
+          
+          # 2. Compress using multi-threading and an efficient compression level to prevent timeouts/OOMs
+          xz -T 0 -3 inkflow.img
+          
+          # 3. Calculate compressed metrics
+          DOWNLOAD_SIZE=$(stat -c%s inkflow.img.xz)
+          DOWNLOAD_SHA=$(sha256sum inkflow.img.xz | awk '{print $1}')
+          echo "Compressed image size: $DOWNLOAD_SIZE"
+          echo "Compressed image SHA256: $DOWNLOAD_SHA"
+          
+          # 4. Inject calculated metrics dynamically into repository JSON using jq
+          jq --arg ext_size "$EXTRACT_SIZE" \
+             --arg ext_sha "$EXTRACT_SHA" \
+             --arg dl_size "$DOWNLOAD_SIZE" \
+             --arg dl_sha "$DOWNLOAD_SHA" \
+             '.os_list[0].subitems[0].extract_size = ($ext_size | tonumber) |
+              .os_list[0].subitems[0].extract_sha256 = $ext_sha |
+              .os_list[0].subitems[0].image_download_size = ($dl_size | tonumber) |
+              .os_list[0].subitems[0].image_download_sha256 = $dl_sha' \
+             inkflow-imager-repo.json > tmp.json && mv tmp.json inkflow-imager-repo.json
+          
+          echo "✅ Dynamically compiled inkflow-imager-repo.json successfully!"
+          cat inkflow-imager-repo.json
+
+      - name: 💾 Save build image as action artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkflow
+          path: |
+            inkflow.img.xz
+            inkflow-imager-repo.json
+          retention-days: 7
+
+      - name: 🚀 Publish release packages
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            inkflow.img.xz
+            inkflow-imager-repo.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
