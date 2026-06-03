@@ -24,7 +24,7 @@ sed -i 's/\r$//' "$SETUP_FILE"
 # Helper function to parse configuration values (strips inline comments, trims whitespace, and removes wrapping quotes)
 parse_setup_val() {
     local key="$1"
-    grep -E "^${key}=" "$SETUP_FILE" | sed -e 's/#.*//' | cut -d= -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e "s/^['\"]//" -e "s/['\"]$//" || true
+    grep -E "^${key}=" "$SETUP_FILE" | tail -n 1 | sed -e 's/#.*//' | cut -d= -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e "s/^['\"]//" -e "s/['\"]$//" || true
 }
 
 ROLE=$(parse_setup_val "ROLE")
@@ -61,6 +61,7 @@ if [ "$ROLE" == "server" ]; then
     cd /opt/trmnl-pi-server || exit 1
     
     # Run the server installer autonomously
+    sed -i 's/\r$//' install.sh 2>/dev/null || true
     chmod +x install.sh
     export DEBIAN_FRONTEND=noninteractive
     ./install.sh
@@ -89,6 +90,7 @@ TRMNL_DEFAULT_POLL_INTERVAL=1800
 EOF
 
     # Execute client-only installer autonomously
+    sed -i 's/\r$//' inkflow-client.sh 2>/dev/null || true
     chmod +x inkflow-client.sh
     ./inkflow-client.sh install
 # --- PERMISSION CORRECTIONS ---
