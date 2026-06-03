@@ -100,4 +100,6 @@ systemctl disable inkflow-bootstrap.service
 # Move setup file to a backup so it doesn't trigger again
 mv "$SETUP_FILE" "${SETUP_FILE}.processed"
 
+echo "🔄 Rebooting to apply kernel configurations and activate SPI bus..."
+reboot
 exit 0
