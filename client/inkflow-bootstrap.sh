@@ -32,6 +32,29 @@ DEVICE_NAME=$(parse_setup_val "DEVICE_NAME")
 SCREEN_TYPE=$(parse_setup_val "SCREEN_TYPE")
 SERVER_IP=$(parse_setup_val "SERVER_IP")
 
+# Helper function to wait for network connection before running updates/installs
+wait_for_network() {
+    echo "🔍 Checking network connectivity..."
+    local timeout=90
+    local elapsed=0
+    # Try pinging standard DNS (8.8.8.8) or Github to verify routing & resolver are active
+    while ! ping -c 1 -W 2 8.8.8.8 &>/dev/null && ! ping -c 1 -W 2 github.com &>/dev/null; do
+        sleep 3
+        elapsed=$((elapsed + 3))
+        if [ "$elapsed" -ge "$timeout" ]; then
+            echo "⚠️ Network connection check timed out. Proceeding anyway, but dependencies might fail to install."
+            return 1
+        fi
+        echo "⏳ Waiting for network connection ($elapsed/${timeout}s)..."
+    done
+    echo "🟢 Network is online!"
+    return 0
+}
+
+# Wait for working internet routing before launching install sequences
+wait_for_network
+
+
 # --- SERVER PROVISIONING ---
 if [ "$ROLE" == "server" ]; then
     echo "⚙️ Configuring Server Role..."
