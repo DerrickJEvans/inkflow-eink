@@ -46,7 +46,10 @@
           "image_download_size": 2755657728,
           "image_download_sha256": "cb9b870477405f8daa4afc5116b6115415bab883389b70ebaa9859148f6a2272",
           "release_date": "2026-05-30",
-          "init_format": "systemd"
+          "init_format": "cloud-init-rpi",
+          "capabilities": [
+            "image_customisation"
+          ]
         }
       ]
     }
