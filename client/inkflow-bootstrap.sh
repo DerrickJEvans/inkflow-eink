@@ -91,6 +91,16 @@ EOF
     # Execute client-only installer autonomously
     chmod +x inkflow-client.sh
     ./inkflow-client.sh install
+# --- PERMISSION CORRECTIONS ---
+# Resolve the target non-root user (typically 'inkflow' or 'pi')
+REAL_USER=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
+
+if [ -n "$REAL_USER" ]; then
+    echo "👥 Assigning hardware SPI/GPIO access groups to user: $REAL_USER..."
+    usermod -aG spi,gpio,dialout "$REAL_USER" || true
+    
+    echo "📂 Granting file ownership of /opt/trmnl-pi-server recursively to $REAL_USER..."
+    chown -R "$REAL_USER:$REAL_USER" /opt/trmnl-pi-server
 fi
 
 # --- CLEAN UP & PURGE BOOTSTRAPPER ---
