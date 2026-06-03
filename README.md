@@ -165,7 +165,7 @@ Once the server is running, configure your physical displays to retrieve rendere
 
       # CLIENT MODE (Uncomment and configure)
       ROLE=client
-      SERVER_IP=192.168.1.100    # Point this to your Raspberry Pi 5 Server IP
+      SERVER_IP=192.168.1.100    # Point to Server IP or mDNS hostname (e.g. inkflow-server.local)
       SCREEN_TYPE=4in26           # Options: '4in26', '7in5', '4in2', '2in9'
       DEVICE_NAME=Kitchen E-Ink  # Friendly label for your control panel
       ```

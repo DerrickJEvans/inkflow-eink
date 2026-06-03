@@ -14,6 +14,6 @@ DEVICE_NAME=Living Room Pi   # OPTIONAL: Friendly name of your screen
 # the parameters below:
 # ------------------------------------------------------------------------------
 # ROLE=client
-# SERVER_IP=192.168.1.122      # REQUIRED: The local IP of your main server Pi
+# SERVER_IP=192.168.1.122      # REQUIRED: The local IP or mDNS hostname (e.g., inkflow-server.local) of your main server Pi
 # SCREEN_TYPE=4in26            # REQUIRED: Your display size: '4in26', '7in5', '4in2', '2in9'
 # DEVICE_NAME=Kitchen E-Ink    # OPTIONAL: Friendly name reported to the server
