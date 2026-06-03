@@ -21,11 +21,16 @@ fi
 # Clean up Windows line endings in the config file
 sed -i 's/\r$//' "$SETUP_FILE"
 
-# Parse configuration values
-ROLE=$(grep -E '^ROLE=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
-DEVICE_NAME=$(grep -E '^DEVICE_NAME=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
-SCREEN_TYPE=$(grep -E '^SCREEN_TYPE=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
-SERVER_IP=$(grep -E '^SERVER_IP=' "$SETUP_FILE" | cut -d= -f2 | tr -d '"'\'' ' || true)
+# Helper function to parse configuration values (strips inline comments, trims whitespace, and removes wrapping quotes)
+parse_setup_val() {
+    local key="$1"
+    grep -E "^${key}=" "$SETUP_FILE" | sed -e 's/#.*//' | cut -d= -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e "s/^['\"]//" -e "s/['\"]$//" || true
+}
+
+ROLE=$(parse_setup_val "ROLE")
+DEVICE_NAME=$(parse_setup_val "DEVICE_NAME")
+SCREEN_TYPE=$(parse_setup_val "SCREEN_TYPE")
+SERVER_IP=$(parse_setup_val "SERVER_IP")
 
 # --- SERVER PROVISIONING ---
 if [ "$ROLE" == "server" ]; then
