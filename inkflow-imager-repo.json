@@ -1,57 +1,142 @@
 {
-  "devices": [
-    {
-      "name": "Raspberry Pi 5",
-      "tags": [
-        "pi5"
-      ],
-      "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_5.png",
-      "description": "Raspberry Pi 5"
-    },
-    {
-      "name": "Raspberry Pi 4",
-      "tags": [
-        "pi4"
-      ],
-      "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_4.png",
-      "description": "Raspberry Pi 4"
-    },
-    {
-      "name": "Raspberry Pi Zero 2 W",
-      "tags": [
-        "pi02w"
-      ],
-      "icon": "https://downloads.raspberrypi.com/imager/icons/RPi_Zero_2_W.png",
-      "description": "Raspberry Pi Zero 2 W"
-    }
-  ],
-  "os_list": [
-    {
-      "name": "Inkflow OS",
-      "description": "Custom Raspberry Pi OS for E-Ink Dashboard Server and Client",
-      "icon": "https://raspberrypi.org",
-      "subitems": [
-        {
-          "name": "Inkflow Headless OS",
-          "description": "Raspberry Pi OS Bookworm Lite (64-bit) with Inkflow pre-installed",
-          "icon": "https://raspberrypi.org",
-          "url": "file:///C:/Users/derri/Downloads/inkflow.img.xz",
-          "devices": [
-            "pi4",
-            "pi5",
-            "pi02w"
-          ],
-          "extract_size": 2755657728,
-          "extract_sha256": "cb9b870477405f8daa4afc5116b6115415bab883389b70ebaa9859148f6a2272",
-          "image_download_size": 2755657728,
-          "image_download_sha256": "cb9b870477405f8daa4afc5116b6115415bab883389b70ebaa9859148f6a2272",
-          "release_date": "2026-05-30",
-          "init_format": "cloud-init-rpi",
-          "capabilities": [
-            "image_customisation"
-          ]
-        }
-      ]
-    }
-  ]
+	"imager": {
+		"latest_version": "2.0.7",
+		"url": "https://www.raspberrypi.com/software/",
+		"devices": [
+			{
+				"name": "Raspberry Pi 5",
+				"tags": [
+					"pi5-64bit",
+					"pi5-32bit"
+				],
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_5.png",
+				"description": "Raspberry Pi 5, 500 / 500+, and Compute Module 5",
+				"matching_type": "exclusive",
+				"capabilities": []
+			},
+			{
+				"name": "Raspberry Pi 4",
+				"tags": [
+					"pi4-64bit",
+					"pi4-32bit"
+				],
+				"default": false,
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_4.png",
+				"description": "Raspberry Pi 4 Model B, 400, and Compute Module 4 / 4S",
+				"matching_type": "inclusive",
+				"capabilities": []
+			},
+			{
+				"name": "Raspberry Pi 3",
+				"tags": [
+					"pi3-64bit",
+					"pi3-32bit"
+				],
+				"default": false,
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_3.png",
+				"description": "Raspberry Pi 3 Model A+ / B / B+ and Compute Module 3 / 3+",
+				"matching_type": "inclusive",
+				"capabilities": []
+			},
+			{
+				"name": "Raspberry Pi 2",
+				"tags": [
+					"pi2-32bit"
+				],
+				"default": false,
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_2.png",
+				"description": "Raspberry Pi 2 Model B",
+				"matching_type": "inclusive",
+				"capabilities": []
+			},
+			{
+				"name": "Raspberry Pi 1",
+				"tags": [
+					"pi1-32bit"
+				],
+				"default": false,
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_1B+.png",
+				"description": "Raspberry Pi 1 Model A / A+ / B / B+ and Compute Module 1",
+				"matching_type": "inclusive",
+				"capabilities": []
+			},
+			{
+				"name": "Raspberry Pi Zero 2 W",
+				"tags": [
+					"pi3-64bit",
+					"pi3-32bit"
+				],
+				"default": false,
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_Zero_2_W.png",
+				"description": "Raspberry Pi Zero 2 W",
+				"matching_type": "inclusive",
+				"capabilities": []
+			},
+			{
+				"name": "Raspberry Pi Zero",
+				"tags": [
+					"pi1-32bit"
+				],
+				"default": false,
+				"icon": "https://downloads.raspberrypi.com/imager/icons/RPi_Zero.png",
+				"description": "Raspberry Pi Zero, Zero W, and Zero WH",
+				"matching_type": "inclusive",
+				"capabilities": []
+			},
+			{
+				"name": "No filtering",
+				"tags": [],
+				"default": false,
+				"description": "Show every possible image",
+				"matching_type": "inclusive",
+				"capabilities": []
+			}
+		]
+	},
+	"os_list": [
+		{
+			"name": "Other specific-purpose OS",
+			"description": "Home automation, 3D printing and specialised operating systems",
+			"icon": "icons/cat_other_specific_purpose_operating_systems.png",
+			"random": true,
+			"subitems": [
+				{
+					"name": "Digital signage and kiosks",
+					"description": "Digital signage and kiosk operating systems",
+					"icon": "icons/cat_digital_signage.png",
+					"random": true,
+					"subitems": [
+						{
+							"name": "Inkflow",
+							"description": "Inkflow is a build of bookworm 64bit OS with added applications for e-ink dashboard server and client",
+							"icon": "icons/cat_digital_signage.png",
+							"random": false,
+							"subitems": [
+								{
+									"name": "Inkflow server and client",
+									"description": "Latest release",
+									"icon": "https://downloads.raspberrypi.com/raspios_armhf/Raspberry_Pi_OS_(32-bit).png",
+									"url": "C:\\Users\\derri\\Downloads\\inkflow.img.xz",
+									"extract_size": 2864709632,
+									"extract_sha256": "3a10eddf85525195d235078e85761343fc6f9c8c155e20433e8778ce9b67b98b",
+									"image_download_size": 557445988,
+									"image_download_sha256": "f0f2df71c03c9098d30299542d2b5fc64ab2112880e4a970f1a5c52a062326dc",
+									"release_date": "2026-05-30",
+									"init_format": "cloudinit-rpi",
+									"devices": [
+										"pi5-64bit",
+										"pi4-64bit",
+										"pi3-64bit"
+									],
+									"capabilities": [
+										"image_customisation"
+									]
+								}
+							]
+						}
+					]
+				}
+			]
+		}
+	]
 }

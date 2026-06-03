@@ -111,10 +111,10 @@ jobs:
              --arg ext_sha "$EXTRACT_SHA" \
              --arg dl_size "$DOWNLOAD_SIZE" \
              --arg dl_sha "$DOWNLOAD_SHA" \
-             '.os_list[0].subitems[0].extract_size = ($ext_size | tonumber) |
-              .os_list[0].subitems[0].extract_sha256 = $ext_sha |
-              .os_list[0].subitems[0].image_download_size = ($dl_size | tonumber) |
-              .os_list[0].subitems[0].image_download_sha256 = $dl_sha' \
+             '.os_list[0].subitems[0].subitems[0].subitems[0].extract_size = ($ext_size | tonumber) |
+              .os_list[0].subitems[0].subitems[0].subitems[0].extract_sha256 = $ext_sha |
+              .os_list[0].subitems[0].subitems[0].subitems[0].image_download_size = ($dl_size | tonumber) |
+              .os_list[0].subitems[0].subitems[0].subitems[0].image_download_sha256 = $dl_sha' \
              inkflow-imager-repo.json > tmp.json && mv tmp.json inkflow-imager-repo.json
           
           echo "✅ Dynamically compiled inkflow-imager-repo.json successfully!"
