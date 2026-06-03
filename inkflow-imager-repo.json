@@ -116,7 +116,7 @@
 									"name": "Inkflow server and client",
 									"description": "Latest release",
 									"icon": "https://downloads.raspberrypi.com/raspios_armhf/Raspberry_Pi_OS_(32-bit).png",
-									"url": "C:\\Users\\derri\\Downloads\\inkflow.img.xz",
+									"url": "file:///C:/Users/derri/Downloads/inkflow.img.xz",
 									"extract_size": 2864709632,
 									"extract_sha256": "3a10eddf85525195d235078e85761343fc6f9c8c155e20433e8778ce9b67b98b",
 									"image_download_size": 557445988,

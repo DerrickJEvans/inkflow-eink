@@ -107,14 +107,21 @@ jobs:
           echo "Compressed image SHA256: $DOWNLOAD_SHA"
           
           # 4. Inject calculated metrics dynamically into repository JSON using jq
+          RELEASE_URL="https://github.com/DerrickJEvans/inkflow-eink/releases/latest/download/inkflow.img.xz"
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            RELEASE_URL="https://github.com/DerrickJEvans/inkflow-eink/releases/download/${{ github.ref_name }}/inkflow.img.xz"
+          fi
+
           jq --arg ext_size "$EXTRACT_SIZE" \
              --arg ext_sha "$EXTRACT_SHA" \
              --arg dl_size "$DOWNLOAD_SIZE" \
              --arg dl_sha "$DOWNLOAD_SHA" \
+             --arg url "$RELEASE_URL" \
              '.os_list[0].subitems[0].subitems[0].subitems[0].extract_size = ($ext_size | tonumber) |
               .os_list[0].subitems[0].subitems[0].subitems[0].extract_sha256 = $ext_sha |
               .os_list[0].subitems[0].subitems[0].subitems[0].image_download_size = ($dl_size | tonumber) |
-              .os_list[0].subitems[0].subitems[0].subitems[0].image_download_sha256 = $dl_sha' \
+              .os_list[0].subitems[0].subitems[0].subitems[0].image_download_sha256 = $dl_sha |
+              .os_list[0].subitems[0].subitems[0].subitems[0].url = $url' \
              inkflow-imager-repo.json > tmp.json && mv tmp.json inkflow-imager-repo.json
           
           echo "✅ Dynamically compiled inkflow-imager-repo.json successfully!"
