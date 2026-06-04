@@ -52,7 +52,7 @@ wait_for_network() {
 }
 
 # Wait for working internet routing before launching install sequences
-wait_for_network
+wait_for_network || true
 
 
 # --- SERVER PROVISIONING ---
@@ -64,7 +64,7 @@ if [ "$ROLE" == "server" ]; then
     sed -i 's/\r$//' install.sh 2>/dev/null || true
     chmod +x install.sh
     export DEBIAN_FRONTEND=noninteractive
-    ./install.sh
+    ./install.sh || true
     
     # Update device settings if configured
     if [ -n "$DEVICE_NAME" ]; then
@@ -92,7 +92,7 @@ EOF
     # Execute client-only installer autonomously
     sed -i 's/\r$//' inkflow-client.sh 2>/dev/null || true
     chmod +x inkflow-client.sh
-    ./inkflow-client.sh install
+    ./inkflow-client.sh install || true
 # --- PERMISSION CORRECTIONS ---
 # Resolve the target non-root user (typically 'inkflow' or 'pi')
 REAL_USER=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
