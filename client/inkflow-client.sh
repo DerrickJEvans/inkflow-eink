@@ -40,6 +40,9 @@ require_sudo() {
 install_client() {
     require_sudo "install"
     
+    # Enforce strict error checks during the installer sequence to prevent silent failures
+    set -e
+    
     echo -e "\n${BLUE}📦 [1/4] Installing system dependencies (SPI, Git, PIL, NumPy)...${NC}"
     apt-get update
     apt-get install -y python3-pip python3-pil python3-numpy python3-spidev git
@@ -199,6 +202,9 @@ EOF
     if [ -t 0 ]; then
         read -n 1 -s -r -p "Press any key to return to menu..."
     fi
+    
+    # Restore relaxed error tolerance for interactive menu operations
+    set +e
 }
 
 # Action: Start Client
