@@ -105,6 +105,8 @@ EOF
     sed -i 's/\r$//' inkflow-client.sh 2>/dev/null || true
     chmod +x inkflow-client.sh
     ./inkflow-client.sh install || true
+fi
+
 # --- PERMISSION CORRECTIONS ---
 # Resolve the target non-root user (typically 'inkflow' or 'pi')
 REAL_USER=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
