@@ -102,31 +102,50 @@ EOF
     fi
 
     # Prompt user to adjust server IP, name, and screen type during installer (only if running interactively)
+    # Prompt user to adjust server IP, name, and screen type during installer (only if running interactively)
     if [ -t 0 ]; then
-        read -p "📡 Enter your main TRMNL Server IP address (e.g. 192.168.1.100) [192.168.1.100]: " SERVER_IP
+        # Load existing configurations as defaults from .env if present
+        local default_ip="192.168.1.100"
+        local default_name="Living Room Pi"
+        local default_screen="4in26"
+
+        if [ -f ".env" ]; then
+            default_ip=$(grep -E '^TRMNL_SERVER_IP=' .env | cut -d= -f2 | tr -d '"'\'' ' || echo "192.168.1.100")
+            default_name=$(grep -E '^TRMNL_DEVICE_NAME=' .env | cut -d= -f2 | tr -d '"'\''' || echo "Living Room Pi")
+            default_screen=$(grep -E '^TRMNL_SCREEN_TYPE=' .env | cut -d= -f2 | tr -d '"'\'' ' || echo "4in26")
+        fi
+
+        read -p "📡 Enter your main TRMNL Server IP address [$default_ip]: " SERVER_IP
         if [ -z "$SERVER_IP" ]; then
-            SERVER_IP="192.168.1.100"
+            SERVER_IP="$default_ip"
         fi
         sed -i "s/TRMNL_SERVER_IP=.*/TRMNL_SERVER_IP=${SERVER_IP}/" .env 2>/dev/null || sed -i "s/SERVER_HOST=.*/SERVER_HOST=${SERVER_IP}/" .env
 
-        read -p "📝 Enter a friendly name for this device [Living Room Pi]: " DEVICE_NAME
+        read -p "📝 Enter a friendly name for this device [$default_name]: " DEVICE_NAME
         if [ -z "$DEVICE_NAME" ]; then
-            DEVICE_NAME="Living Room Pi"
+            DEVICE_NAME="$default_name"
         fi
         sed -i "s/TRMNL_DEVICE_NAME=.*/TRMNL_DEVICE_NAME=${DEVICE_NAME}/" .env
 
-        echo -e "📺 Select your E-Paper display panel size:"
+        # Map display sizes for easier screen prompt presentation
+        local screen_label="4.26\" (800x480)"
+        [ "$default_screen" = "7in5" ] && screen_label="7.5\" (800x480)"
+        [ "$default_screen" = "4in2" ] && screen_label="4.2\" (400x300)"
+        [ "$default_screen" = "2in9" ] && screen_label="2.9\" (296x128)"
+
+        echo -e "📺 Select your E-Paper display panel size [Current: $screen_label]:"
         echo -e "   [1] 4.26\" (800x480) - recommended"
         echo -e "   [2] 7.5\"  (800x480)"
         echo -e "   [3] 4.2\"  (400x300)"
         echo -e "   [4] 2.9\"  (296x128)"
-        read -p "👉 Selection (1-4) [1]: " SCREEN_OPT
+        read -p "👉 Selection (1-4) or press Enter to keep current: " SCREEN_OPT
 
         case "$SCREEN_OPT" in
+            1) SCREEN_TYPE="4in26" ;;
             2) SCREEN_TYPE="7in5" ;;
             3) SCREEN_TYPE="4in2" ;;
             4) SCREEN_TYPE="2in9" ;;
-            *) SCREEN_TYPE="4in26" ;;
+            *) SCREEN_TYPE="$default_screen" ;;
         esac
         sed -i "s/TRMNL_SCREEN_TYPE=.*/TRMNL_SCREEN_TYPE=${SCREEN_TYPE}/" .env
         echo -e "${GREEN}✅ Client configurations saved successfully to .env.${NC}"
