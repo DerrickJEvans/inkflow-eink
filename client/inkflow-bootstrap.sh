@@ -161,6 +161,7 @@ if [ "$INSTALL_SUCCESS" = true ]; then
     reboot
     exit 0
 else
-    log_console "❌ Installation failed. Keeping firstboot active. Retrying on next boot..."
+    log_console "❌ Installation failed. Setup will automatically retry on the next boot."
+    log_console "👉 Please check your internet connection and restart the system (run: sudo reboot) to retry."
     exit 1
 fi
