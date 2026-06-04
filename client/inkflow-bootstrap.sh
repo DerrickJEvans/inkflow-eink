@@ -12,9 +12,21 @@ BOOT_DIR="/boot/firmware"
 [ ! -d "$BOOT_DIR" ] && BOOT_DIR="/boot"
 SETUP_FILE="${BOOT_DIR}/inkflow-setup.txt"
 
+# Helper: Print sleek progress notifications directly to physical HDMI display / active TTY
+log_console() {
+    local msg="🤖 \033[1;36m[InkFlow Setup]\033[0m \033[1;33m$1\033[0m"
+    echo -e "$msg"
+    # Write to physical terminal interfaces so users see overlay notifications above login screens
+    for tty in /dev/console /dev/tty1 /dev/tty0; do
+        if [ -c "$tty" ]; then
+            echo -e "\n$msg\n" > "$tty" 2>/dev/null || true
+        fi
+    done
+}
+
 # If no config is found on the boot partition, exit silently
 if [ ! -f "$SETUP_FILE" ]; then
-    echo "No inkflow-setup.txt configuration found on FAT partition. Skipping auto-provisioning."
+    log_console "No inkflow-setup.txt configuration found on FAT partition. Skipping auto-provisioning."
     exit 0
 fi
 
@@ -44,9 +56,11 @@ DEVICE_NAME=$(parse_setup_val "DEVICE_NAME")
 SCREEN_TYPE=$(parse_setup_val "SCREEN_TYPE")
 SERVER_IP=$(parse_setup_val "SERVER_IP")
 
+log_console "Auto-Provisioner started! Target Role: ${ROLE^^}"
+
 # Helper function to wait for network connection before running updates/installs
 wait_for_network() {
-    echo "🔍 Checking network connectivity..."
+    log_console "Checking network/internet connectivity (waiting up to 90 seconds)..."
     local timeout=90
     local elapsed=0
     # Try pinging standard DNS (8.8.8.8) or Github to verify routing & resolver are active
@@ -54,12 +68,12 @@ wait_for_network() {
         sleep 3
         elapsed=$((elapsed + 3))
         if [ "$elapsed" -ge "$timeout" ]; then
-            echo "⚠️ Network connection check timed out. Proceeding anyway, but dependencies might fail to install."
+            log_console "⚠️ Network connection check timed out. Proceeding offline..."
             return 1
         fi
-        echo "⏳ Waiting for network connection ($elapsed/${timeout}s)..."
+        log_console "⏳ Waiting for network connection ($elapsed/${timeout}s)..."
     done
-    echo "🟢 Network is online!"
+    log_console "🟢 Network is online!"
     return 0
 }
 
@@ -73,7 +87,7 @@ fi
 
 # --- SERVER PROVISIONING ---
 if [ "$ROLE" == "server" ]; then
-    echo "⚙️ Configuring Server Role..."
+    log_console "⚙️ Configuring SERVER role... Running install.sh (this will take 2-3 minutes)..."
     cd /opt/trmnl-pi-server || exit 1
     
     # Run the server installer autonomously
@@ -83,6 +97,7 @@ if [ "$ROLE" == "server" ]; then
     
     if ./install.sh; then
         INSTALL_SUCCESS=true
+        log_console "✅ SERVER installation successfully completed!"
         # Update device settings if configured
         if [ -n "$DEVICE_NAME" ]; then
             # Dynamically set initial screen name in server config
@@ -90,12 +105,12 @@ if [ "$ROLE" == "server" ]; then
         fi
     else
         INSTALL_SUCCESS=false
-        echo "⚠️ Server installation failed."
+        log_console "❌ SERVER installation failed. Please check logs."
     fi
 
 # --- CLIENT PROVISIONING ---
 elif [ "$ROLE" == "client" ]; then
-    echo "⚙️ Configuring Client Role..."
+    log_console "⚙️ Configuring CLIENT role... Running client installer (this will take 2-3 minutes)..."
     cd /opt/trmnl-pi-server/client || exit 1
     
     # Write custom .env configuration file
@@ -116,36 +131,36 @@ EOF
     
     if ./inkflow-client.sh install; then
         INSTALL_SUCCESS=true
+        log_console "✅ CLIENT installation successfully completed!"
     else
         INSTALL_SUCCESS=false
-        echo "⚠️ Client installation failed."
+        log_console "❌ CLIENT installation failed. Please check logs."
     fi
 fi
 
 # --- PERMISSION CORRECTIONS ---
+log_console "👥 Assigning hardware access privileges and correcting directory ownerships..."
 # Resolve the target non-root user (typically 'inkflow' or 'pi')
 REAL_USER=$(awk -F: '$3 >= 1000 && $1 != "nobody" {print $1}' /etc/passwd | head -n 1 || echo "pi")
 
 if [ -n "$REAL_USER" ]; then
-    echo "👥 Assigning hardware SPI/GPIO access groups to user: $REAL_USER..."
     usermod -aG spi,gpio,dialout "$REAL_USER" || true
-    
-    echo "📂 Granting file ownership of /opt/trmnl-pi-server recursively to $REAL_USER..."
     chown -R "$REAL_USER:$REAL_USER" /opt/trmnl-pi-server
 fi
 
 # --- CLEAN UP & PURGE BOOTSTRAPPER ---
 if [ "$INSTALL_SUCCESS" = true ]; then
-    echo "✅ Provisioning completed successfully. Disabling firstboot service."
+    log_console "🎉 Setup finished successfully! Disabling firstboot service..."
     systemctl disable inkflow-bootstrap.service
 
     # Move setup file to a backup so it doesn't trigger again (ignore errors if partition is read-only)
     mv "$SETUP_FILE" "${SETUP_FILE}.processed" 2>/dev/null || true
 
-    echo "🔄 Rebooting to apply kernel configurations and activate SPI bus..."
+    log_console "🔄 Rebooting system in 5 seconds to apply kernel configuration changes..."
+    sleep 5
     reboot
     exit 0
 else
-    echo "❌ Provisioning failed. Keeping firstboot bootstrap active to retry on next boot."
+    log_console "❌ Installation failed. Keeping firstboot active. Retrying on next boot..."
     exit 1
 fi
