@@ -18,13 +18,25 @@ if [ ! -f "$SETUP_FILE" ]; then
     exit 0
 fi
 
-# Clean up Windows line endings in the config file
-sed -i 's/\r$//' "$SETUP_FILE"
+# Clean up Windows line endings in the config file (ignore errors if partition is read-only)
+sed -i 's/\r$//' "$SETUP_FILE" 2>/dev/null || true
 
-# Helper function to parse configuration values (strips inline comments, trims whitespace, and removes wrapping quotes)
+# Helper function to parse configuration values safely (using a single awk process to avoid grep/pipeline set -e crashes)
 parse_setup_val() {
     local key="$1"
-    grep -E "^${key}=" "$SETUP_FILE" | tail -n 1 | sed -e 's/#.*//' | cut -d= -f2- | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e "s/^['\"]//" -e "s/['\"]$//" || true
+    awk -v k="$key" '
+    $0 ~ "^" k "=" {
+        val = $0
+        sub("^" k "=", "", val)
+        sub("#.*", "", val)
+        sub(/^[ \t]+/, "", val)
+        sub(/[ \t]+$/, "", val)
+        sub(/^["\x27]/, "", val)
+        sub(/["\x27]$/, "", val)
+        last = val
+    }
+    END { if (last != "") print last }
+    ' "$SETUP_FILE" 2>/dev/null || true
 }
 
 ROLE=$(parse_setup_val "ROLE")
@@ -109,8 +121,8 @@ fi
 echo "✅ Provisioning completed. Disabling firstboot service."
 systemctl disable inkflow-bootstrap.service
 
-# Move setup file to a backup so it doesn't trigger again
-mv "$SETUP_FILE" "${SETUP_FILE}.processed"
+# Move setup file to a backup so it doesn't trigger again (ignore errors if partition is read-only)
+mv "$SETUP_FILE" "${SETUP_FILE}.processed" 2>/dev/null || true
 
 echo "🔄 Rebooting to apply kernel configurations and activate SPI bus..."
 reboot
