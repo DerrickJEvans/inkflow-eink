@@ -63,9 +63,13 @@ wait_for_network() {
     return 0
 }
 
-# Wait for working internet routing before launching install sequences
-wait_for_network || true
+# Initialize installation status state
+INSTALL_SUCCESS=false
 
+# Wait for working internet routing before launching install sequences
+if wait_for_network; then
+    INSTALL_SUCCESS=true
+fi
 
 # --- SERVER PROVISIONING ---
 if [ "$ROLE" == "server" ]; then
@@ -76,12 +80,17 @@ if [ "$ROLE" == "server" ]; then
     sed -i 's/\r$//' install.sh 2>/dev/null || true
     chmod +x install.sh
     export DEBIAN_FRONTEND=noninteractive
-    ./install.sh || true
     
-    # Update device settings if configured
-    if [ -n "$DEVICE_NAME" ]; then
-        # Dynamically set initial screen name in server config
-        sed -i "s/\"name\": \"Living Room Screen\"/\"name\": \"${DEVICE_NAME}\"/" config.json 2>/dev/null
+    if ./install.sh; then
+        INSTALL_SUCCESS=true
+        # Update device settings if configured
+        if [ -n "$DEVICE_NAME" ]; then
+            # Dynamically set initial screen name in server config
+            sed -i "s/\"name\": \"Living Room Screen\"/\"name\": \"${DEVICE_NAME}\"/" config.json 2>/dev/null
+        fi
+    else
+        INSTALL_SUCCESS=false
+        echo "⚠️ Server installation failed."
     fi
 
 # --- CLIENT PROVISIONING ---
@@ -104,7 +113,13 @@ EOF
     # Execute client-only installer autonomously
     sed -i 's/\r$//' inkflow-client.sh 2>/dev/null || true
     chmod +x inkflow-client.sh
-    ./inkflow-client.sh install || true
+    
+    if ./inkflow-client.sh install; then
+        INSTALL_SUCCESS=true
+    else
+        INSTALL_SUCCESS=false
+        echo "⚠️ Client installation failed."
+    fi
 fi
 
 # --- PERMISSION CORRECTIONS ---
@@ -120,12 +135,17 @@ if [ -n "$REAL_USER" ]; then
 fi
 
 # --- CLEAN UP & PURGE BOOTSTRAPPER ---
-echo "✅ Provisioning completed. Disabling firstboot service."
-systemctl disable inkflow-bootstrap.service
+if [ "$INSTALL_SUCCESS" = true ]; then
+    echo "✅ Provisioning completed successfully. Disabling firstboot service."
+    systemctl disable inkflow-bootstrap.service
 
-# Move setup file to a backup so it doesn't trigger again (ignore errors if partition is read-only)
-mv "$SETUP_FILE" "${SETUP_FILE}.processed" 2>/dev/null || true
+    # Move setup file to a backup so it doesn't trigger again (ignore errors if partition is read-only)
+    mv "$SETUP_FILE" "${SETUP_FILE}.processed" 2>/dev/null || true
 
-echo "🔄 Rebooting to apply kernel configurations and activate SPI bus..."
-reboot
-exit 0
+    echo "🔄 Rebooting to apply kernel configurations and activate SPI bus..."
+    reboot
+    exit 0
+else
+    echo "❌ Provisioning failed. Keeping firstboot bootstrap active to retry on next boot."
+    exit 1
+fi
