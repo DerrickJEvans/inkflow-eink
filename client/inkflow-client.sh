@@ -158,6 +158,10 @@ SyslogIdentifier=inkflow-client
 WantedBy=multi-user.target
 EOF
 
+    # Fix directory permissions for non-root runtime and git updates
+    chown -R "$USER_NAME:$USER_NAME" "$SCRIPT_DIR"
+    usermod -aG spi,gpio,dialout "$USER_NAME" || true
+
     systemctl daemon-reload
     systemctl enable inkflow-client.service
     systemctl restart inkflow-client.service
