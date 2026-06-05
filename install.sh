@@ -45,12 +45,12 @@ if [ ! -e "$USER_LINK" ]; then
 fi
 
 echo -e "${CYAN}[1/5] Updating package cache...${NC}"
-apt-get update -y
+apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update -y
 
 # 2. Install Node.js and npm if not available
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then
   echo -e "${CYAN}[2/5] Node.js or npm not detected. Installing nodejs, npm, and build-essential...${NC}"
-  apt-get install -y nodejs npm build-essential
+  apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y nodejs npm build-essential
 else
   echo -e "${GREEN}[✓] Node.js ($(node -v)) and npm ($(npm -v)) are already installed${NC}"
 fi

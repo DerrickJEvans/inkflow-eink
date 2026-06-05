@@ -74,6 +74,27 @@ wait_for_network() {
         log_console "⏳ Waiting for network connection ($elapsed/${timeout}s)..."
     done
     log_console "🟢 Network is online!"
+
+    # Wait for time synchronization (NTP) to avoid APT Release file date mismatches and SSL errors
+    log_console "Waiting for system clock synchronization (NTP) to prevent apt-get and Git SSL failures..."
+    local ntp_timeout=45
+    local ntp_elapsed=0
+    while true; do
+        # Check if year is >= 2025 (e.g. current system time has updated past the default image date of Oct 2024)
+        local current_year=$(date +%Y)
+        if [ "$current_year" -ge 2025 ] || [ "$(timedatectl show --property=NTPSynchronized --value 2>/dev/null || echo 'no')" = "yes" ]; then
+            log_console "⏰ System clock successfully synchronized! Current year: $current_year"
+            break
+        fi
+        sleep 3
+        ntp_elapsed=$((ntp_elapsed + 3))
+        if [ "$ntp_elapsed" -ge "$ntp_timeout" ]; then
+            log_console "⚠️ NTP synchronization check timed out. Proceeding with current time: $(date)"
+            break
+        fi
+        log_console "⏳ Waiting for clock sync ($ntp_elapsed/${ntp_timeout}s)..."
+    done
+
     return 0
 }
 

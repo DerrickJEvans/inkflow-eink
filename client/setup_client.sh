@@ -16,8 +16,8 @@ echo "===================================================="
 
 # 1. Update package list and install system dependencies
 echo "📦 Installing system dependencies (SPI, Git, PIL, NumPy, Requests)..."
-apt-get update
-apt-get install -y python3-pip python3-pil python3-numpy python3-spidev python3-requests git
+apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update
+apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y python3-pip python3-pil python3-numpy python3-spidev python3-requests git
 
 # 2. Enable SPI interface in Pi config
 echo "🔌 Enabling hardware SPI interface..."

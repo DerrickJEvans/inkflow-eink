@@ -44,8 +44,8 @@ install_client() {
     set -e
     
     echo -e "\n${BLUE}📦 [1/4] Installing system dependencies (SPI, Git, PIL, NumPy)...${NC}"
-    apt-get update
-    apt-get install -y python3-pip python3-pil python3-numpy python3-spidev git
+    apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update
+    apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y python3-pip python3-pil python3-numpy python3-spidev git
  
     # 2. Enable SPI interface in Pi config
     echo -e "\n${BLUE}🔌 [2/4] Enabling hardware SPI interface...${NC}"
