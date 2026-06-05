@@ -17,9 +17,9 @@ log_console() {
     local msg="🤖 \033[1;36m[InkFlow Setup]\033[0m \033[1;33m$1\033[0m"
     echo -e "$msg"
     # Write to physical terminal interface so users see overlay notifications above login screens
-    # We only write to /dev/tty1 to avoid duplicate printing across alias consoles
-    if [ -c "/dev/tty1" ]; then
-        echo -e "\n$msg\n" > "/dev/tty1" 2>/dev/null || true
+    # We write to /dev/tty0 (active virtual console) to ensure visibility on the HDMI screen without duplication
+    if [ -c "/dev/tty0" ]; then
+        echo -e "\n$msg\n" > "/dev/tty0" 2>/dev/null || true
     fi
 }
 
@@ -115,10 +115,10 @@ if [ "$ROLE" == "server" ]; then
     chmod +x install.sh
     export DEBIAN_FRONTEND=noninteractive
     
-    # Run installer and redirect output to /dev/tty1 so the user gets real-time progress updates on screen
+    # Run installer and redirect output to /dev/tty0 so the user gets real-time progress updates on screen
     local run_cmd="./install.sh"
-    if [ -c "/dev/tty1" ]; then
-        run_cmd="./install.sh 2>&1 | tee /dev/tty1"
+    if [ -c "/dev/tty0" ]; then
+        run_cmd="./install.sh 2>&1 | tee /dev/tty0"
     fi
     
     if eval "$run_cmd"; then
@@ -155,10 +155,10 @@ EOF
     sed -i 's/\r$//' inkflow-client.sh 2>/dev/null || true
     chmod +x inkflow-client.sh
     
-    # Run installer and redirect output to /dev/tty1 so the user gets real-time progress updates on screen
+    # Run installer and redirect output to /dev/tty0 so the user gets real-time progress updates on screen
     local run_cmd="./inkflow-client.sh install"
-    if [ -c "/dev/tty1" ]; then
-        run_cmd="./inkflow-client.sh install 2>&1 | tee /dev/tty1"
+    if [ -c "/dev/tty0" ]; then
+        run_cmd="./inkflow-client.sh install 2>&1 | tee /dev/tty0"
     fi
     
     if eval "$run_cmd"; then
