@@ -116,7 +116,7 @@ if [ "$ROLE" == "server" ]; then
     export DEBIAN_FRONTEND=noninteractive
     
     # Run installer and redirect output to /dev/tty0 so the user gets real-time progress updates on screen
-    local run_cmd="./install.sh"
+    run_cmd="./install.sh"
     if [ -c "/dev/tty0" ]; then
         run_cmd="./install.sh 2>&1 | tee /dev/tty0"
     fi
@@ -156,7 +156,7 @@ EOF
     chmod +x inkflow-client.sh
     
     # Run installer and redirect output to /dev/tty0 so the user gets real-time progress updates on screen
-    local run_cmd="./inkflow-client.sh install"
+    run_cmd="./inkflow-client.sh install"
     if [ -c "/dev/tty0" ]; then
         run_cmd="./inkflow-client.sh install 2>&1 | tee /dev/tty0"
     fi
