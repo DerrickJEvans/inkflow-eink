@@ -16,12 +16,11 @@ SETUP_FILE="${BOOT_DIR}/inkflow-setup.txt"
 log_console() {
     local msg="🤖 \033[1;36m[InkFlow Setup]\033[0m \033[1;33m$1\033[0m"
     echo -e "$msg"
-    # Write to physical terminal interfaces so users see overlay notifications above login screens
-    for tty in /dev/console /dev/tty1 /dev/tty0; do
-        if [ -c "$tty" ]; then
-            echo -e "\n$msg\n" > "$tty" 2>/dev/null || true
-        fi
-    done
+    # Write to physical terminal interface so users see overlay notifications above login screens
+    # We only write to /dev/tty1 to avoid duplicate printing across alias consoles
+    if [ -c "/dev/tty1" ]; then
+        echo -e "\n$msg\n" > "/dev/tty1" 2>/dev/null || true
+    fi
 }
 
 # If no config is found on the boot partition, exit silently
@@ -108,7 +107,7 @@ fi
 
 # --- SERVER PROVISIONING ---
 if [ "$ROLE" == "server" ]; then
-    log_console "⚙️ Configuring SERVER role... Running install.sh (this will take 2-3 minutes)..."
+    log_console "⚙️ Configuring SERVER role... Running install.sh (this will take 15-30 minutes)..."
     cd /opt/trmnl-pi-server || exit 1
     
     # Run the server installer autonomously
@@ -116,7 +115,13 @@ if [ "$ROLE" == "server" ]; then
     chmod +x install.sh
     export DEBIAN_FRONTEND=noninteractive
     
-    if ./install.sh; then
+    # Run installer and redirect output to /dev/tty1 so the user gets real-time progress updates on screen
+    local run_cmd="./install.sh"
+    if [ -c "/dev/tty1" ]; then
+        run_cmd="./install.sh 2>&1 | tee /dev/tty1"
+    fi
+    
+    if eval "$run_cmd"; then
         INSTALL_SUCCESS=true
         log_console "✅ SERVER installation successfully completed!"
         # Update device settings if configured
@@ -131,7 +136,7 @@ if [ "$ROLE" == "server" ]; then
 
 # --- CLIENT PROVISIONING ---
 elif [ "$ROLE" == "client" ]; then
-    log_console "⚙️ Configuring CLIENT role... Running client installer (this will take 2-3 minutes)..."
+    log_console "⚙️ Configuring CLIENT role... Running client installer (this will take 15-30 minutes)..."
     cd /opt/trmnl-pi-server/client || exit 1
     
     # Write custom .env configuration file
@@ -150,7 +155,13 @@ EOF
     sed -i 's/\r$//' inkflow-client.sh 2>/dev/null || true
     chmod +x inkflow-client.sh
     
-    if ./inkflow-client.sh install; then
+    # Run installer and redirect output to /dev/tty1 so the user gets real-time progress updates on screen
+    local run_cmd="./inkflow-client.sh install"
+    if [ -c "/dev/tty1" ]; then
+        run_cmd="./inkflow-client.sh install 2>&1 | tee /dev/tty1"
+    fi
+    
+    if eval "$run_cmd"; then
         INSTALL_SUCCESS=true
         log_console "✅ CLIENT installation successfully completed!"
     else
