@@ -57,6 +57,7 @@ const byte DNS_PORT = 53;
 #include "font8x8.h"
 
 // Forward declarations
+bool fetchAndStreamDisplay(String action = "");
 void startSetupWizard();
 void processDNS();
 void drawSplashDirect(int mode, String param1 = "", String param2 = "", String param3 = "");
@@ -213,7 +214,7 @@ void loop() {
 //          CORE STREAMING FUNCTIONS
 // ==========================================
 
-bool fetchAndStreamDisplay(String action = "") {
+bool fetchAndStreamDisplay(String action) {
   Serial.print(F("Connecting to server pipeline: "));
   Serial.print(activeConfig.server_host);
   Serial.print(F(":"));
