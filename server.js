@@ -996,6 +996,7 @@ app.get('/api/display/raw', async (req, res) => {
   try {
     const deviceId = req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
     const force = req.query.force === 'true';
+    console.log(`[DEBUG] GET /api/display/raw - deviceId: ${deviceId}, Query:`, req.query);
 
     const device = getOrCreateDevice(deviceId, req);
     recordDeviceConnection(device, req);
