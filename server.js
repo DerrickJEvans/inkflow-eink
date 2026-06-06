@@ -912,6 +912,24 @@ app.get('/api/display/image.png', async (req, res) => {
     
     const device = getOrCreateDevice(deviceId, req);
     recordDeviceConnection(device, req);
+
+    // Handle manual next/prev button actions
+    const action = req.query.action;
+    if (action && device.activePlugins && device.activePlugins.length > 1) {
+      const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
+      if (activePlugins.length > 1) {
+        const len = activePlugins.length;
+        const currentIndex = parseInt(device.currentPluginIndex) || 0;
+        if (action === 'prev') {
+          device.currentPluginIndex = (currentIndex - 2 + len) % len;
+          console.log(`[Buttons] Button Action 'prev': Changed plugin index from ${currentIndex} to ${device.currentPluginIndex}`);
+        } else if (action === 'next') {
+          console.log(`[Buttons] Button Action 'next': Keeping plugin index at ${device.currentPluginIndex} to render it`);
+        }
+        saveConfig();
+      }
+    }
+
     const data = await fetchDeviceDisplayData(device, force);
     
     const cached = imageCache[device.id];
@@ -981,6 +999,24 @@ app.get('/api/display/raw', async (req, res) => {
 
     const device = getOrCreateDevice(deviceId, req);
     recordDeviceConnection(device, req);
+
+    // Handle manual next/prev button actions
+    const action = req.query.action;
+    if (action && device.activePlugins && device.activePlugins.length > 1) {
+      const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
+      if (activePlugins.length > 1) {
+        const len = activePlugins.length;
+        const currentIndex = parseInt(device.currentPluginIndex) || 0;
+        if (action === 'prev') {
+          device.currentPluginIndex = (currentIndex - 2 + len) % len;
+          console.log(`[Buttons] Button Action 'prev': Changed plugin index from ${currentIndex} to ${device.currentPluginIndex}`);
+        } else if (action === 'next') {
+          console.log(`[Buttons] Button Action 'next': Keeping plugin index at ${device.currentPluginIndex} to render it`);
+        }
+        saveConfig();
+      }
+    }
+
     const data = await fetchDeviceDisplayData(device, force);
 
     const cached = imageCache[device.id];

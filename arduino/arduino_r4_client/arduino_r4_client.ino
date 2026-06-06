@@ -21,12 +21,15 @@
 #include <WiFiS3.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
+#include <Arduino_Modulino.h>
 #include "config.h"
 
 Epd epd;
 WiFiClient client;
 WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
+
+ModulinoButtons buttons;
 
 String scannedSSIDs[20];
 int scannedSSIDCount = 0;
@@ -120,6 +123,10 @@ void setup() {
   delay(1000);
   Serial.println(F("\n--- InkFlow Arduino R4 WiFi Client (Direct Stream) ---"));
 
+  // Initialize Modulino system and buttons card
+  Modulino.begin();
+  buttons.begin();
+
   // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise
   pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH);
   pinMode(SD_CS,  OUTPUT); digitalWrite(SD_CS,  HIGH);
@@ -128,41 +135,28 @@ void setup() {
   // Load configuration from EEPROM
   loadConfiguration();
 
-  // 10-Second Serial trigger prompt to allow developers to force reset settings
-  // SWRF flag in RSTSR1 register is set to 1 on software resets (simulated sleep wakes)
-  bool isWarmReset = (R_SYSTEM->RSTSR1_b.SWRF == 0x1);
-  bool resetPressed = false;
-  
-  if (isWarmReset) {
-    Serial.println(F("[Sleep] Resuming silently from simulated sleep wake..."));
-    // Clear the software reset flag so subsequent physical resets are caught cleanly
-    R_SYSTEM->RSTSR1_b.SWRF = 0;
-  } else {
-    Serial.println(F("\n💡 Press 'r' in Serial Monitor within 10 seconds to force clear settings & launch Setup AP Portal..."));
-    unsigned long promptStart = millis();
-    while (millis() - promptStart < 10000) {
-      if (Serial.available() > 0) {
-        char c = Serial.read();
-        if (c == 'r' || c == 'R') {
-          resetPressed = true;
-          break;
-        }
-      }
-      delay(10);
-    }
+  // Check action settings from EEPROM (address 500)
+  uint8_t actionVal = EEPROM.read(500);
+  String actionStr = "";
+  if (actionVal == 1) {
+    actionStr = "prev";
+    Serial.println(F("[Buttons] EEPROM stored Action: Fetching PREVIOUS image."));
+  } else if (actionVal == 2) {
+    actionStr = "next";
+    Serial.println(F("[Buttons] EEPROM stored Action: Fetching NEXT image."));
   }
-
-  if (resetPressed) {
-    Serial.println(F("[Config] Reset key detected! Clearing EEPROM storage..."));
-    memset(&activeConfig, 0, sizeof(EEPROMConfig));
-    EEPROM.put(0, activeConfig);
-    startSetupWizard();
+  // Clear action code in EEPROM
+  if (actionVal != 0) {
+    EEPROM.write(500, 0);
   }
 
   // Initialize WiFi connection
-  if (connectWiFi()) {
+  if (strlen(activeConfig.wifi_ssid) == 0 || strcmp(activeConfig.wifi_ssid, "YOUR_WIFI_SSID") == 0) {
+    Serial.println(F("[Config] WiFi SSID unconfigured or default template. Launching Setup Wizard AP..."));
+    startSetupWizard();
+  } else if (connectWiFi()) {
     // Connect to server and stream incoming byte data directly to e-Paper RAM
-    if (fetchAndStreamDisplay()) {
+    if (fetchAndStreamDisplay(actionStr)) {
       Serial.println(F("[Success] Screen updated."));
     } else {
       Serial.println(F("[Warning] Display fetch or stream failed."));
@@ -173,14 +167,37 @@ void setup() {
     WiFi.end();
   }
   
-  // Safe Deep sleep loop simulation block
-  Serial.print(F("Entering deep wait loop phase: "));
+  // Safe Deep sleep loop simulation block with Modulino Button Polling
+  Serial.print(F("Entering deep wait loop phase (monitoring buttons): "));
   Serial.print(nextRefreshSeconds);
   Serial.println(F(" seconds..."));
   
-  // Convert seconds to millisecond system delays
-  for(int i = 0; i < nextRefreshSeconds; i++) {
-    delay(1000);
+  unsigned long startWait = millis();
+  unsigned long waitDuration = (unsigned long)nextRefreshSeconds * 1000;
+  
+  while (millis() - startWait < waitDuration) {
+    if (buttons.update()) {
+      if (buttons.isPressed(0)) { // Button A
+        Serial.println(F("[Buttons] Button A pressed: Requesting PREVIOUS image..."));
+        EEPROM.write(500, 1);
+        delay(100);
+        NVIC_SystemReset();
+      }
+      if (buttons.isPressed(1)) { // Button B
+        Serial.println(F("[Buttons] Button B pressed: Requesting NEXT image..."));
+        EEPROM.write(500, 2);
+        delay(100);
+        NVIC_SystemReset();
+      }
+      if (buttons.isPressed(2)) { // Button C
+        Serial.println(F("[Buttons] Button C pressed: Resetting settings to open Setup AP..."));
+        memset(&activeConfig, 0, sizeof(EEPROMConfig));
+        EEPROM.put(0, activeConfig);
+        delay(100);
+        NVIC_SystemReset();
+      }
+    }
+    delay(20);
   }
   
   // Force R4 board level software restart to run the execution loop fresh
@@ -196,7 +213,7 @@ void loop() {
 //          CORE STREAMING FUNCTIONS
 // ==========================================
 
-bool fetchAndStreamDisplay() {
+bool fetchAndStreamDisplay(String action = "") {
   Serial.print(F("Connecting to server pipeline: "));
   Serial.print(activeConfig.server_host);
   Serial.print(F(":"));
@@ -224,6 +241,11 @@ bool fetchAndStreamDisplay() {
   client.print(displayWidth);
   client.print(F("&height="));
   client.print(displayHeight);
+  if (action.length() > 0) {
+    client.print(F("&action="));
+    client.print(action);
+    client.print(F("&force=true"));
+  }
   client.println(F(" HTTP/1.1"));
   client.print(F("Host: "));
   client.println(activeConfig.server_host);

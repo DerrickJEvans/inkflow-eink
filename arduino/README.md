@@ -134,4 +134,13 @@ The UNO R4 WiFi client features an integrated **Web Setup Portal & EEPROM Wifi M
    * You can still open the **Serial Monitor** set to **`115200 baud`** to observe raw HTTP packet counts, AP request handling, and hardware drawing cycles.
 
 > [!TIP]
-> **Developer Reset Mode**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe the EEPROM database and restart the Setup AP Portal!
+> **Developer Reset Mode (Serial)**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe the EEPROM database and restart the Setup AP Portal!
+
+### 🎛️ Modulino Buttons Integration
+If you have connected an I2C **Arduino Modulino Buttons** module to your Uno R4 (e.g. via the Qwiic connector), the board supports physical control controls:
+* **Button A (Left)**: Instantly fetches the **previous** image/plugin in the rotation carousel.
+* **Button B (Center)**: Instantly fetches the **next** image/plugin in the rotation carousel.
+* **Button C (Right)**: Clears all saved network and server credentials from the EEPROM and triggers a software reboot to automatically boot back into the Setup AP Web Portal.
+
+*(Note: Ensure you have installed the `Arduino_Modulino` library via the Library Manager before compiling.)*
+
