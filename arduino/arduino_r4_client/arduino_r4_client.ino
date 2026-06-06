@@ -177,26 +177,25 @@ void setup() {
   unsigned long waitDuration = (unsigned long)nextRefreshSeconds * 1000;
   
   while (millis() - startWait < waitDuration) {
-    if (buttons.update()) {
-      if (buttons.isPressed(0)) { // Button A
-        Serial.println(F("[Buttons] Button A pressed: Requesting PREVIOUS image..."));
-        EEPROM.write(500, 1);
-        delay(100);
-        NVIC_SystemReset();
-      }
-      if (buttons.isPressed(1)) { // Button B
-        Serial.println(F("[Buttons] Button B pressed: Requesting NEXT image..."));
-        EEPROM.write(500, 2);
-        delay(100);
-        NVIC_SystemReset();
-      }
-      if (buttons.isPressed(2)) { // Button C
-        Serial.println(F("[Buttons] Button C pressed: Resetting settings to open Setup AP..."));
-        memset(&activeConfig, 0, sizeof(EEPROMConfig));
-        EEPROM.put(0, activeConfig);
-        delay(100);
-        NVIC_SystemReset();
-      }
+    buttons.update();
+    if (buttons.isPressed(0)) { // Button A
+      Serial.println(F("[Buttons] Button A pressed: Requesting PREVIOUS image..."));
+      EEPROM.write(500, 1);
+      delay(100);
+      NVIC_SystemReset();
+    }
+    if (buttons.isPressed(1)) { // Button B
+      Serial.println(F("[Buttons] Button B pressed: Requesting NEXT image..."));
+      EEPROM.write(500, 2);
+      delay(100);
+      NVIC_SystemReset();
+    }
+    if (buttons.isPressed(2)) { // Button C
+      Serial.println(F("[Buttons] Button C pressed: Resetting settings to open Setup AP..."));
+      memset(&activeConfig, 0, sizeof(EEPROMConfig));
+      EEPROM.put(0, activeConfig);
+      delay(100);
+      NVIC_SystemReset();
     }
     delay(20);
   }
