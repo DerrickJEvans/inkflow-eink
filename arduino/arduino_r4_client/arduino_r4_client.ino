@@ -23,6 +23,7 @@
 #include <EEPROM.h>
 #include <Arduino_Modulino.h>
 #include "config.h"
+#include "logo.h"
 
 Epd epd;
 WiFiClient client;
@@ -991,6 +992,41 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
                 if ((fontByte >> fontCol) & 1) {
                   isBlack = true;
                 }
+              }
+            }
+          }
+        }
+
+        // 3. Render Logo element
+        if (!isBlack) {
+          if (displayWidth >= 800) {
+            int logoX = 580;
+            int logoY = 120;
+            int logoWidth = 160;
+            int logoHeight = 160;
+            if (x >= logoX && x < logoX + logoWidth && y >= logoY && y < logoY + logoHeight) {
+              int lx = x - logoX;
+              int ly = y - logoY;
+              int byteIdx = (ly * logoWidth + lx) / 8;
+              int bitIdx = 7 - ((ly * logoWidth + lx) % 8);
+              uint8_t byteVal = logo_160x160[byteIdx];
+              if (((byteVal >> bitIdx) & 1) == 0) {
+                isBlack = true;
+              }
+            }
+          } else if (displayWidth >= 400) {
+            int logoX = 280;
+            int logoY = 80;
+            int logoWidth = 80;
+            int logoHeight = 80;
+            if (x >= logoX && x < logoX + logoWidth && y >= logoY && y < logoY + logoHeight) {
+              int lx = x - logoX;
+              int ly = y - logoY;
+              int byteIdx = (ly * logoWidth + lx) / 8;
+              int bitIdx = 7 - ((ly * logoWidth + lx) % 8);
+              uint8_t byteVal = logo_80x80[byteIdx];
+              if (((byteVal >> bitIdx) & 1) == 0) {
+                isBlack = true;
               }
             }
           }
