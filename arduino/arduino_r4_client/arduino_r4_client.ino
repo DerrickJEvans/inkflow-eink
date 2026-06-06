@@ -279,6 +279,7 @@ bool fetchAndStreamDisplay(String action) {
   String currentLine = "";
   uint8_t headerState = 0;
   bool hasRefreshRateHeader = false;
+  bool isFirstLine = true;
   timeout = millis();
   
   while (client.connected() || client.available() > 0) {
@@ -294,6 +295,18 @@ bool fetchAndStreamDisplay(String action) {
       // State machine to find the \r\n\r\n boundary cleanly
       if (headerState == 0 && c == '\r') headerState = 1;
       else if (headerState == 1 && c == '\n') {
+        // Parse HTTP status on the very first line
+        if (isFirstLine) {
+          isFirstLine = false;
+          if (currentLine.indexOf(" 200") == -1) {
+            Serial.print(F("[Error] Bad HTTP status: "));
+            Serial.println(currentLine);
+            drawErrorSplashDirect("HTTP Status Error", currentLine, "Please check server endpoints.");
+            client.stop();
+            return false;
+          }
+        }
+
         // Line complete, check for custom refresh rate headers
         if (currentLine.startsWith("X-Refresh-Rate:")) {
           int colonIdx = currentLine.indexOf(':');
