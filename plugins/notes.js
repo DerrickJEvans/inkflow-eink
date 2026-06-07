@@ -4,12 +4,12 @@ module.exports = {
   name: "Notice Board & Todo",
   description: "Displays checklists and bulleted text notices configured in your dashboard.",
   configFields: [
-    { key: "title", label: "Board Title", type: "text", default: "Family Notice Board" },
+    { key: "title", label: "Board Title", type: "text", default: "Notice Board" },
     { key: "items", label: "Items (One per line or JSON Array)", type: "textarea", default: "" }
   ],
 
   async fetchData(settings) {
-    let title = settings.title || "Family Notice Board";
+    let title = settings.title || "Notice Board";
     let rawItems = settings.items;
     let items = [];
 
