@@ -45,8 +45,8 @@ module.exports = {
 
   async fetchData(settings) {
     let cpuTemp = "42.5";
-    let ramUsage = 35; // %
-    let ramText = "1.2GB / 4.0GB";
+    let ramUsage = 65; // % Free
+    let ramText = "2.8GB Free / 4.0GB";
     let diskUsage = 28; // %
     let diskText = "16GB / 64GB";
     let uptime = "3d 4h 12m";
@@ -70,9 +70,8 @@ module.exports = {
           const meminfo = fs.readFileSync('/proc/meminfo', 'utf8');
           const memTotal = parseInt(meminfo.match(/MemTotal:\s+(\d+)/)[1]);
           const memAvailable = parseInt(meminfo.match(/MemAvailable:\s+(\d+)/)[1]);
-          const memUsed = memTotal - memAvailable;
-          ramUsage = Math.floor((memUsed / memTotal) * 100);
-          ramText = `${(memUsed / 1024 / 1024).toFixed(1)}G / ${(memTotal / 1024 / 1024).toFixed(0)}G`;
+          ramUsage = Math.floor((memAvailable / memTotal) * 100);
+          ramText = `${(memAvailable / 1024 / 1024).toFixed(1)}GB Free / ${(memTotal / 1024 / 1024).toFixed(0)}GB`;
         }
 
         // Disk Usage
@@ -159,7 +158,7 @@ module.exports = {
             </g>
             
             <g transform="translate(0, 85)">
-              ${drawProgressBar("Active Memory (RAM)", data.ramUsage, data.ramText, 0, 10, width - padding * 2, 14)}
+              ${drawProgressBar("Free Memory (RAM)", data.ramUsage, data.ramText, 0, 10, width - padding * 2, 14)}
             </g>
             
             <g transform="translate(0, 150)">
@@ -182,7 +181,7 @@ module.exports = {
           <text x="${width - padding}" y="52" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">Temp: <tspan font-weight="bold">${data.cpuTemp}°C</tspan></text>
           
           ${drawProgressBar("CPU Load", data.cpuUsage, `${data.cpuUsage}%`, padding, 74, barWidth, 8)}
-          ${drawProgressBar("Memory", data.ramUsage, data.ramText, padding, 114, barWidth, 8)}
+          ${drawProgressBar("Free RAM", data.ramUsage, data.ramText, padding, 114, barWidth, 8)}
           ${drawProgressBar("Disk Space", data.diskUsage, data.diskText, padding, 154, barWidth, 8)}
         </g>
       `;

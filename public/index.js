@@ -1388,7 +1388,7 @@ async function startTelemetryLoop() {
       telemetryRam.innerText = data.ramText || '--';
       
       // Calculate Free RAM percentage
-      const ramFreePct = 100 - (data.ramUsage || 0);
+      const ramFreePct = data.ramUsage || 0;
       const rawTemp = parseFloat(data.cpuTemp) || 40.0;
       
       // Push and cap history points
