@@ -128,6 +128,44 @@ const fetchBatchedEndpoint = async (endpoint, accessToken, onBatch) => {
   return totalLoaded;
 };
 
+// Helper to resolve UK postcode to latitude & longitude
+const resolvePostcode = (postcode) => {
+  return new Promise((resolve) => {
+    if (!postcode || !postcode.trim()) return resolve(null);
+    const cleanPostcode = postcode.trim().replace(/\s+/g, '');
+    const url = `https://api.postcodes.io/postcodes/${encodeURIComponent(cleanPostcode)}`;
+    https.get(url, {
+      headers: {
+        'User-Agent': 'TrmnlPiServer/1.0 (RaspberryPi E-Ink Dashboard)'
+      },
+      timeout: 5000,
+      rejectUnauthorized: false
+    }, (res) => {
+      if (res.statusCode !== 200) {
+        return resolve(null);
+      }
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.status === 200 && json.result) {
+            resolve({
+              latitude: parseFloat(json.result.latitude),
+              longitude: parseFloat(json.result.longitude),
+              postcode: json.result.postcode
+            });
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }).on('error', () => resolve(null));
+  });
+};
+
 module.exports = {
   id: "uk_fuel",
   name: "UK Fuel Prices",
@@ -135,6 +173,7 @@ module.exports = {
   configFields: [
     { key: "clientId", label: "Fuel API Client ID", type: "text", default: "" },
     { key: "clientSecret", label: "Fuel API Client Secret", type: "text", default: "" },
+    { key: "postcode", label: "Home Postcode (UK)", type: "text", default: "" },
     { key: "latitude", label: "Home Latitude", type: "number", default: 51.9614 },
     { key: "longitude", label: "Home Longitude", type: "number", default: 1.3519 },
     { key: "radius", label: "Local Radius (miles)", type: "number", default: 10 }
@@ -144,9 +183,19 @@ module.exports = {
     // API Credentials fallbacks
     const clientId = settings.clientId || process.env.FUEL_API_CLIENT_ID || "pI8DjGe00xpGp5G7nuGOGxfO2vKIS05z";
     const clientSecret = settings.clientSecret || process.env.FUEL_API_CLIENT_SECRET || "8Pk6viES2PwJyiWyr5dg0GTOaZaikRLugUOmvBJb4aG9V0UuI0twbKOoEu5t0wf0";
-    const homeLat = parseFloat(settings.latitude || 51.9614);
-    const homeLng = parseFloat(settings.longitude || 1.3519);
+    let homeLat = parseFloat(settings.latitude || 51.9614);
+    let homeLng = parseFloat(settings.longitude || 1.3519);
+    let homePostcode = settings.postcode ? settings.postcode.trim().toUpperCase() : "";
     const radius = parseFloat(settings.radius || 10);
+
+    if (homePostcode) {
+      const resolved = await resolvePostcode(homePostcode);
+      if (resolved) {
+        homeLat = resolved.latitude;
+        homeLng = resolved.longitude;
+        homePostcode = resolved.postcode;
+      }
+    }
 
     try {
       // 1. Authenticate & Obtain OAuth token
@@ -324,6 +373,7 @@ module.exports = {
       return {
         updatedAt: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' UTC',
         localRadius: radius,
+        postcode: homePostcode,
         localE10: localE10 ? {
           brand: localE10.brand,
           name: localE10.name || localE10.address.split(',')[0],
@@ -363,6 +413,7 @@ module.exports = {
       return {
         updatedAt: "12:00 UTC",
         localRadius: radius,
+        postcode: homePostcode,
         localE10: { brand: "Tesco", name: "Felixstowe", price: "138.9", dist: "1.2" },
         localB7: { brand: "Shell", name: "Walton", price: "145.9", dist: "2.4" },
         localE5: { brand: "BP", name: "Trimley", price: "152.9", dist: "3.1" },
@@ -452,7 +503,7 @@ module.exports = {
         <g>
           <!-- Header -->
           <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">⚡ UK FUEL FINDER</text>
-          <text x="${width - padding}" y="33" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" opacity="0.7" text-anchor="end">Radius: ${data.localRadius} mi • Refreshed: ${escapeXml(data.updatedAt)}</text>
+          <text x="${width - padding}" y="33" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" opacity="0.7" text-anchor="end">Radius: ${data.localRadius} mi${data.postcode ? ` (${data.postcode})` : ''} • Refreshed: ${escapeXml(data.updatedAt)}</text>
           <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
 
           <!-- Cheapest Cards -->
@@ -510,7 +561,7 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ LOCAL FUEL PRICES</text>
+          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ LOCAL FUEL PRICES${data.postcode ? ` [${data.postcode}]` : ''}</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
 
           <!-- Unleaded Card -->
