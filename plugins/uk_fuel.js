@@ -267,7 +267,20 @@ module.exports = {
               if (pObj && typeof pObj === 'object') {
                 const fType = pObj.fuel_type || pObj.type;
                 const fVal = pObj.price || pObj.amount;
+                const lastUpdatedStr = pObj.price_last_updated || pObj.price_change_effective_timestamp || pObj.last_updated;
                 if (fType && fVal !== undefined) {
+                  if (lastUpdatedStr) {
+                    try {
+                      const updatedDate = new Date(lastUpdatedStr);
+                      const now = new Date();
+                      const ageDays = (now - updatedDate) / (1000 * 60 * 60 * 24);
+                      if (ageDays > 7) {
+                        continue; // Skip pricing older than 7 days
+                      }
+                    } catch (e) {
+                      // Keep it if parsing fails as a fallback
+                    }
+                  }
                   priceEntries.push([fType, fVal]);
                 }
               }
