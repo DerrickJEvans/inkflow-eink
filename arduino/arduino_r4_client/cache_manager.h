@@ -129,7 +129,7 @@ public:
     Serial.println(F("[Cache] Initialized successfully."));
   }
 
-  // Write stream directly to a slot in RAM memory
+  // Write stream to a slot in RAM memory using decoupled block-buffering to avoid SPI conflicts
   bool writeSlot(uint32_t slotIndex, WiFiClient& stream, uint32_t totalBytes) {
     uint32_t startAddr = CACHE_SLOTS_START_ADDR + (slotIndex * BLOCK_SIZE);
     if (startAddr + totalBytes > SRAM_SIZE) {
@@ -139,39 +139,48 @@ public:
       return false;
     }
 
-    Serial.print(F("[Cache] Writing stream directly to SPI RAM slot address 0x"));
+    Serial.print(F("[Cache] Writing stream to SPI RAM slot address 0x"));
     Serial.println(startAddr, HEX);
 
-    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
-    select();
-    SPI.transfer(SRAM_CMD_WRITE);
-    SPI.transfer((startAddr >> 16) & 0xFF);
-    SPI.transfer((startAddr >> 8) & 0xFF);
-    SPI.transfer(startAddr & 0xFF);
-
+    uint8_t pageBuf[512];
     uint32_t bytesWritten = 0;
     unsigned long timeout = millis();
 
     while (bytesWritten < totalBytes) {
-      if (stream.available() > 0) {
-        SPI.transfer(stream.read());
-        bytesWritten++;
-        timeout = millis();
-      } else if (!stream.connected()) {
-        deselect();
-        SPI.endTransaction();
-        Serial.println(F("[Cache Error] Stream disconnected."));
-        return false;
-      } else if (millis() - timeout > 3000) {
-        deselect();
-        SPI.endTransaction();
-        Serial.println(F("[Cache Error] Read timeout."));
-        return false;
+      uint32_t chunk = min((uint32_t)512, totalBytes - bytesWritten);
+      uint32_t bytesRead = 0;
+
+      // Read chunk from stream (RAM_CS is HIGH / deasserted during this time)
+      while (bytesRead < chunk) {
+        if (stream.available() > 0) {
+          pageBuf[bytesRead++] = stream.read();
+          timeout = millis();
+        } else if (!stream.connected()) {
+          Serial.println(F("[Cache Error] Stream disconnected."));
+          return false;
+        } else if (millis() - timeout > 3000) {
+          Serial.println(F("[Cache Error] Read timeout."));
+          return false;
+        }
       }
+
+      // Write chunk to SRAM sequentially (asserting RAM_CS only for the write transaction)
+      SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+      select();
+      SPI.transfer(SRAM_CMD_WRITE);
+      uint32_t currentAddr = startAddr + bytesWritten;
+      SPI.transfer((currentAddr >> 16) & 0xFF);
+      SPI.transfer((currentAddr >> 8) & 0xFF);
+      SPI.transfer(currentAddr & 0xFF);
+      for (uint32_t i = 0; i < bytesRead; i++) {
+        SPI.transfer(pageBuf[i]);
+      }
+      deselect();
+      SPI.endTransaction();
+
+      bytesWritten += bytesRead;
     }
 
-    deselect();
-    SPI.endTransaction();
     Serial.print(F("[Cache] Successfully wrote "));
     Serial.print(bytesWritten);
     Serial.println(F(" bytes to RAM."));
