@@ -1,7 +1,7 @@
 // notes.js - Custom text/todo checklist plugin
 module.exports = {
   id: "notes",
-  name: "Notice Board & Todo",
+  name: "Notice Board",
   description: "Displays checklists and bulleted text notices configured in your dashboard.",
   configFields: [
     { key: "title", label: "Board Title", type: "text", default: "Notice Board" },
