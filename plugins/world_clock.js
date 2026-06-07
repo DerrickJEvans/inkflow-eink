@@ -216,14 +216,14 @@ module.exports = {
     { key: "latitude", label: "Station Latitude", type: "number", default: 51.5074 },
     { key: "longitude", label: "Station Longitude", type: "number", default: -0.1278 },
     { key: "mapStyle", label: "Map Render Style", type: "select", default: "hires", options: ["hires", "solid", "dots"] },
-    { key: "label", label: "Clock Title", type: "text", default: "Greenwich Meridian Clock" }
+    { key: "label", label: "Clock Title", type: "text", default: "World Clock" }
   ],
 
   async fetchData(settings, device = {}) {
     const lat = parseFloat(settings.latitude !== undefined ? settings.latitude : 51.5074);
     const lon = parseFloat(settings.longitude !== undefined ? settings.longitude : -0.1278);
     const timezone = settings.timezone || "Europe/London";
-    const label = settings.label || "Greenwich Meridian Clock";
+    const label = settings.label || "World Clock";
 
     const date = new Date();
     
@@ -469,7 +469,6 @@ module.exports = {
           </g>
           
           <!-- Greenwich Header & Map Border -->
-          <text x="250" y="85" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="1">🌎 WORLD DAY/NIGHT &amp; CELESTIAL POSITION</text>
           <line x1="250" y1="95" x2="${width - 20}" y2="95" stroke="black" stroke-width="2" />
           
           <!-- Rendered Dot World Map -->
@@ -503,7 +502,6 @@ module.exports = {
           <!-- Header Bar -->
           <rect x="0" y="0" width="${width}" height="52" fill="black" />
           <text x="20" y="34" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1.5">🌍 ${escapeXml(data.label.toUpperCase())}</text>
-          <text x="${width - 20}" y="32" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="white" text-anchor="end" letter-spacing="1">MERIDIAN CENTERED MAP</text>
         </g>
       `;
     } else {
