@@ -149,6 +149,24 @@ void setup() {
   pinMode(SD_CS,  OUTPUT); digitalWrite(SD_CS,  HIGH);
   pinMode(EPD_CS, OUTPUT); digitalWrite(EPD_CS, HIGH);
 
+  // Perform SPI RAM Self-Test
+  Serial.println(F("[Cache] Running SPI RAM Self-Test..."));
+  uint8_t testWrite[4] = {0xDE, 0xAD, 0xBE, 0xEF};
+  uint8_t testRead[4] = {0, 0, 0, 0};
+  cache.writeData(0x1000, testWrite, 4);
+  cache.readData(0x1000, testRead, 4);
+  Serial.print(F("[Cache] Self-Test Read: "));
+  for (int i = 0; i < 4; i++) {
+    Serial.print(testRead[i], HEX);
+    Serial.print(" ");
+  }
+  Serial.println();
+  if (testRead[0] == 0xDE && testRead[1] == 0xAD && testRead[2] == 0xBE && testRead[3] == 0xEF) {
+    Serial.println(F("[Cache] Self-Test PASSED!"));
+  } else {
+    Serial.println(F("[Cache] Self-Test FAILED!"));
+  }
+
   // Load configuration from EEPROM
   loadConfiguration();
 
