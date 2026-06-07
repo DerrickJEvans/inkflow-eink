@@ -201,7 +201,9 @@ void loop() {
   // Button A (Left) -> Previous Image in Cache
   if (buttons.isPressed(0)) {
     if (!cacheEnabled) {
-      Serial.println(F("[Buttons] Left pressed, but cache is disabled (Self-Test failed)."));
+      Serial.println(F("[Buttons] Left pressed. Cache is disabled. Fetching previous from server..."));
+      fetchAndStreamDisplay("prev");
+      lastSyncTime = millis(); // Reset sync timer since we just updated the screen
     } else {
       CacheHeader header;
       if (cache.getHeader(header) && header.total_slots > 0) {
@@ -221,7 +223,9 @@ void loop() {
   // Button B (Middle) -> Next Image in Cache
   if (buttons.isPressed(1)) {
     if (!cacheEnabled) {
-      Serial.println(F("[Buttons] Middle pressed, but cache is disabled (Self-Test failed)."));
+      Serial.println(F("[Buttons] Middle pressed. Cache is disabled. Fetching next from server..."));
+      fetchAndStreamDisplay("next");
+      lastSyncTime = millis(); // Reset sync timer since we just updated the screen
     } else {
       CacheHeader header;
       if (cache.getHeader(header) && header.total_slots > 0) {
