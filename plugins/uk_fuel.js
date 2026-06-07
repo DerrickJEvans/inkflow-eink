@@ -486,8 +486,8 @@ module.exports = {
         list.forEach((item, idx) => {
           const y = 35 + idx * 30;
           rowsHtml += `
-            <text x="5" y="${y}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${escapeXml(item.brand)}</text>
-            <text x="90" y="${y}" font-family="sans-serif" font-size="12" fill="black" opacity="0.75">${escapeXml(truncateText(item.name, 18))}</text>
+            <text x="5" y="${y}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${escapeXml(truncateText(item.brand, 10))}</text>
+            <text x="105" y="${y}" font-family="sans-serif" font-size="12" fill="black" opacity="0.75">${escapeXml(truncateText(item.name, 16))}</text>
             <text x="${tableWidth - 85}" y="${y}" font-family="sans-serif" font-size="12.5" fill="black" opacity="0.6" text-anchor="end">${escapeXml(item.dist)}</text>
             <text x="${tableWidth - 5}" y="${y}" font-family="sans-serif" font-size="14" font-weight="bold" fill="black" text-anchor="end">${escapeXml(item.price)}</text>
             <line x1="5" y1="${y + 8}" x2="${tableWidth - 5}" y2="${y + 8}" stroke="black" stroke-width="0.5" stroke-dasharray="2,2" opacity="0.5" />
@@ -535,20 +535,20 @@ module.exports = {
 
           <!-- National Averages / Stats Row -->
           <g transform="translate(${padding}, 375)">
-            <rect x="0" y="0" width="${width - padding * 2}" height="70" rx="8" fill="none" stroke="black" stroke-width="1.2" />
+            <rect x="0" y="0" width="${width - padding * 2}" height="80" rx="8" fill="none" stroke="black" stroke-width="1.2" />
             
-            <g transform="translate(20, 20)">
-              <text x="0" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="black" opacity="0.6">UNLEADED (E10) NATIONWIDE</text>
-              <text x="0" y="40" font-family="sans-serif" font-size="20" font-weight="bold" fill="black">Cheapest: ${escapeXml(data.ukE10 ? data.ukE10.price : "n/a")}p <tspan font-size="13" font-weight="normal" opacity="0.6">(${escapeXml(data.ukE10 ? data.ukE10.brand : "")})</tspan></text>
-              <text x="320" y="40" font-family="sans-serif" font-size="14" fill="black">UK Avg: <tspan font-weight="bold">${escapeXml(data.e10Stats.avg)}p</tspan>  (Range: ${escapeXml(data.e10Stats.min)}p - ${escapeXml(data.e10Stats.max)}p)</text>
+            <g transform="translate(15, 12)">
+              <text x="0" y="12" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" opacity="0.65">UNLEADED (E10) NATIONWIDE</text>
+              <text x="0" y="34" font-family="sans-serif" font-size="14.5" fill="black">Cheapest: <tspan font-weight="bold" font-size="17">${escapeXml(data.ukE10 ? data.ukE10.price : "n/a")}p</tspan> (${escapeXml(data.ukE10 ? truncateText(data.ukE10.brand, 16) : "")})</text>
+              <text x="0" y="54" font-family="sans-serif" font-size="12.5" fill="black">Avg: <tspan font-weight="bold">${escapeXml(data.e10Stats.avg)}p</tspan> <tspan opacity="0.6"> (Range: ${escapeXml(data.e10Stats.min)}p-${escapeXml(data.e10Stats.max)}p)</tspan></text>
             </g>
 
-            <line x1="${(width - padding * 2) / 2 + 10}" y1="10" x2="${(width - padding * 2) / 2 + 10}" y2="60" stroke="black" stroke-width="1" stroke-dasharray="2,2" opacity="0.5" />
+            <line x1="${(width - padding * 2) / 2}" y1="10" x2="${(width - padding * 2) / 2}" y2="70" stroke="black" stroke-width="1" stroke-dasharray="2,2" opacity="0.5" />
 
-            <g transform="translate(${(width - padding * 2) / 2 + 30}, 20)">
-              <text x="0" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="black" opacity="0.6">DIESEL (B7) NATIONWIDE</text>
-              <text x="0" y="40" font-family="sans-serif" font-size="20" font-weight="bold" fill="black">Cheapest: ${escapeXml(data.ukB7 ? data.ukB7.price : "n/a")}p <tspan font-size="13" font-weight="normal" opacity="0.6">(${escapeXml(data.ukB7 ? data.ukB7.brand : "")})</tspan></text>
-              <text x="300" y="40" font-family="sans-serif" font-size="14" fill="black">UK Avg: <tspan font-weight="bold">${escapeXml(data.b7Stats.avg)}p</tspan></text>
+            <g transform="translate(${(width - padding * 2) / 2 + 15}, 12)">
+              <text x="0" y="12" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" opacity="0.65">DIESEL (B7) NATIONWIDE</text>
+              <text x="0" y="34" font-family="sans-serif" font-size="14.5" fill="black">Cheapest: <tspan font-weight="bold" font-size="17">${escapeXml(data.ukB7 ? data.ukB7.price : "n/a")}p</tspan> (${escapeXml(data.ukB7 ? truncateText(data.ukB7.brand, 16) : "")})</text>
+              <text x="0" y="54" font-family="sans-serif" font-size="12.5" fill="black">Avg: <tspan font-weight="bold">${escapeXml(data.b7Stats.avg)}p</tspan> <tspan opacity="0.6"> (Range: ${escapeXml(data.b7Stats.min)}p-${escapeXml(data.b7Stats.max)}p)</tspan></text>
             </g>
           </g>
 
