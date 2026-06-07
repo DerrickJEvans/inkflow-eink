@@ -2,11 +2,24 @@
 const http = require('http');
 const https = require('https');
 
+// Helper to escape XML special characters
+const escapeXml = (unsafe) => {
+  if (!unsafe) return "";
+  return unsafe.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+};
+
 // Helper to make GET requests returning JSON
 const getJson = (url) => {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
-    client.get(url, (res) => {
+    client.get(url, {
+      headers: { 'User-Agent': 'TrmnlPiServer/1.0 (RaspberryPi E-Ink Dashboard)' }
+    }, (res) => {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
@@ -118,14 +131,32 @@ module.exports = {
     const tempParam = isFahr ? '&temperature_unit=fahrenheit' : '';
 
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto${tempParam}`;
-    
+    const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+
     try {
-      const res = await getJson(url);
+      const [res, geoData] = await Promise.all([
+        getJson(url),
+        getJson(geoUrl).catch(err => {
+          console.error("Error geocoding weather coordinates:", err);
+          return null;
+        })
+      ]);
       
       const current = res.current;
       const daily = res.daily;
 
+      let settlement = '';
+      let postcode = '';
+      if (geoData && geoData.address) {
+        settlement = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.hamlet || geoData.address.suburb || geoData.address.municipality || '';
+        postcode = geoData.address.postcode || '';
+      }
+
       return {
+        lat: parseFloat(lat),
+        lon: parseFloat(lon),
+        settlement,
+        postcode,
         temp: Math.round(current.temperature_2m),
         humidity: current.relative_humidity_2m,
         code: current.weather_code,
@@ -143,6 +174,10 @@ module.exports = {
       console.error("Error fetching weather:", e);
       // Fallback data
       return {
+        lat: parseFloat(lat),
+        lon: parseFloat(lon),
+        settlement: "Unknown Settlement",
+        postcode: "",
         temp: 18,
         humidity: 62,
         code: 1,
@@ -163,13 +198,15 @@ module.exports = {
     const isFullScreen = height > 300;
     
     if (isFullScreen) {
-      // Elegant Full-Screen Weather Station Dashboard
+      // Elegant Full-Screen Weather Dashboard
       const colWidth = (width - padding * 2) / 3;
+      const locStr = `${data.settlement || 'Unknown'}${data.postcode ? ` [${data.postcode}]` : ''} (${data.lat.toFixed(4)}°, ${data.lon.toFixed(4)}°)`;
       
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">🌤️ LOCAL WEATHER STATION</text>
+          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">🌤️ LOCAL WEATHER</text>
+          <text x="${width - padding}" y="34" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" opacity="0.75" text-anchor="end">${escapeXml(locStr)}</text>
           <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
           
           <!-- Primary Current Weather Section -->
@@ -201,7 +238,7 @@ module.exports = {
               ${drawWeatherIcon(data.code, (colWidth - 15) / 2, 70)}
               <text x="${(colWidth - 15) / 2}" y="120" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="black">${data.low}° / ${data.high}°</text>
             </g>
-
+ 
             <!-- Forecast Column 2: Tomorrow -->
             <g transform="translate(${padding + colWidth}, 0)">
               <rect x="0" y="0" width="${colWidth - 15}" height="140" rx="10" fill="none" stroke="black" stroke-width="1.5" />
@@ -209,7 +246,7 @@ module.exports = {
               ${drawWeatherIcon(data.forecast[0].code, (colWidth - 15) / 2, 70)}
               <text x="${(colWidth - 15) / 2}" y="120" font-family="sans-serif" font-size="13" font-weight="bold" text-anchor="middle" fill="black">${data.forecast[0].low}° / ${data.forecast[0].high}°</text>
             </g>
-
+ 
             <!-- Forecast Column 3: Day After -->
             <g transform="translate(${padding + colWidth * 2}, 0)">
               <rect x="0" y="0" width="${colWidth - 15}" height="140" rx="10" fill="none" stroke="black" stroke-width="1.5" />
@@ -222,10 +259,12 @@ module.exports = {
       `;
     } else {
       // Standard compact grid cell layout
+      const locStr = `${data.settlement || ''}${data.postcode ? ` [${data.postcode}]` : ''} (${data.lat.toFixed(2)}°, ${data.lon.toFixed(2)}°)`;
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">🌤️ WEATHER FORECAST</text>
+          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">🌤️ LOCAL WEATHER</text>
+          <text x="${width - padding}" y="24" font-family="sans-serif" font-size="9.5" font-weight="bold" fill="black" opacity="0.75" text-anchor="end">${escapeXml(locStr)}</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
           
           <!-- Large Current Temp & Condition -->
