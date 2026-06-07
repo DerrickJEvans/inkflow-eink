@@ -1,6 +1,6 @@
 /*
-  cache_manager.h - SPI Flash Cache Manager for Waveshare E-Paper Shield
-  Designed for Arduino UNO R4 WiFi & standard SPI Flash (W25Q64, 8MB)
+  cache_manager.h - SPI RAM Cache Manager for Waveshare E-Paper Shield (23LC1024 SRAM)
+  Designed for Arduino UNO R4 WiFi & onboard 128KB SPI SRAM
 */
 
 #ifndef CACHE_MANAGER_H
@@ -9,20 +9,23 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+// 23LC1024 Commands
+#define SRAM_CMD_WRITE              0x02
+#define SRAM_CMD_READ               0x03
+#define SRAM_CMD_RDMR               0x05  // Read Mode Register
+#define SRAM_CMD_WRMR               0x01  // Write Mode Register
 
-// Flash commands
-#define FLASH_CMD_WRITE_ENABLE      0x06
-#define FLASH_CMD_READ_STATUS_1     0x05
-#define FLASH_CMD_READ_DATA         0x03
-#define FLASH_CMD_PAGE_PROGRAM      0x02
-#define FLASH_CMD_SECTOR_ERASE_4K   0x20
-#define FLASH_CMD_BLOCK_ERASE_64K   0xD8
+// Mode Register values
+#define SRAM_MODE_BYTE              0x00
+#define SRAM_MODE_SEQUENTIAL        0x40
 
-// Slot config (Each image is 64KB block-aligned)
-#define BLOCK_SIZE                  65536
+#define SRAM_SIZE                   131072  // 128KB
+
+// Slot config (Each image is dynamically sized based on display)
 #define CACHE_HEADER_ADDR           0x000000
-#define CACHE_SLOTS_START_ADDR      0x010000
-#define MAX_SLOTS                   100
+#define CACHE_SLOTS_START_ADDR      256
+#define BLOCK_SIZE                  (((uint32_t)DISPLAY_WIDTH * DISPLAY_HEIGHT) / 8)
+#define MAX_SLOTS                   (SRAM_SIZE / BLOCK_SIZE)
 
 struct CacheHeader {
   char magic[4];              // "INKF"
@@ -31,8 +34,6 @@ struct CacheHeader {
   uint32_t height;
   uint32_t total_slots;       // How many slots are populated
 };
-
-// Class to manage cache
 
 class FlashCache {
 private:
@@ -46,25 +47,13 @@ private:
     digitalWrite(csPin, HIGH);
   }
 
-  void writeEnable() {
+  void setSequentialMode() {
     SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
     select();
-    SPI.transfer(FLASH_CMD_WRITE_ENABLE);
+    SPI.transfer(SRAM_CMD_WRMR);
+    SPI.transfer(SRAM_MODE_SEQUENTIAL);
     deselect();
     SPI.endTransaction();
-  }
-
-  void waitBusy() {
-    while (true) {
-      SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
-      select();
-      SPI.transfer(FLASH_CMD_READ_STATUS_1);
-      uint8_t status = SPI.transfer(0);
-      deselect();
-      SPI.endTransaction();
-      if ((status & 0x01) == 0) break; // Check Write In Progress (WIP) bit
-      delay(1);
-    }
   }
 
 public:
@@ -73,50 +62,38 @@ public:
   void begin() {
     pinMode(csPin, OUTPUT);
     deselect();
+    setSequentialMode();
   }
 
   void eraseBlock64K(uint32_t address) {
-    writeEnable();
-    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
-    select();
-    SPI.transfer(FLASH_CMD_BLOCK_ERASE_64K);
-    SPI.transfer((address >> 16) & 0xFF);
-    SPI.transfer((address >> 8) & 0xFF);
-    SPI.transfer(address & 0xFF);
-    deselect();
-    SPI.endTransaction();
-    waitBusy();
+    // SRAM does not need erasing! No-op.
   }
 
   void writeData(uint32_t address, const uint8_t* buffer, uint32_t length) {
-    uint32_t bytesWritten = 0;
-    while (bytesWritten < length) {
-      uint32_t pageAddr = address + bytesWritten;
-      uint32_t maxWrite = 256 - (pageAddr % 256); // Don't cross 256-byte page boundary
-      uint32_t chunk = min(maxWrite, length - bytesWritten);
+    if (address + length > SRAM_SIZE) return;
 
-      writeEnable();
-      SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
-      select();
-      SPI.transfer(FLASH_CMD_PAGE_PROGRAM);
-      SPI.transfer((pageAddr >> 16) & 0xFF);
-      SPI.transfer((pageAddr >> 8) & 0xFF);
-      SPI.transfer(pageAddr & 0xFF);
-      for (uint32_t i = 0; i < chunk; i++) {
-        SPI.transfer(buffer[bytesWritten + i]);
-      }
-      deselect();
-      SPI.endTransaction();
-      waitBusy();
-
-      bytesWritten += chunk;
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    select();
+    SPI.transfer(SRAM_CMD_WRITE);
+    SPI.transfer((address >> 16) & 0xFF);
+    SPI.transfer((address >> 8) & 0xFF);
+    SPI.transfer(address & 0xFF);
+    for (uint32_t i = 0; i < length; i++) {
+      SPI.transfer(buffer[i]);
     }
+    deselect();
+    SPI.endTransaction();
   }
 
   void readData(uint32_t address, uint8_t* buffer, uint32_t length) {
+    if (address + length > SRAM_SIZE) {
+      memset(buffer, 0, length);
+      return;
+    }
+
     SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
     select();
-    SPI.transfer(FLASH_CMD_READ_DATA);
+    SPI.transfer(SRAM_CMD_READ);
     SPI.transfer((address >> 16) & 0xFF);
     SPI.transfer((address >> 8) & 0xFF);
     SPI.transfer(address & 0xFF);
@@ -135,13 +112,12 @@ public:
 
   // Writes new header
   void saveHeader(const CacheHeader& header) {
-    eraseBlock64K(CACHE_HEADER_ADDR);
     writeData(CACHE_HEADER_ADDR, (const uint8_t*)&header, sizeof(CacheHeader));
   }
 
   // Clear cache and write new signature
   void initCache(const String& newSignature, uint32_t w, uint32_t h) {
-    Serial.println(F("[Cache] Invalidation triggered. Re-initializing SPI Flash..."));
+    Serial.println(F("[Cache] Invalidation triggered. Re-initializing SPI RAM..."));
     CacheHeader header;
     strncpy(header.magic, "INKF", 4);
     memset(header.signature, 0, 32);
@@ -153,43 +129,52 @@ public:
     Serial.println(F("[Cache] Initialized successfully."));
   }
 
-  // Write stream directly to a slot in Flash memory (chunked pages to minimize RAM)
+  // Write stream directly to a slot in RAM memory
   bool writeSlot(uint32_t slotIndex, WiFiClient& stream, uint32_t totalBytes) {
     uint32_t startAddr = CACHE_SLOTS_START_ADDR + (slotIndex * BLOCK_SIZE);
-    Serial.print(F("[Cache] Erasing slot block at 0x"));
+    if (startAddr + totalBytes > SRAM_SIZE) {
+      Serial.print(F("[Cache Error] Slot "));
+      Serial.print(slotIndex);
+      Serial.println(F(" exceeds onboard 128KB SRAM capacity. Skipping cache write."));
+      return false;
+    }
+
+    Serial.print(F("[Cache] Writing stream directly to SPI RAM slot address 0x"));
     Serial.println(startAddr, HEX);
-    eraseBlock64K(startAddr);
 
-    uint8_t pageBuf[256];
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    select();
+    SPI.transfer(SRAM_CMD_WRITE);
+    SPI.transfer((startAddr >> 16) & 0xFF);
+    SPI.transfer((startAddr >> 8) & 0xFF);
+    SPI.transfer(startAddr & 0xFF);
+
     uint32_t bytesWritten = 0;
-
-    Serial.println(F("[Cache] Writing stream directly to SPI Flash slot..."));
     unsigned long timeout = millis();
 
     while (bytesWritten < totalBytes) {
-      uint32_t chunk = min((uint32_t)256, totalBytes - bytesWritten);
-      uint32_t bytesRead = 0;
-
-      while (bytesRead < chunk) {
-        if (stream.available() > 0) {
-          pageBuf[bytesRead++] = stream.read();
-          timeout = millis();
-        } else if (!stream.connected()) {
-          Serial.println(F("[Cache Error] Stream disconnected."));
-          return false;
-        } else if (millis() - timeout > 3000) {
-          Serial.println(F("[Cache Error] Read timeout."));
-          return false;
-        }
+      if (stream.available() > 0) {
+        SPI.transfer(stream.read());
+        bytesWritten++;
+        timeout = millis();
+      } else if (!stream.connected()) {
+        deselect();
+        SPI.endTransaction();
+        Serial.println(F("[Cache Error] Stream disconnected."));
+        return false;
+      } else if (millis() - timeout > 3000) {
+        deselect();
+        SPI.endTransaction();
+        Serial.println(F("[Cache Error] Read timeout."));
+        return false;
       }
-
-      writeData(startAddr + bytesWritten, pageBuf, chunk);
-      bytesWritten += chunk;
     }
 
+    deselect();
+    SPI.endTransaction();
     Serial.print(F("[Cache] Successfully wrote "));
     Serial.print(bytesWritten);
-    Serial.println(F(" bytes to Flash."));
+    Serial.println(F(" bytes to RAM."));
     return true;
   }
 };

@@ -476,7 +476,7 @@ bool fetchAndStreamDisplay(String action) {
   }
 
   // --- HEADER PARSED AND SYNC ROUTINES ---
-  if (carouselSig.length() > 0) {
+  if (carouselSig.length() > 0 && serverImageIndex < MAX_SLOTS) {
     CacheHeader localHeader;
     bool hasHeader = cache.getHeader(localHeader);
 
@@ -492,14 +492,14 @@ bool fetchAndStreamDisplay(String action) {
       Serial.print(F("[Cache] Image is already cached in Slot "));
       Serial.println(serverImageIndex);
       
-      // Stop connection & stream local image from SPI Flash
+      // Stop connection & stream local image from SPI RAM
       client.stop();
       displayCachedImage(serverImageIndex);
       return true;
     }
 
-    // Otherwise, direct incoming download stream directly into SPI Flash
-    Serial.print(F("[Cache] Image not cached. Downloading to Flash Slot "));
+    // Otherwise, direct incoming download stream directly into SPI RAM
+    Serial.print(F("[Cache] Image not cached. Downloading to RAM Slot "));
     Serial.println(serverImageIndex);
 
     bool success = cache.writeSlot(serverImageIndex, client, totalImageBytes);
@@ -514,7 +514,7 @@ bool fetchAndStreamDisplay(String action) {
       displayCachedImage(serverImageIndex);
       return true;
     } else {
-      Serial.println(F("[Cache Error] Failed to write stream to Flash slot."));
+      Serial.println(F("[Cache Error] Failed to write stream to RAM slot."));
       return false;
     }
   }
