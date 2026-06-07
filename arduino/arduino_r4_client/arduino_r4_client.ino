@@ -138,16 +138,16 @@ void setup() {
   Modulino.begin();
   buttons.begin();
 
+  // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise first
+  pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH);
+  pinMode(SD_CS,  OUTPUT); digitalWrite(SD_CS,  HIGH);
+  pinMode(EPD_CS, OUTPUT); digitalWrite(EPD_CS, HIGH);
+
   // Initialize SPI bus interface
   SPI.begin();
 
   // Initialize SPI Flash Cache
   cache.begin();
-
-  // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise
-  pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH);
-  pinMode(SD_CS,  OUTPUT); digitalWrite(SD_CS,  HIGH);
-  pinMode(EPD_CS, OUTPUT); digitalWrite(EPD_CS, HIGH);
 
   // Perform SPI RAM Self-Test
   Serial.println(F("[Cache] Running SPI RAM Self-Test..."));
