@@ -1357,7 +1357,7 @@ async function startTelemetryLoop() {
       
       // Update circular load gauge
       const val = Math.min(100, Math.max(0, data.cpuUsage || 0));
-      cpuText.innerText = `${val}%`;
+      cpuText.textContent = `${val}%`;
       cpuChart.setAttribute('stroke-dasharray', `${val}, 100`);
       
       // Update metadata text
