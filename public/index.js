@@ -1253,7 +1253,8 @@ function drawTelemetryGraph() {
   
   const paddingX = 8;
   const paddingY = 8;
-  const graphWidth = width - 2 * paddingX;
+  const plotStartX = paddingX + 55;
+  const plotWidth = width - paddingX - plotStartX;
   const graphHeight = height - 2 * paddingY;
   
   // Draw grid lines
@@ -1262,7 +1263,7 @@ function drawTelemetryGraph() {
   for (let i = 1; i < 4; i++) {
     const yLine = paddingY + (i / 4) * graphHeight;
     ctx.beginPath();
-    ctx.moveTo(paddingX, yLine);
+    ctx.moveTo(plotStartX, yLine);
     ctx.lineTo(width - paddingX, yLine);
     ctx.stroke();
   }
@@ -1281,7 +1282,7 @@ function drawTelemetryGraph() {
       const val = telemetryHistory[i][key];
       const pct = Math.min(100, Math.max(0, val)) / maxVal;
       
-      const x = paddingX + (i / (maxTelemetryPoints - 1)) * graphWidth;
+      const x = plotStartX + (i / (maxTelemetryPoints - 1)) * plotWidth;
       const y = height - paddingY - pct * graphHeight;
       
       if (i === 0) {
@@ -1301,16 +1302,19 @@ function drawTelemetryGraph() {
   drawLine('ramFree', '#00e676', 100);
   drawLine('cpu', '#00f0ff', 100);
 
-  // Draw Vertical Axis Range Labels (top/bottom)
+  // Draw Vertical Axis Range Labels (top/middle/bottom)
   ctx.fillStyle = 'rgba(255,255,255,0.38)';
   ctx.font = '8px monospace';
   
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillText('100% / 100°C', paddingX + 2, paddingY + 2);
+  ctx.fillText('100% / 100°C', paddingX + 2, paddingY);
+  
+  ctx.textBaseline = 'middle';
+  ctx.fillText('50% / 50°C', paddingX + 2, paddingY + graphHeight / 2);
   
   ctx.textBaseline = 'bottom';
-  ctx.fillText('0% / 0°C', paddingX + 2, height - paddingY - 2);
+  ctx.fillText('0% / 0°C', paddingX + 2, height - paddingY);
 
   // Draw Legend vertically aligned at top-right
   const drawLegend = () => {
