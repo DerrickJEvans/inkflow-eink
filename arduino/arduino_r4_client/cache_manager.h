@@ -48,7 +48,7 @@ private:
   }
 
   void setSequentialMode() {
-    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     select();
     SPI.transfer(SRAM_CMD_WRMR);
     SPI.transfer(SRAM_MODE_SEQUENTIAL);
@@ -72,7 +72,7 @@ public:
   void writeData(uint32_t address, const uint8_t* buffer, uint32_t length) {
     if (address + length > SRAM_SIZE) return;
 
-    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     select();
     SPI.transfer(SRAM_CMD_WRITE);
     SPI.transfer((address >> 16) & 0xFF);
@@ -91,7 +91,7 @@ public:
       return;
     }
 
-    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     select();
     SPI.transfer(SRAM_CMD_READ);
     SPI.transfer((address >> 16) & 0xFF);
@@ -165,7 +165,7 @@ public:
       }
 
       // Write chunk to SRAM sequentially (asserting RAM_CS only for the write transaction)
-      SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
+      SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
       select();
       SPI.transfer(SRAM_CMD_WRITE);
       uint32_t currentAddr = startAddr + bytesWritten;

@@ -34,6 +34,7 @@ int nextRefreshSeconds = fallbackSleepSeconds;
 ModulinoButtons buttons;
 FlashCache cache(RAM_CS);
 int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
+bool cacheEnabled = false; // Flag to track if the SPI RAM cache is functional after self-test
 
 String scannedSSIDs[20];
 int scannedSSIDCount = 0;
@@ -163,8 +164,10 @@ void setup() {
   Serial.println();
   if (testRead[0] == 0xDE && testRead[1] == 0xAD && testRead[2] == 0xBE && testRead[3] == 0xEF) {
     Serial.println(F("[Cache] Self-Test PASSED!"));
+    cacheEnabled = true;
   } else {
-    Serial.println(F("[Cache] Self-Test FAILED!"));
+    Serial.println(F("[Cache] Self-Test FAILED! Caching disabled."));
+    cacheEnabled = false;
   }
 
   // Load configuration from EEPROM
@@ -197,32 +200,40 @@ void loop() {
 
   // Button A (Left) -> Previous Image in Cache
   if (buttons.isPressed(0)) {
-    CacheHeader header;
-    if (cache.getHeader(header) && header.total_slots > 0) {
-      if (currentCacheSlot == -1) currentCacheSlot = 0;
-      currentCacheSlot = (currentCacheSlot - 1 + header.total_slots) % header.total_slots;
-      Serial.print(F("[Buttons] Left pressed. Browsing to slot "));
-      Serial.println(currentCacheSlot);
-      displayCachedImage(currentCacheSlot);
-      userBrowseTime = millis(); // Mark user browsing active
+    if (!cacheEnabled) {
+      Serial.println(F("[Buttons] Left pressed, but cache is disabled (Self-Test failed)."));
     } else {
-      Serial.println(F("[Buttons] Left pressed, but cache is empty."));
+      CacheHeader header;
+      if (cache.getHeader(header) && header.total_slots > 0) {
+        if (currentCacheSlot == -1) currentCacheSlot = 0;
+        currentCacheSlot = (currentCacheSlot - 1 + header.total_slots) % header.total_slots;
+        Serial.print(F("[Buttons] Left pressed. Browsing to slot "));
+        Serial.println(currentCacheSlot);
+        displayCachedImage(currentCacheSlot);
+        userBrowseTime = millis(); // Mark user browsing active
+      } else {
+        Serial.println(F("[Buttons] Left pressed, but cache is empty."));
+      }
     }
     delay(300); // Debounce
   }
 
   // Button B (Middle) -> Next Image in Cache
   if (buttons.isPressed(1)) {
-    CacheHeader header;
-    if (cache.getHeader(header) && header.total_slots > 0) {
-      if (currentCacheSlot == -1) currentCacheSlot = 0;
-      currentCacheSlot = (currentCacheSlot + 1) % header.total_slots;
-      Serial.print(F("[Buttons] Middle pressed. Browsing to slot "));
-      Serial.println(currentCacheSlot);
-      displayCachedImage(currentCacheSlot);
-      userBrowseTime = millis(); // Mark user browsing active
+    if (!cacheEnabled) {
+      Serial.println(F("[Buttons] Middle pressed, but cache is disabled (Self-Test failed)."));
     } else {
-      Serial.println(F("[Buttons] Middle pressed, but cache is empty."));
+      CacheHeader header;
+      if (cache.getHeader(header) && header.total_slots > 0) {
+        if (currentCacheSlot == -1) currentCacheSlot = 0;
+        currentCacheSlot = (currentCacheSlot + 1) % header.total_slots;
+        Serial.print(F("[Buttons] Middle pressed. Browsing to slot "));
+        Serial.println(currentCacheSlot);
+        displayCachedImage(currentCacheSlot);
+        userBrowseTime = millis(); // Mark user browsing active
+      } else {
+        Serial.println(F("[Buttons] Middle pressed, but cache is empty."));
+      }
     }
     delay(300); // Debounce
   }
@@ -267,12 +278,12 @@ void loop() {
 
 void loadOfflineCache() {
   CacheHeader header;
-  if (cache.getHeader(header) && header.total_slots > 0) {
+  if (cacheEnabled && cache.getHeader(header) && header.total_slots > 0) {
     Serial.println(F("[Cache] Loading Offline Cache Slot 0..."));
     currentCacheSlot = 0;
     displayCachedImage(0);
   } else {
-    Serial.println(F("[Cache Error] No offline cache found."));
+    Serial.println(F("[Cache Error] No offline cache found or cache is disabled."));
     drawErrorSplashDirect("Offline & No Cache", "Please connect to WiFi", "to download images.");
   }
 }
@@ -494,7 +505,7 @@ bool fetchAndStreamDisplay(String action) {
   }
 
   // --- HEADER PARSED AND SYNC ROUTINES ---
-  if (carouselSig.length() > 0 && serverImageIndex < MAX_SLOTS) {
+  if (cacheEnabled && carouselSig.length() > 0 && serverImageIndex < MAX_SLOTS) {
     CacheHeader localHeader;
     bool hasHeader = cache.getHeader(localHeader);
 
