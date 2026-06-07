@@ -1001,6 +1001,10 @@ function updateGuides(device) {
 const widgetConfigTemplates = {
   weather: (settings) => `
     <div class="inline-config-form">
+      <div class="form-group mb-3">
+        <label>UK Postcode (Optional)</label>
+        <input type="text" class="inline-cfg-postcode" placeholder="e.g. SW1A 1AA" value="${settings.postcode || ''}">
+      </div>
       <div class="form-row">
         <div class="form-group col-6">
           <label>Latitude</label>
@@ -1877,6 +1881,7 @@ function renderHostedWidgetsList(filterText = '') {
         // Grab inputs inside this card
         if (plugin.id === 'weather') {
           serverConfig.settings.weather = {
+            postcode: configWrapper.querySelector('.inline-cfg-postcode').value.trim() || '',
             latitude: parseFloat(configWrapper.querySelector('.inline-cfg-lat').value) || 51.5074,
             longitude: parseFloat(configWrapper.querySelector('.inline-cfg-lon').value) || -0.1278,
             unit: configWrapper.querySelector('.inline-cfg-unit').value
