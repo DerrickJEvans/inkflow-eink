@@ -24,6 +24,7 @@
 #include <Arduino_Modulino.h>
 #include "config.h"
 #include "logo.h"
+#include "cache_manager.h"
 
 Epd epd;
 WiFiClient client;
@@ -31,6 +32,8 @@ WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
 
 ModulinoButtons buttons;
+FlashCache cache(RAM_CS);
+int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
 
 String scannedSSIDs[20];
 int scannedSSIDCount = 0;
@@ -69,6 +72,9 @@ void drawErrorSplashDirect(String errorMsg, String detail1, String detail2);
 String parseUrlParam(String body, String paramName);
 String urlDecode(String str);
 unsigned char h2d(char hex);
+void displayCachedImage(int slotIndex);
+void loadOfflineCache();
+bool connectWiFi();
 
 // Reads EEPROM settings, falling back to config.h defaults on first run
 void loadConfiguration() {
@@ -120,6 +126,9 @@ void saveConfiguration(const char* ssidVal, const char* passVal, const char* hos
 // ==========================================
 //                  SETUP
 // ==========================================
+unsigned long lastSyncTime = 0;
+unsigned long userBrowseTime = 0;
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -129,6 +138,9 @@ void setup() {
   Modulino.begin();
   buttons.begin();
 
+  // Initialize SPI Flash Cache
+  cache.begin();
+
   // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise
   pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH);
   pinMode(SD_CS,  OUTPUT); digitalWrite(SD_CS,  HIGH);
@@ -137,77 +149,145 @@ void setup() {
   // Load configuration from EEPROM
   loadConfiguration();
 
-  // Check action settings from EEPROM (address 500)
-  uint8_t actionVal = EEPROM.read(500);
-  String actionStr = "";
-  if (actionVal == 1) {
-    actionStr = "prev";
-    Serial.println(F("[Buttons] EEPROM stored Action: Fetching PREVIOUS image."));
-  } else if (actionVal == 2) {
-    actionStr = "next";
-    Serial.println(F("[Buttons] EEPROM stored Action: Fetching NEXT image."));
-  }
-  // Clear action code in EEPROM
-  if (actionVal != 0) {
-    EEPROM.write(500, 0);
-  }
-
   // Initialize WiFi connection
   if (strlen(activeConfig.wifi_ssid) == 0 || strcmp(activeConfig.wifi_ssid, "YOUR_WIFI_SSID") == 0) {
-    Serial.println(F("[Config] WiFi SSID unconfigured or default template. Launching Setup Wizard AP..."));
+    Serial.println(F("[Config] WiFi SSID unconfigured. Launching Setup Wizard AP..."));
     startSetupWizard();
-  } else if (connectWiFi()) {
-    // Connect to server and stream incoming byte data directly to e-Paper RAM
-    if (fetchAndStreamDisplay(actionStr)) {
-      Serial.println(F("[Success] Screen updated."));
+  } else {
+    // Attempt connecting to WiFi
+    if (connectWiFi()) {
+      if (fetchAndStreamDisplay()) {
+        Serial.println(F("[Success] Initial screen synced."));
+      } else {
+        Serial.println(F("[Warning] Initial stream failed. Checking cache..."));
+        loadOfflineCache();
+      }
     } else {
-      Serial.println(F("[Warning] Display fetch or stream failed."));
+      Serial.println(F("[Warning] Initial WiFi connection failed. Checking cache..."));
+      loadOfflineCache();
     }
-    
-    // Shut down radios safely to conserve energy
-    WiFi.disconnect();
-    WiFi.end();
   }
-  
-  // Safe Deep sleep loop simulation block with Modulino Button Polling
-  Serial.print(F("Entering deep wait loop phase (monitoring buttons): "));
-  Serial.print(nextRefreshSeconds);
-  Serial.println(F(" seconds..."));
-  
-  unsigned long startWait = millis();
-  unsigned long waitDuration = (unsigned long)nextRefreshSeconds * 1000;
-  
-  while (millis() - startWait < waitDuration) {
-    buttons.update();
-    if (buttons.isPressed(0)) { // Button A
-      Serial.println(F("[Buttons] Button A pressed: Requesting PREVIOUS image..."));
-      EEPROM.write(500, 1);
-      delay(100);
-      NVIC_SystemReset();
-    }
-    if (buttons.isPressed(1)) { // Button B
-      Serial.println(F("[Buttons] Button B pressed: Requesting NEXT image..."));
-      EEPROM.write(500, 2);
-      delay(100);
-      NVIC_SystemReset();
-    }
-    if (buttons.isPressed(2)) { // Button C
-      Serial.println(F("[Buttons] Button C pressed: Resetting settings to open Setup AP..."));
-      memset(&activeConfig, 0, sizeof(EEPROMConfig));
-      EEPROM.put(0, activeConfig);
-      delay(100);
-      NVIC_SystemReset();
-    }
-    delay(20);
-  }
-  
-  // Force R4 board level software restart to run the execution loop fresh
-  Serial.println(F("Restarting script environment..."));
-  NVIC_SystemReset(); 
+
+  lastSyncTime = millis();
 }
 
 void loop() {
-  // Setup block uses an absolute execution loop structure; loop remains empty.
+  buttons.update();
+
+  // Button A (Left) -> Previous Image in Cache
+  if (buttons.isPressed(0)) {
+    CacheHeader header;
+    if (cache.getHeader(header) && header.total_slots > 0) {
+      if (currentCacheSlot == -1) currentCacheSlot = 0;
+      currentCacheSlot = (currentCacheSlot - 1 + header.total_slots) % header.total_slots;
+      Serial.print(F("[Buttons] Left pressed. Browsing to slot "));
+      Serial.println(currentCacheSlot);
+      displayCachedImage(currentCacheSlot);
+      userBrowseTime = millis(); // Mark user browsing active
+    } else {
+      Serial.println(F("[Buttons] Left pressed, but cache is empty."));
+    }
+    delay(300); // Debounce
+  }
+
+  // Button B (Middle) -> Next Image in Cache
+  if (buttons.isPressed(1)) {
+    CacheHeader header;
+    if (cache.getHeader(header) && header.total_slots > 0) {
+      if (currentCacheSlot == -1) currentCacheSlot = 0;
+      currentCacheSlot = (currentCacheSlot + 1) % header.total_slots;
+      Serial.print(F("[Buttons] Middle pressed. Browsing to slot "));
+      Serial.println(currentCacheSlot);
+      displayCachedImage(currentCacheSlot);
+      userBrowseTime = millis(); // Mark user browsing active
+    } else {
+      Serial.println(F("[Buttons] Middle pressed, but cache is empty."));
+    }
+    delay(300); // Debounce
+  }
+
+  // Button C (Right) -> Force configuration reset
+  if (buttons.isPressed(2)) {
+    Serial.println(F("[Buttons] Right pressed. Resetting configuration EEPROM..."));
+    memset(&activeConfig, 0, sizeof(EEPROMConfig));
+    EEPROM.put(0, activeConfig);
+    delay(500);
+    NVIC_SystemReset();
+  }
+
+  // Handle periodic server synchronization
+  unsigned long now = millis();
+  // If user is actively browsing, wait 2 minutes (120s) before resuming auto-sync. Otherwise sync at normal interval
+  unsigned long activeInterval = (now - userBrowseTime < 120000) ? 120000 : ((unsigned long)nextRefreshSeconds * 1000);
+
+  if (now - lastSyncTime >= activeInterval) {
+    lastSyncTime = now;
+    Serial.println(F("[Sync] Checking server for updates..."));
+    
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println(F("[Sync] WiFi disconnected. Attempting reconnect..."));
+      connectWiFi();
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      currentCacheSlot = -1; // Reset to live mode
+      if (fetchAndStreamDisplay()) {
+        Serial.println(F("[Sync] Success. Cache updated and display refreshed."));
+      } else {
+        Serial.println(F("[Sync Warning] Sync failed."));
+      }
+    } else {
+      Serial.println(F("[Sync Warning] WiFi unavailable. Staying in offline cache mode."));
+    }
+  }
+
+  delay(20);
+}
+
+void loadOfflineCache() {
+  CacheHeader header;
+  if (cache.getHeader(header) && header.total_slots > 0) {
+    Serial.println(F("[Cache] Loading Offline Cache Slot 0..."));
+    currentCacheSlot = 0;
+    displayCachedImage(0);
+  } else {
+    Serial.println(F("[Cache Error] No offline cache found."));
+    drawErrorSplashDirect("Offline & No Cache", "Please connect to WiFi", "to download images.");
+  }
+}
+
+void displayCachedImage(int slotIndex) {
+  Serial.print(F("[Display] Displaying cached image from Slot "));
+  Serial.println(slotIndex);
+
+  // Initialize display CS lines
+  pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH); // Disable Flash SPI CS first
+  
+  if (epd.Init() != 0) {
+     Serial.println(F("[Error] E-Paper init failed during cache read."));
+     return;
+  }
+  epd.SendCommand(0x24);
+
+  // Read data from Flash in 64-byte chunks and send to EPD
+  uint32_t startAddr = CACHE_SLOTS_START_ADDR + ((uint32_t)slotIndex * BLOCK_SIZE);
+  uint8_t tempBuf[64];
+
+  for (uint32_t i = 0; i < totalImageBytes; i += 64) {
+    cache.readData(startAddr + i, tempBuf, 64);
+    for (int j = 0; j < 64; j++) {
+      epd.SendData(tempBuf[j]);
+    }
+  }
+
+  // Trigger physical E-Paper refresh sequence
+  Serial.println(F("[Display] Triggering physical screen refresh..."));
+  epd.SendCommand(0x22); 
+  epd.SendData(0xF7); 
+  epd.SendCommand(0x20); 
+  EPD_WAIT_BUSY(epd);
+  epd.Sleep();
+  Serial.println(F("[Display] Cache screen update finished."));
 }
 
 // ==========================================
@@ -222,7 +302,6 @@ bool fetchAndStreamDisplay(String action) {
 
   if (!client.connect(activeConfig.server_host, activeConfig.server_port)) {
     Serial.println(F("[Error] Web Server connection failed."));
-    drawErrorSplashDirect("Server Offline", "Host: " + String(activeConfig.server_host), "Port: " + String(activeConfig.server_port));
     return false;
   }
 
@@ -232,8 +311,6 @@ bool fetchAndStreamDisplay(String action) {
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X", 
            mac[5], mac[4], mac[3], mac[2], mac[1], mac[0]);
-  Serial.print(F("[WiFi] Dynamic hardware MAC address for InkFlow ID: "));
-  Serial.println(macStr);
 
   // Send standard HTTP GET request with TRMNL headers
   client.print(F("GET /api/display/raw?device="));
@@ -268,7 +345,6 @@ bool fetchAndStreamDisplay(String action) {
   while (client.available() == 0) {
     if (millis() - timeout > 5000) {
       Serial.println(F("[Error] Client HTTP connection timeout."));
-      drawErrorSplashDirect("HTTP Timeout", "No response from server", "within 5 seconds.");
       client.stop();
       return false;
     }
@@ -282,6 +358,10 @@ bool fetchAndStreamDisplay(String action) {
   bool isFirstLine = true;
   timeout = millis();
   
+  String carouselSig = "";
+  int serverImageIndex = 0;
+  int serverTotalImages = 1;
+
   while (client.connected() || client.available() > 0) {
     if (client.available() > 0) {
       char c = client.read();
@@ -301,15 +381,24 @@ bool fetchAndStreamDisplay(String action) {
           if (currentLine.indexOf(" 200") == -1) {
             Serial.print(F("[Error] Bad HTTP status: "));
             Serial.println(currentLine);
-            drawErrorSplashDirect("HTTP Status Error", currentLine, "Please check server endpoints.");
             client.stop();
             return false;
           }
         }
 
+        // Print the header for visibility and debugging
+        if (currentLine.length() > 0) {
+          Serial.print(F("[HTTP Header] "));
+          Serial.println(currentLine);
+        }
+
+        // Convert a copy of currentLine to lowercase for case-insensitive matching
+        String lowerLine = currentLine;
+        lowerLine.toLowerCase();
+
         // Line complete, check for custom refresh rate headers
-        if (currentLine.startsWith("X-Refresh-Rate:")) {
-          int colonIdx = currentLine.indexOf(':');
+        if (lowerLine.startsWith("x-refresh-rate:")) {
+          int colonIdx = lowerLine.indexOf(':');
           if (colonIdx != -1) {
             String valStr = currentLine.substring(colonIdx + 1);
             valStr.trim();
@@ -322,9 +411,9 @@ bool fetchAndStreamDisplay(String action) {
               Serial.println(F(" seconds"));
             }
           }
-        } else if (currentLine.startsWith("X-Trmnl-Deep-Sleep:")) {
+        } else if (lowerLine.startsWith("x-trmnl-deep-sleep:")) {
           if (!hasRefreshRateHeader) {
-            int colonIdx = currentLine.indexOf(':');
+            int colonIdx = lowerLine.indexOf(':');
             if (colonIdx != -1) {
               String valStr = currentLine.substring(colonIdx + 1);
               valStr.trim();
@@ -336,6 +425,32 @@ bool fetchAndStreamDisplay(String action) {
                 Serial.println(F(" seconds"));
               }
             }
+          }
+        } else if (lowerLine.startsWith("x-carousel-signature:")) {
+          int colonIdx = lowerLine.indexOf(':');
+          if (colonIdx != -1) {
+            carouselSig = currentLine.substring(colonIdx + 1);
+            carouselSig.trim();
+            Serial.print(F("[Header] Server Signature matched: "));
+            Serial.println(carouselSig);
+          }
+        } else if (lowerLine.startsWith("x-image-index:")) {
+          int colonIdx = lowerLine.indexOf(':');
+          if (colonIdx != -1) {
+            String val = currentLine.substring(colonIdx + 1);
+            val.trim();
+            serverImageIndex = val.toInt();
+            Serial.print(F("[Header] Server Image Index matched: "));
+            Serial.println(serverImageIndex);
+          }
+        } else if (lowerLine.startsWith("x-total-images:")) {
+          int colonIdx = lowerLine.indexOf(':');
+          if (colonIdx != -1) {
+            String val = currentLine.substring(colonIdx + 1);
+            val.trim();
+            serverTotalImages = val.toInt();
+            Serial.print(F("[Header] Server Total Images matched: "));
+            Serial.println(serverTotalImages);
           }
         }
         currentLine = "";
@@ -352,17 +467,59 @@ bool fetchAndStreamDisplay(String action) {
     }
     if (millis() - timeout > 3000) {
       Serial.println(F("[Error] Timeout waiting for header boundary."));
-      drawErrorSplashDirect("HTTP Header Error", "Failed to parse response", "headers from server.");
       client.stop();
       return false;
     }
   }
 
-  // Initialise E-Paper controller lines
-  Serial.println(F("Initializing E-Paper controller lines..."));
+  // --- HEADER PARSED AND SYNC ROUTINES ---
+  if (carouselSig.length() > 0) {
+    CacheHeader localHeader;
+    bool hasHeader = cache.getHeader(localHeader);
+
+    // Invalidate if signature doesn't match
+    if (!hasHeader || strncmp(localHeader.signature, carouselSig.c_str(), 32) != 0) {
+      Serial.println(F("[Cache] Signature mismatch or no cache. Invalidate cache..."));
+      cache.initCache(carouselSig, displayWidth, displayHeight);
+      hasHeader = cache.getHeader(localHeader); // Reload updated header
+    }
+
+    // Check if we already have this image slot cached
+    if (hasHeader && serverImageIndex < (int)localHeader.total_slots) {
+      Serial.print(F("[Cache] Image is already cached in Slot "));
+      Serial.println(serverImageIndex);
+      
+      // Stop connection & stream local image from SPI Flash
+      client.stop();
+      displayCachedImage(serverImageIndex);
+      return true;
+    }
+
+    // Otherwise, direct incoming download stream directly into SPI Flash
+    Serial.print(F("[Cache] Image not cached. Downloading to Flash Slot "));
+    Serial.println(serverImageIndex);
+
+    bool success = cache.writeSlot(serverImageIndex, client, totalImageBytes);
+    client.stop();
+
+    if (success) {
+      // Save new slot count in header
+      if (serverImageIndex >= (int)localHeader.total_slots) {
+        localHeader.total_slots = serverImageIndex + 1;
+        cache.saveHeader(localHeader);
+      }
+      displayCachedImage(serverImageIndex);
+      return true;
+    } else {
+      Serial.println(F("[Cache Error] Failed to write stream to Flash slot."));
+      return false;
+    }
+  }
+
+  // --- FALLBACK DIRECT BINARY STREAM TO DISPLAY (if no caching signature) ---
+  Serial.println(F("Initializing E-Paper controller lines (No Cache Fallback)..."));
   if (epd.Init() != 0) {
      Serial.println(F("[Error] Display initialization step failed."));
-     drawErrorSplashDirect("Display Init Failed", "Cannot communicate with", "E-Paper shield over SPI.");
      client.stop();
      return false;
   }
@@ -388,7 +545,6 @@ bool fetchAndStreamDisplay(String action) {
     }
     else if (millis() - timeout > 4000) {
       Serial.println(F("[Error] Stream timed out mid-frame."));
-      drawErrorSplashDirect("Stream Timeout", "Connection lost while", "downloading display data.");
       break;
     }
   }

@@ -316,7 +316,21 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
 
   console.log(`[Renderer] Compiling screen elements for device: ${device.id} (Interval: ${refreshRate}s)...`);
   try {
+    const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
+    const totalImages = activePluginsList.length;
+    const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
+    
+    const crypto = require('crypto');
+    const signature = crypto.createHash('md5')
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings))
+      .digest('hex');
+
     const rendered = await renderDeviceImage(device, config.settings);
+    rendered.carouselSignature = signature;
+    rendered.imageIndex = renderedIndex;
+    rendered.totalImages = totalImages;
+    rendered.imageId = activePluginsList[renderedIndex] || 'default';
+
     saveConfig();
     
     // Update local cache and include the calculated refresh rate
@@ -1024,10 +1038,22 @@ app.get('/api/display/raw', async (req, res) => {
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepInterval = resolveDeepSleepInterval(device, rate);
 
+    const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
+    const totalImages = activePluginsList.length;
+    const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
+    const crypto = require('crypto');
+    const signature = crypto.createHash('md5')
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings))
+      .digest('hex');
+
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.setHeader('X-Refresh-Rate', rate.toString());
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
+    res.setHeader('X-Carousel-Signature', data.carouselSignature || signature);
+    res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
+    res.setHeader('X-Image-Index', (data.imageIndex !== undefined ? data.imageIndex : renderedIndex).toString());
+    res.setHeader('X-Total-Images', (data.totalImages !== undefined ? data.totalImages : totalImages).toString());
     res.send(data.raw);
   } catch (err) {
     console.error(err);
