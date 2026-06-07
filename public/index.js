@@ -1212,16 +1212,46 @@ function generateDynamicConfigForm(configFields, settings) {
 }
 
 // Toast indicator animation
+let toastTimeout = null;
 function showToast(message, isError = false) {
   const toast = document.getElementById('toast');
-  toast.innerText = message;
-  toast.style.background = isError ? 'rgba(255, 23, 68, 0.95)' : 'rgba(0, 230, 118, 0.95)';
-  toast.style.color = isError ? '#ffffff' : '#020604';
-  
-  toast.classList.add('show');
-  setTimeout(() => {
+  if (!toast) return;
+
+  if (toastTimeout) {
+    clearTimeout(toastTimeout);
+    toastTimeout = null;
+  }
+
+  if (isError) {
+    toast.innerText = message + "\n\n(Click to copy error details & dismiss)";
+    toast.style.background = 'rgba(255, 23, 68, 0.98)';
+    toast.style.color = '#ffffff';
+    toast.style.boxShadow = '0 4px 20px rgba(255, 23, 68, 0.45)';
+  } else {
+    toast.innerText = message;
+    toast.style.background = 'rgba(0, 230, 118, 0.95)';
+    toast.style.color = '#020604';
+    toast.style.boxShadow = '0 4px 15px rgba(0, 230, 118, 0.35)';
+  }
+
+  toast.onclick = () => {
+    if (isError) {
+      navigator.clipboard.writeText(message).then(() => {
+        console.log("Error details copied to clipboard!");
+      }).catch(err => {
+        console.error("Failed to copy error details to clipboard: ", err);
+      });
+    }
     toast.classList.remove('show');
-  }, 3000);
+  };
+
+  toast.classList.add('show');
+
+  // Success/info dismisses in 3.5 seconds. Errors persist for 15 seconds to allow reading.
+  const duration = isError ? 15000 : 3500;
+  toastTimeout = setTimeout(() => {
+    toast.classList.remove('show');
+  }, duration);
 }
 
 // Premium Dynamic Graph Renderer
@@ -1971,6 +2001,43 @@ let ollamaStatusInterval = null;
 let ollamaPullInterval = null;
 let savedOllamaModel = 'llama3.2:1b';
 
+// Helper to update active AI engine badges
+function updateEngineBadge(elementId, engine, selectedProvider) {
+  const badge = document.getElementById(elementId);
+  if (!badge) return;
+
+  badge.className = 'ollama-status-badge';
+  badge.title = '';
+
+  const formatEngineName = (name) => {
+    if (name === 'gemini') return 'Gemini';
+    if (name === 'groq') return 'Groq';
+    if (name === 'ollama') return 'Ollama';
+    return 'None';
+  };
+
+  if (!engine || engine === 'none') {
+    badge.innerText = 'Disabled';
+    badge.classList.add('disabled');
+  } else {
+    const formatted = formatEngineName(engine);
+    if (engine === 'ollama') {
+      badge.innerText = `Active: ${formatted} (Local)`;
+      badge.classList.add('local');
+    } else {
+      badge.innerText = `Active: ${formatted}`;
+      badge.classList.add('online');
+    }
+
+    // Highlight discrepancy/fallback if they don't match
+    if (selectedProvider && selectedProvider !== 'none' && selectedProvider !== engine) {
+      badge.innerText = `Fallback: ${formatted}`;
+      badge.className = 'ollama-status-badge offline';
+      badge.title = `Discrepancy: You selected ${formatEngineName(selectedProvider)} but the server fell back to ${formatted} (verify API keys).`;
+    }
+  }
+}
+
 // Fetch AI Environment configurations from server
 async function fetchAiEnvConfig() {
   try {
@@ -1980,6 +2047,9 @@ async function fetchAiEnvConfig() {
     
     document.getElementById('ai-env-builder-provider').value = data.widgetBuilderProvider;
     document.getElementById('ai-env-widgets-provider').value = data.dynamicWidgetsProvider;
+    
+    updateEngineBadge('ai-builder-active-engine', data.widgetBuilderEngine, data.widgetBuilderProvider);
+    updateEngineBadge('ai-widgets-active-engine', data.dynamicWidgetsEngine, data.dynamicWidgetsProvider);
     
     const geminiInput = document.getElementById('ai-env-gemini-key');
     if (geminiInput) {
@@ -2185,8 +2255,9 @@ function setupAiAdminTabListeners() {
         if (data.success) {
           showToast("AI Configurations hot-reloaded successfully!");
           
-          // Re-fetch global settings to align UI help states!
+          // Re-fetch global settings and AI status to align UI states!
           await fetchSettings();
+          await fetchAiEnvConfig();
         } else {
           showToast(data.error || "Failed to update configurations", true);
         }

@@ -681,6 +681,8 @@ app.get('/api/ai/env', (req, res) => {
       hasGroqKey: !!groqKey,
       widgetBuilderProvider: envVars.WIDGET_BUILDER_AI_PROVIDER || 'gemini',
       dynamicWidgetsProvider: envVars.DYNAMIC_WIDGETS_AI_PROVIDER || 'gemini',
+      widgetBuilderEngine: aiCore.getWidgetBuilderEngine(),
+      dynamicWidgetsEngine: aiCore.getDynamicWidgetsEngine(),
       ollamaHost: envVars.OLLAMA_HOST || 'http://127.0.0.1:11434',
       ollamaModel: envVars.OLLAMA_MODEL || 'llama3.2:1b'
     });

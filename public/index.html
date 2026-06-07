@@ -446,7 +446,10 @@
                 <p class="card-help">Determine which backend artificial intelligence engine powers your specific E-Ink cognitive features.</p>
                 
                 <div class="form-group mb-3 mt-3">
-                  <label for="ai-env-builder-provider">✨ Widget Builder Provider</label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="ai-env-builder-provider" style="margin-bottom: 0;">✨ Widget Builder Provider</label>
+                    <span id="ai-builder-active-engine" class="ollama-status-badge offline">Offline</span>
+                  </div>
                   <select id="ai-env-builder-provider" required>
                     <option value="gemini">Google Gemini (Recommended — gemini-2.5-pro)</option>
                     <option value="groq">Groq Cloud (Ultra-Fast Llama)</option>
@@ -457,7 +460,10 @@
                 </div>
 
                 <div class="form-group">
-                  <label for="ai-env-widgets-provider">📰 Dynamic AI Widgets Provider</label>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="ai-env-widgets-provider" style="margin-bottom: 0;">📰 Dynamic AI Widgets Provider</label>
+                    <span id="ai-widgets-active-engine" class="ollama-status-badge offline">Offline</span>
+                  </div>
                   <select id="ai-env-widgets-provider" required>
                     <option value="gemini">Google Gemini (Low-Latency gemini-2.5-flash-lite)</option>
                     <option value="groq">Groq Cloud (Llama 3)</option>

@@ -23,37 +23,19 @@ function initAiCore() {
   }
 
   // 1. Resolve Widget Builder Engine (Specific to complex SVG/code generation)
-  widgetBuilderEngine = "none";
+  widgetBuilderEngine = "gemini";
   const configBuilderProvider = process.env.WIDGET_BUILDER_AI_PROVIDER;
 
   if (configBuilderProvider && ["gemini", "groq", "ollama", "none"].includes(configBuilderProvider.toLowerCase())) {
     widgetBuilderEngine = configBuilderProvider.toLowerCase();
-  } else {
-    // Autodetect fallback
-    if (apiKey && apiKey !== 'your_gemini_api_key_here') {
-      widgetBuilderEngine = "gemini"; // Gemini Pro is the primary coding choice!
-    } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
-      widgetBuilderEngine = "groq";
-    } else if (ollamaEnabled) {
-      widgetBuilderEngine = "ollama";
-    }
   }
 
   // 2. Resolve Dynamic Widgets Engine (Specific to Daily Briefing, Telemetry Insights)
-  dynamicWidgetsEngine = "none";
+  dynamicWidgetsEngine = "gemini";
   const configWidgetsProvider = process.env.DYNAMIC_WIDGETS_AI_PROVIDER;
 
   if (configWidgetsProvider && ["gemini", "groq", "ollama", "none"].includes(configWidgetsProvider.toLowerCase())) {
     dynamicWidgetsEngine = configWidgetsProvider.toLowerCase();
-  } else {
-    // Autodetect fallback
-    if (apiKey && apiKey !== 'your_gemini_api_key_here') {
-      dynamicWidgetsEngine = "gemini";
-    } else if (groqKey && groqKey !== 'your_groq_api_key_here') {
-      dynamicWidgetsEngine = "groq";
-    } else if (ollamaEnabled) {
-      dynamicWidgetsEngine = "ollama";
-    }
   }
 
   console.log(`   ⚙️  [AI Core] Widget Builder engine: [${widgetBuilderEngine.toUpperCase()}]`);
@@ -86,6 +68,9 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
  * Groq completions fetcher (standard OpenAI compatibility)
  */
 const generateWithGroq = async (prompt, systemInstruction = null, context = "general") => {
+  if (!groqKey || groqKey === 'your_groq_api_key_here') {
+    throw new Error("Groq API key is not configured. Please add GROQ_API_KEY to your settings.");
+  }
   const modelName = context === "widget"
     ? (process.env.WIDGET_BUILDER_GROQ_MODEL || process.env.GROQ_MODEL || "llama-3.3-70b-specdec")
     : (process.env.DYNAMIC_WIDGETS_GROQ_MODEL || process.env.GROQ_MODEL || "llama-3.1-8b-instant");
@@ -155,6 +140,9 @@ const generateWithOllama = async (prompt, systemInstruction = null, context = "g
  * Google Gemini API generator with fallback models and retry capability
  */
 const generateWithGemini = async (prompt, systemInstruction = null, context = "general") => {
+  if (!genAI) {
+    throw new Error("Google Gemini API client is not initialized. Please configure your GEMINI_API_KEY in the dashboard.");
+  }
   // Use gemini-2.5-pro for high-fidelity code widget building, and gemini-2.5-flash-lite for lightweight daily text summaries!
   const primaryModelName = context === "widget" ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
   const fallbackModelName = "gemini-2.5-flash";

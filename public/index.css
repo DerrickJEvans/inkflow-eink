@@ -747,18 +747,25 @@ textarea:focus {
   position: fixed;
   bottom: 24px;
   right: 24px;
+  max-width: 600px;
+  max-width: calc(100vw - 48px);
   background: rgba(0, 230, 118, 0.95);
   color: #020604;
-  font-family: var(--font-header);
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-weight: 500;
   font-size: 13.5px;
-  padding: 12px 20px;
+  line-height: 1.5;
+  padding: 14px 20px;
   border-radius: 8px;
-  box-shadow: 0 4px 15px rgba(0, 230, 118, 0.35);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
   transform: translateY(100px);
   opacity: 0;
   transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   z-index: 1000;
+  cursor: pointer;
+  word-break: break-word;
+  white-space: pre-wrap;
+  user-select: text;
 }
 
 .toast.show {
@@ -1480,6 +1487,19 @@ textarea:focus {
   border: 1px solid rgba(255, 23, 68, 0.25);
   box-shadow: 0 0 10px rgba(255, 23, 68, 0.15);
   animation: pulse-red 2s infinite;
+}
+
+.ollama-status-badge.local {
+  background: rgba(225, 0, 255, 0.08);
+  color: var(--accent-neon);
+  border: 1px solid rgba(225, 0, 255, 0.2);
+  box-shadow: 0 0 10px rgba(225, 0, 255, 0.1);
+}
+
+.ollama-status-badge.disabled {
+  background: rgba(144, 144, 168, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid rgba(144, 144, 168, 0.25);
 }
 
 @keyframes pulse-red {

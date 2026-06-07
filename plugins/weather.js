@@ -17,9 +17,13 @@ const escapeXml = (unsafe) => {
 const getJson = (url) => {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https') ? https : http;
-    client.get(url, {
+    const options = {
       headers: { 'User-Agent': 'TrmnlPiServer/1.0 (RaspberryPi E-Ink Dashboard)' }
-    }, (res) => {
+    };
+    if (url.startsWith('https')) {
+      options.rejectUnauthorized = false; // Bypass certificate chain validation issues (local proxy/firewall certs)
+    }
+    client.get(url, options, (res) => {
       let data = '';
       res.on('data', (chunk) => data += chunk);
       res.on('end', () => {
@@ -119,14 +123,31 @@ module.exports = {
   name: "Local Weather",
   description: "Fetches local weather condition, current temp, humidity, and forecasts from Open-Meteo.",
   configFields: [
+    { key: "postcode", label: "UK Postcode (Optional)", type: "text", default: "", helpUrl: "https://postcodes.io", helpLabel: "🌐 postcodes.io" },
     { key: "latitude", label: "Latitude", type: "number", default: 51.9639 },
     { key: "longitude", label: "Longitude", type: "number", default: 1.3513 },
     { key: "unit", label: "Temp Unit (°C/°F)", type: "select", options: ["celsius", "fahrenheit"], default: "celsius" }
   ],
 
   async fetchData(settings) {
-    const lat = settings.latitude || 51.9639;
-    const lon = settings.longitude || 1.3513;
+    let lat = settings.latitude || 51.9639;
+    let lon = settings.longitude || 1.3513;
+
+    // Resolve postcode if provided
+    if (settings.postcode && settings.postcode.trim() !== "") {
+      const cleanPostcode = encodeURIComponent(settings.postcode.trim().replace(/\s+/g, ''));
+      try {
+        const postcodeRes = await getJson(`https://api.postcodes.io/postcodes/${cleanPostcode}`);
+        if (postcodeRes && postcodeRes.status === 200 && postcodeRes.result) {
+          lat = postcodeRes.result.latitude;
+          lon = postcodeRes.result.longitude;
+          console.log(`[Weather Plugin] Resolved postcode "${settings.postcode}" to ${lat}, ${lon}`);
+        }
+      } catch (postcodeErr) {
+        console.error(`[Weather Plugin] Error geocoding postcode "${settings.postcode}":`, postcodeErr.message);
+      }
+    }
+
     const isFahr = settings.unit === 'fahrenheit';
     const tempParam = isFahr ? '&temperature_unit=fahrenheit' : '';
 
