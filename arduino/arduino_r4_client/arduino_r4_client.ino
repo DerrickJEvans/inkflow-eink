@@ -138,6 +138,9 @@ void setup() {
   Modulino.begin();
   buttons.begin();
 
+  // Initialize SPI bus interface
+  SPI.begin();
+
   // Initialize SPI Flash Cache
   cache.begin();
 

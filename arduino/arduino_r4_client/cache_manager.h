@@ -47,17 +47,21 @@ private:
   }
 
   void writeEnable() {
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
     select();
     SPI.transfer(FLASH_CMD_WRITE_ENABLE);
     deselect();
+    SPI.endTransaction();
   }
 
   void waitBusy() {
     while (true) {
+      SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
       select();
       SPI.transfer(FLASH_CMD_READ_STATUS_1);
       uint8_t status = SPI.transfer(0);
       deselect();
+      SPI.endTransaction();
       if ((status & 0x01) == 0) break; // Check Write In Progress (WIP) bit
       delay(1);
     }
@@ -73,12 +77,14 @@ public:
 
   void eraseBlock64K(uint32_t address) {
     writeEnable();
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
     select();
     SPI.transfer(FLASH_CMD_BLOCK_ERASE_64K);
     SPI.transfer((address >> 16) & 0xFF);
     SPI.transfer((address >> 8) & 0xFF);
     SPI.transfer(address & 0xFF);
     deselect();
+    SPI.endTransaction();
     waitBusy();
   }
 
@@ -90,6 +96,7 @@ public:
       uint32_t chunk = min(maxWrite, length - bytesWritten);
 
       writeEnable();
+      SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
       select();
       SPI.transfer(FLASH_CMD_PAGE_PROGRAM);
       SPI.transfer((pageAddr >> 16) & 0xFF);
@@ -99,6 +106,7 @@ public:
         SPI.transfer(buffer[bytesWritten + i]);
       }
       deselect();
+      SPI.endTransaction();
       waitBusy();
 
       bytesWritten += chunk;
@@ -106,6 +114,7 @@ public:
   }
 
   void readData(uint32_t address, uint8_t* buffer, uint32_t length) {
+    SPI.beginTransaction(SPISettings(4000000, MSBFIRST, SPI_MODE0));
     select();
     SPI.transfer(FLASH_CMD_READ_DATA);
     SPI.transfer((address >> 16) & 0xFF);
@@ -115,6 +124,7 @@ public:
       buffer[i] = SPI.transfer(0);
     }
     deselect();
+    SPI.endTransaction();
   }
 
   // Reads from header block
