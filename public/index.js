@@ -1537,7 +1537,7 @@ function renderHostedWidgetsList(filterText = '') {
   const query = filterText.toLowerCase().trim();
 
   // List of core built-in plugin IDs to distinguish from AI ones
-  const corePluginIds = ['weather', 'system', 'rss', 'notes', 'tfl', 'uk_trains', 'xkcd', 'world_clock', 'ai_briefing', 'ai_advisor', 'airport_board', 'tide_timetable'];
+  const corePluginIds = ['weather', 'system', 'rss', 'notes', 'tfl', 'uk_trains', 'xkcd', 'world_clock', 'ai_briefing', 'ai_advisor', 'airport_board', 'tide_timetable', 'uk_fuel'];
 
   const filtered = availablePlugins.filter(plugin => {
     return plugin.name.toLowerCase().includes(query) || 

@@ -445,7 +445,7 @@ app.delete('/api/plugins/:pluginId', (req, res) => {
     if (!pluginId) return res.status(400).json({ error: "Plugin ID is required" });
 
     // Protect core system plugins from deletion
-    const corePluginIds = ['weather', 'system', 'rss', 'notes', 'tfl', 'uk_trains', 'xkcd', 'world_clock', 'ai_briefing', 'ai_advisor', 'airport_board', 'tide_timetable'];
+    const corePluginIds = ['weather', 'system', 'rss', 'notes', 'tfl', 'uk_trains', 'xkcd', 'world_clock', 'ai_briefing', 'ai_advisor', 'airport_board', 'tide_timetable', 'uk_fuel'];
     if (corePluginIds.includes(pluginId)) {
       return res.status(403).json({ error: "Cannot delete core system plugins." });
     }
