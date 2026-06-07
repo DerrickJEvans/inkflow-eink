@@ -1324,7 +1324,26 @@ function drawTelemetryGraph() {
       { label: 'Temp', color: '#ff3d57' }
     ];
     
-    let currentX = width - paddingX;
+    let totalLegendWidth = 0;
+    items.forEach(item => {
+      totalLegendWidth += ctx.measureText(item.label).width + 20;
+    });
+
+    const boxX = width - paddingX - totalLegendWidth - 6;
+    const boxY = paddingY - 2;
+    const boxW = totalLegendWidth + 12;
+    const boxH = 17;
+    
+    ctx.fillStyle = 'rgba(15, 16, 22, 0.85)';
+    if (typeof ctx.roundRect === 'function') {
+      ctx.beginPath();
+      ctx.roundRect(boxX, boxY, boxW, boxH, 4);
+      ctx.fill();
+    } else {
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+    }
+    
+    let currentX = width - paddingX - 4;
     const y = paddingY + 2;
     
     items.forEach(item => {
