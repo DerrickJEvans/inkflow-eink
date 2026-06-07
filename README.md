@@ -44,10 +44,11 @@ Inkflow clients (Python and C++) fetch images in a single API call. The python c
 Seamlessly cycle through all of your active widgets at full-screen resolution. One widget is displayed per refresh cycle, ensuring maximum legibility, large premium typography, and 0% text truncation.
 * **Weather Forecast**: Open-Meteo local forecasts with daily high/low temperatures, precipitation, and wind.
 * **RSS Feed**: Aggregates headlines from major presets (Tech, UK, World, HN, NYT) or a custom XML RSS feed URL.
-* **Family Notice Board**: A fully interactive notice board with checklists and chores customizable inline.
+* **Notice Board**: A fully interactive notice board with checklists and chores customizable inline.
 * **TfL Rail Status**: Live London Underground, Overground, DLR, and Elizabeth Line disruption tracker.
 * **UK Train Board**: Real-time mainline station departures and arrivals styled after authentic LED station boards.
 * **System Stats**: Monitors Raspberry Pi system health (CPU load, memory, disk, uptime, temperature).
+* **UK Fuel Prices**: Fetches live petrol and diesel prices from the official UK Government API with client OAuth credentials, geocodes UK postcodes dynamically on the fly, filters out prices older than 7 days, and displays sorted local and nationwide averages.
 * **XKCD Comics**: Scaled comic strips fetched from the daily archive.
 * **World Sun & Moon Clock**: Day/night solar and lunar maps overlaying daylight terminator curves onto dot-matrix/solid projections.
 * **Daily AI Briefing**: Synthesizes custom RSS feeds and weather coordinates using Google Gemini into an elegant broadsheet.
@@ -324,7 +325,7 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
 * [**`server.js`**](server.js): Main Express server hosting API endpoints and managing system settings.
 * [**`renderer.js`**](renderer.js): Graphic rendering engine handling SVG construction, Sharp rasterization, and dithering.
 * [**`plugins/`**](plugins): Widgets that fetch remote data and build dither-ready SVG layouts.
-  * **Core**: [`system.js`](plugins/system.js), [`weather.js`](plugins/weather.js), [`rss.js`](plugins/rss.js), [`notes.js`](plugins/notes.js), [`tfl.js`](plugins/tfl.js), [`uk_trains.js`](plugins/uk_trains.js), [`xkcd.js`](plugins/xkcd.js), [`world_clock.js`](plugins/world_clock.js), [`feynman_quote.js`](plugins/feynman_quote.js).
+  * **Core**: [`system.js`](plugins/system.js), [`weather.js`](plugins/weather.js), [`rss.js`](plugins/rss.js), [`notes.js`](plugins/notes.js), [`tfl.js`](plugins/tfl.js), [`uk_trains.js`](plugins/uk_trains.js), [`xkcd.js`](plugins/xkcd.js), [`world_clock.js`](plugins/world_clock.js), [`feynman_quote.js`](plugins/feynman_quote.js), [`uk_fuel.js`](plugins/uk_fuel.js).
   * **AI Powered**: [`ai_briefing.js`](plugins/ai_briefing.js), [`ai_advisor.js`](plugins/ai_advisor.js).
 * [**`public/`**](public): Glassmorphic web control panel to manage settings, widgets, and view real-time screen previews.
 * [**`client/`**](client): Python client code for Raspberry Pi devices with attached E-Paper screens.
