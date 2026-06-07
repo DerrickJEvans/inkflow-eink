@@ -1312,27 +1312,29 @@ function drawTelemetryGraph() {
   ctx.textBaseline = 'bottom';
   ctx.fillText('0% / 0°C', paddingX + 2, height - paddingY - 2);
 
-  // Draw Legend horizontally aligned at top-right
+  // Draw Legend vertically aligned at top-right
   const drawLegend = () => {
     ctx.font = '9px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
     
     const items = [
-      { label: 'CPU Load', color: '#00f0ff' },
       { label: 'RAM Free', color: '#00e676' },
-      { label: 'Temp', color: '#ff3d57' }
+      { label: 'Temp', color: '#ff3d57' },
+      { label: 'CPU Load', color: '#00f0ff' }
     ];
     
-    let totalLegendWidth = 0;
+    let maxItemWidth = 0;
     items.forEach(item => {
-      totalLegendWidth += ctx.measureText(item.label).width + 20;
+      const w = ctx.measureText(item.label).width;
+      if (w > maxItemWidth) maxItemWidth = w;
     });
+    const totalLegendWidth = maxItemWidth + 20;
 
     const boxX = width - paddingX - totalLegendWidth - 6;
     const boxY = paddingY - 2;
     const boxW = totalLegendWidth + 12;
-    const boxH = 17;
+    const boxH = 39;
     
     ctx.fillStyle = 'rgba(15, 16, 22, 0.85)';
     if (typeof ctx.roundRect === 'function') {
@@ -1344,9 +1346,10 @@ function drawTelemetryGraph() {
     }
     
     let currentX = width - paddingX - 4;
-    const y = paddingY + 2;
     
-    items.forEach(item => {
+    items.forEach((item, index) => {
+      const y = paddingY + 2 + index * 12;
+      
       // Print text label
       ctx.fillStyle = 'rgba(255,255,255,0.7)';
       ctx.fillText(item.label, currentX, y);
@@ -1357,9 +1360,6 @@ function drawTelemetryGraph() {
       ctx.fillStyle = item.color;
       ctx.arc(currentX - textWidth - 6, y + 4.5, 3.5, 0, 2 * Math.PI);
       ctx.fill();
-      
-      // Shift currentX for the next item
-      currentX -= (textWidth + 20);
     });
   };
   
