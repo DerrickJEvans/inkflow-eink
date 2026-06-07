@@ -85,8 +85,10 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 /**
  * Groq completions fetcher (standard OpenAI compatibility)
  */
-const generateWithGroq = async (prompt, systemInstruction = null) => {
-  const modelName = process.env.GROQ_MODEL || "llama-3.1-8b-instant";
+const generateWithGroq = async (prompt, systemInstruction = null, context = "general") => {
+  const modelName = context === "widget"
+    ? (process.env.WIDGET_BUILDER_GROQ_MODEL || process.env.GROQ_MODEL || "llama-3.3-70b-specdec")
+    : (process.env.DYNAMIC_WIDGETS_GROQ_MODEL || process.env.GROQ_MODEL || "llama-3.1-8b-instant");
   console.log(`[AI Core] Requesting Groq API using model: ${modelName}...`);
   
   const messages = [];
@@ -119,9 +121,11 @@ const generateWithGroq = async (prompt, systemInstruction = null) => {
 /**
  * Ollama local REST client
  */
-const generateWithOllama = async (prompt, systemInstruction = null) => {
+const generateWithOllama = async (prompt, systemInstruction = null, context = "general") => {
   const ollamaHost = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
-  const modelName = process.env.OLLAMA_MODEL || "llama3.2:1b";
+  const modelName = context === "widget"
+    ? (process.env.WIDGET_BUILDER_OLLAMA_MODEL || process.env.OLLAMA_MODEL || "qwen2.5-coder:7b")
+    : (process.env.DYNAMIC_WIDGETS_OLLAMA_MODEL || process.env.OLLAMA_MODEL || "llama3.2:1b");
   console.log(`[AI Core] Requesting Local Ollama instance (${ollamaHost}) using model: ${modelName}...`);
 
   const response = await fetch(`${ollamaHost}/api/generate`, {
@@ -211,10 +215,10 @@ const generateWithGemini = async (prompt, systemInstruction = null, context = "g
  */
 const generateContentWithEngine = async (engine, prompt, systemInstruction = null, context = "general") => {
   if (engine === "groq") {
-    return await generateWithGroq(prompt, systemInstruction);
+    return await generateWithGroq(prompt, systemInstruction, context);
   }
   if (engine === "ollama") {
-    return await generateWithOllama(prompt, systemInstruction);
+    return await generateWithOllama(prompt, systemInstruction, context);
   }
   if (engine === "gemini") {
     return await generateWithGemini(prompt, systemInstruction, context);
