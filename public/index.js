@@ -1086,8 +1086,8 @@ const widgetConfigTemplates = {
         <input type="text" class="inline-cfg-trains-crs" placeholder="e.g. LST" maxlength="3" style="text-transform: uppercase;" value="${settings.crs || 'LST'}">
       </div>
       <div class="form-group">
-        <label>Filter Station Code (Optional)</label>
-        <input type="text" class="inline-cfg-trains-filter" placeholder="e.g. CBG" maxlength="3" style="text-transform: uppercase;" value="${settings.filterCrs || ''}">
+        <label>Filter Station Code (Optional, comma-separated list)</label>
+        <input type="text" class="inline-cfg-trains-filter" placeholder="e.g. CBG, KGX" maxlength="50" style="text-transform: uppercase;" value="${settings.filterCrs || ''}">
       </div>
       <div class="form-group">
         <label>Board Mode</label>

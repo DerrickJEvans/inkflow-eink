@@ -50,19 +50,69 @@ module.exports = {
     const filterType = mode === "arrivals" ? "from" : "to";
     const limit = parseInt(settings.limit) || 6;
 
-    let url = `https://huxley2.azurewebsites.net/${mode}/${crs}`;
-    if (filterCrs) {
-      url += `/${filterType}/${filterCrs}`;
-    }
-    url += `/${limit}`;
+    const filterCodes = filterCrs ? filterCrs.split(',').map(c => c.trim()).filter(Boolean) : [];
 
     try {
-      const data = await getJson(url);
+      let results = [];
+      if (filterCodes.length <= 1) {
+        let url = `https://huxley2.azurewebsites.net/${mode}/${crs}`;
+        if (filterCodes.length === 1) {
+          url += `/${filterType}/${filterCodes[0]}`;
+        }
+        url += `/${limit}`;
+        const data = await getJson(url);
+        results = [data];
+      } else {
+        const fetchPromises = filterCodes.map(code => {
+          const url = `https://huxley2.azurewebsites.net/${mode}/${crs}/${filterType}/${code}/${limit}`;
+          return getJson(url).catch(err => {
+            console.error(`Error fetching data for filter code ${code}:`, err);
+            return null;
+          });
+        });
+        results = (await Promise.all(fetchPromises)).filter(Boolean);
+      }
+
+      if (results.length === 0) {
+        throw new Error("No data returned from Huxley API");
+      }
+
+      const stationName = results[0].locationName || crs;
       
-      const stationName = data.locationName || crs;
-      const filterStationName = data.filterLocationName || filterCrs;
+      const filterStationNames = results
+        .map(r => r.filterLocationName)
+        .filter(Boolean);
       
-      const services = (data.trainServices || []).map(s => {
+      const filterStationName = filterStationNames.length > 0 
+        ? filterStationNames.join(', ') 
+        : filterCrs;
+
+      const allTrainServices = [];
+      const serviceIds = new Set();
+      for (const data of results) {
+        const trainServices = data.trainServices || [];
+        for (const s of trainServices) {
+          const serviceId = s.serviceId || s.serviceID;
+          if (serviceId) {
+            if (!serviceIds.has(serviceId)) {
+              serviceIds.add(serviceId);
+              allTrainServices.push(s);
+            }
+          } else {
+            allTrainServices.push(s);
+          }
+        }
+      }
+
+      allTrainServices.sort((a, b) => {
+        const timeA = a.std || a.sta || "";
+        const timeB = b.std || b.sta || "";
+        return timeA.localeCompare(timeB);
+      });
+
+      const finalServices = allTrainServices.slice(0, limit);
+
+      const services = finalServices.map(s => {
         const dest = s.destination && s.destination.length > 0 ? s.destination[0].locationName : "Unknown";
         const origin = s.origin && s.origin.length > 0 ? s.origin[0].locationName : "Unknown";
         const operator = s.operator || "National Rail";
@@ -84,11 +134,20 @@ module.exports = {
         };
       });
 
-      // Extract general alerts / NRCC messages
-      const alerts = (data.nrccMessages || []).map(msg => {
-        // Strip out HTML tags from NRE messages
-        return msg.value ? msg.value.replace(/<[^>]*>/g, '') : '';
-      }).filter(Boolean);
+      const alertSet = new Set();
+      const alerts = [];
+      for (const data of results) {
+        const nrcc = data.nrccMessages || [];
+        for (const msg of nrcc) {
+          if (msg.value) {
+            const cleanMsg = msg.value.replace(/<[^>]*>/g, '').trim();
+            if (cleanMsg && !alertSet.has(cleanMsg)) {
+              alertSet.add(cleanMsg);
+              alerts.push(cleanMsg);
+            }
+          }
+        }
+      }
 
       return {
         stationName,
