@@ -176,7 +176,8 @@ module.exports = {
     { key: "postcode", label: "Home Postcode (UK)", type: "text", default: "" },
     { key: "latitude", label: "Home Latitude", type: "number", default: 51.9614 },
     { key: "longitude", label: "Home Longitude", type: "number", default: 1.3519 },
-    { key: "radius", label: "Local Radius (miles)", type: "number", default: 10 }
+    { key: "radius", label: "Local Radius (miles)", type: "number", default: 10 },
+    { key: "refreshHours", label: "Cache Refresh (Hours)", type: "number", default: 4 }
   ],
 
   async fetchData(settings, device = {}) {

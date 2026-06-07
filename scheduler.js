@@ -19,10 +19,27 @@ const getCachePath = (deviceId, pluginId) => {
 const fetchAndCachePlugin = async (device, pluginId, settings) => {
   if (!PLUGINS[pluginId]) return;
   try {
-    console.log(`[Scheduler] Fetching background data for [${pluginId}] on device [${device.id}]...`);
-    const data = await PLUGINS[pluginId].fetchData(settings[pluginId] || {}, device);
-    
+    const globalPluginSettings = settings[pluginId] || {};
+    const devicePluginSettings = (device.settings && device.settings[pluginId]) || {};
+    const mergedSettings = { ...globalPluginSettings, ...devicePluginSettings };
+
     const cachePath = getCachePath(device.id, pluginId);
+    if (fs.existsSync(cachePath)) {
+      const stats = fs.statSync(cachePath);
+      const refreshHours = parseFloat(mergedSettings.refreshHours);
+      if (!isNaN(refreshHours) && refreshHours > 0) {
+        const cacheAgeMs = Date.now() - stats.mtimeMs;
+        const refreshThresholdMs = refreshHours * 60 * 60 * 1000;
+        if (cacheAgeMs < refreshThresholdMs) {
+          console.log(`[Scheduler] Skipping [${pluginId}] for device [${device.id}] - Cache is fresh (age: ${(cacheAgeMs / 3600000).toFixed(2)}h / target: ${refreshHours}h)`);
+          return;
+        }
+      }
+    }
+
+    console.log(`[Scheduler] Fetching background data for [${pluginId}] on device [${device.id}]...`);
+    const data = await PLUGINS[pluginId].fetchData(mergedSettings, device);
+    
     fs.writeFileSync(cachePath, JSON.stringify(data, null, 2), 'utf8');
     
     // Save configuration if indexes were mutated (e.g. sequential rss or xkcd index advance)
