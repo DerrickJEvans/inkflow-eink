@@ -30,8 +30,8 @@ const int fallbackSleepSeconds = 30;
 
 // 5. SPI Pin Mappings
 #define EPD_CS    10
-#define RAM_CS    5   
-#define SD_CS     6   
+#define RAM_CS    5   // Unpopulated RAM slot
+#define FLASH_CS  6   // Onboard MX25R6435F Flash chip
 
 // ==============================================================================
 //                  DYNAMIC DRIVER & SIZE RESOLUTION

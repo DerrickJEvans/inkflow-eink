@@ -32,9 +32,9 @@ WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
 
 ModulinoButtons buttons;
-FlashCache cache(RAM_CS);
+FlashCache cache(FLASH_CS);
 int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
-bool cacheEnabled = false; // Flag to track if the SPI RAM cache is functional after self-test
+bool cacheEnabled = false; // Flag to track if the SPI cache is functional after self-test
 
 String scannedSSIDs[20];
 int scannedSSIDCount = 0;
@@ -140,9 +140,9 @@ void setup() {
   buttons.begin();
 
   // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise first
-  pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH);
-  pinMode(SD_CS,  OUTPUT); digitalWrite(SD_CS,  HIGH);
-  pinMode(EPD_CS, OUTPUT); digitalWrite(EPD_CS, HIGH);
+  pinMode(RAM_CS,   OUTPUT); digitalWrite(RAM_CS,   HIGH);
+  pinMode(FLASH_CS, OUTPUT); digitalWrite(FLASH_CS, HIGH);
+  pinMode(EPD_CS,   OUTPUT); digitalWrite(EPD_CS,   HIGH);
 
   // Initialize SPI bus interface
   SPI.begin();
@@ -150,8 +150,8 @@ void setup() {
   // Initialize SPI Flash Cache
   cache.begin();
 
-  // Perform SPI RAM Self-Test
-  Serial.println(F("[Cache] Running SPI RAM Self-Test..."));
+  // Perform SPI Flash Self-Test
+  Serial.println(F("[Cache] Running SPI Flash Self-Test..."));
   uint8_t testWrite[4] = {0xDE, 0xAD, 0xBE, 0xEF};
   uint8_t testRead[4] = {0, 0, 0, 0};
   cache.writeData(0x1000, testWrite, 4);

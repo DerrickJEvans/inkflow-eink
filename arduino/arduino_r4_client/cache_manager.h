@@ -1,6 +1,6 @@
 /*
-  cache_manager.h - SPI RAM Cache Manager for Waveshare E-Paper Shield (23LC1024 SRAM)
-  Designed for Arduino UNO R4 WiFi & onboard 128KB SPI SRAM
+  cache_manager.h - SPI Flash Cache Manager for Waveshare E-Paper Shield (B)
+  Uses onboard MX25R6435F 8MB SPI Flash chip (CS Pin 6)
 */
 
 #ifndef CACHE_MANAGER_H
@@ -9,23 +9,21 @@
 #include <Arduino.h>
 #include <SPI.h>
 
-// 23LC1024 Commands
-#define SRAM_CMD_WRITE              0x02
-#define SRAM_CMD_READ               0x03
-#define SRAM_CMD_RDMR               0x05  // Read Mode Register
-#define SRAM_CMD_WRMR               0x01  // Write Mode Register
+// SPI Flash Commands (MX25R6435F)
+#define FLASH_CMD_WREN              0x06  // Write Enable
+#define FLASH_CMD_WRITE             0x02  // Page Program (up to 256 bytes)
+#define FLASH_CMD_READ              0x03  // Read Data Bytes
+#define FLASH_CMD_RDSR              0x05  // Read Status Register
+#define FLASH_CMD_SE                0x20  // Sector Erase (4KB)
+#define FLASH_CMD_BE                0xD8  // Block Erase (64KB)
 
-// Mode Register values
-#define SRAM_MODE_BYTE              0x00
-#define SRAM_MODE_SEQUENTIAL        0x40
+#define FLASH_SIZE                  8388608  // 8MB (64Mbit)
 
-#define SRAM_SIZE                   131072  // 128KB
-
-// Slot config (Each image is dynamically sized based on display)
+// Slot config (Each slot is aligned to a 64KB block to make erasing straightforward)
 #define CACHE_HEADER_ADDR           0x000000
-#define CACHE_SLOTS_START_ADDR      256
-#define BLOCK_SIZE                  (((uint32_t)DISPLAY_WIDTH * DISPLAY_HEIGHT) / 8)
-#define MAX_SLOTS                   (SRAM_SIZE / BLOCK_SIZE)
+#define BLOCK_SIZE                  65536    // 64KB block size
+#define CACHE_SLOTS_START_ADDR      65536    // Slot 0 starts at 64KB
+#define MAX_SLOTS                   16       // Support up to 16 cached screens (plenty for carousel)
 
 struct CacheHeader {
   char magic[4];              // "INKF"
@@ -47,34 +45,58 @@ private:
     digitalWrite(csPin, HIGH);
   }
 
-  void setSequentialMode() {
+  void writeEnable() {
     SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     select();
-    SPI.transfer(SRAM_CMD_WRMR);
-    SPI.transfer(SRAM_MODE_SEQUENTIAL);
+    SPI.transfer(FLASH_CMD_WREN);
     deselect();
     SPI.endTransaction();
   }
 
-public:
-  FlashCache(uint8_t pin) : csPin(pin) {}
+  void waitBusy() {
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    while (true) {
+      select();
+      SPI.transfer(FLASH_CMD_RDSR);
+      uint8_t status = SPI.transfer(0);
+      deselect();
+      if ((status & 0x01) == 0) break; // Check WIP (Write In Progress) bit
+      delay(1);
+    }
+    SPI.endTransaction();
+  }
 
-  void begin() {
-    pinMode(csPin, OUTPUT);
+  void eraseSector4K(uint32_t address) {
+    writeEnable();
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    select();
+    SPI.transfer(FLASH_CMD_SE);
+    SPI.transfer((address >> 16) & 0xFF);
+    SPI.transfer((address >> 8) & 0xFF);
+    SPI.transfer(address & 0xFF);
     deselect();
-    setSequentialMode();
+    SPI.endTransaction();
+    waitBusy();
   }
 
   void eraseBlock64K(uint32_t address) {
-    // SRAM does not need erasing! No-op.
-  }
-
-  void writeData(uint32_t address, const uint8_t* buffer, uint32_t length) {
-    if (address + length > SRAM_SIZE) return;
-
+    writeEnable();
     SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     select();
-    SPI.transfer(SRAM_CMD_WRITE);
+    SPI.transfer(FLASH_CMD_BE);
+    SPI.transfer((address >> 16) & 0xFF);
+    SPI.transfer((address >> 8) & 0xFF);
+    SPI.transfer(address & 0xFF);
+    deselect();
+    SPI.endTransaction();
+    waitBusy();
+  }
+
+  void writePage(uint32_t address, const uint8_t* buffer, uint32_t length) {
+    writeEnable();
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    select();
+    SPI.transfer(FLASH_CMD_WRITE);
     SPI.transfer((address >> 16) & 0xFF);
     SPI.transfer((address >> 8) & 0xFF);
     SPI.transfer(address & 0xFF);
@@ -83,17 +105,37 @@ public:
     }
     deselect();
     SPI.endTransaction();
+    waitBusy();
+  }
+
+public:
+  FlashCache(uint8_t pin) : csPin(pin) {}
+
+  void begin() {
+    pinMode(csPin, OUTPUT);
+    deselect();
+  }
+
+  void writeData(uint32_t address, const uint8_t* buffer, uint32_t length) {
+    if (address + length > FLASH_SIZE) return;
+
+    // Erase the 4KB sector containing this address
+    uint32_t sectorAddress = address - (address % 4096);
+    eraseSector4K(sectorAddress);
+
+    // Page Program (assuming length is small and fits in page)
+    writePage(address, buffer, length);
   }
 
   void readData(uint32_t address, uint8_t* buffer, uint32_t length) {
-    if (address + length > SRAM_SIZE) {
+    if (address + length > FLASH_SIZE) {
       memset(buffer, 0, length);
       return;
     }
 
     SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
     select();
-    SPI.transfer(SRAM_CMD_READ);
+    SPI.transfer(FLASH_CMD_READ);
     SPI.transfer((address >> 16) & 0xFF);
     SPI.transfer((address >> 8) & 0xFF);
     SPI.transfer(address & 0xFF);
@@ -117,7 +159,7 @@ public:
 
   // Clear cache and write new signature
   void initCache(const String& newSignature, uint32_t w, uint32_t h) {
-    Serial.println(F("[Cache] Invalidation triggered. Re-initializing SPI RAM..."));
+    Serial.println(F("[Cache] Invalidation triggered. Re-initializing SPI Flash..."));
     CacheHeader header;
     strncpy(header.magic, "INKF", 4);
     memset(header.signature, 0, 32);
@@ -129,28 +171,32 @@ public:
     Serial.println(F("[Cache] Initialized successfully."));
   }
 
-  // Write stream to a slot in RAM memory using decoupled block-buffering to avoid SPI conflicts
+  // Write stream to a slot in Flash memory using page program
   bool writeSlot(uint32_t slotIndex, WiFiClient& stream, uint32_t totalBytes) {
     uint32_t startAddr = CACHE_SLOTS_START_ADDR + (slotIndex * BLOCK_SIZE);
-    if (startAddr + totalBytes > SRAM_SIZE) {
+    if (startAddr + totalBytes > FLASH_SIZE) {
       Serial.print(F("[Cache Error] Slot "));
       Serial.print(slotIndex);
-      Serial.println(F(" exceeds onboard 128KB SRAM capacity. Skipping cache write."));
+      Serial.println(F(" exceeds onboard Flash capacity. Skipping cache write."));
       return false;
     }
 
-    Serial.print(F("[Cache] Writing stream to SPI RAM slot address 0x"));
+    Serial.print(F("[Cache] Erasing 64KB block at address 0x"));
+    Serial.println(startAddr, HEX);
+    eraseBlock64K(startAddr);
+
+    Serial.print(F("[Cache] Writing stream to SPI Flash slot address 0x"));
     Serial.println(startAddr, HEX);
 
-    uint8_t pageBuf[512];
+    uint8_t pageBuf[256];
     uint32_t bytesWritten = 0;
     unsigned long timeout = millis();
 
     while (bytesWritten < totalBytes) {
-      uint32_t chunk = min((uint32_t)512, totalBytes - bytesWritten);
+      uint32_t chunk = min((uint32_t)256, totalBytes - bytesWritten);
       uint32_t bytesRead = 0;
 
-      // Read chunk from stream (RAM_CS is HIGH / deasserted during this time)
+      // Read chunk from stream
       while (bytesRead < chunk) {
         if (stream.available() > 0) {
           pageBuf[bytesRead++] = stream.read();
@@ -164,26 +210,14 @@ public:
         }
       }
 
-      // Write chunk to SRAM sequentially (asserting RAM_CS only for the write transaction)
-      SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
-      select();
-      SPI.transfer(SRAM_CMD_WRITE);
-      uint32_t currentAddr = startAddr + bytesWritten;
-      SPI.transfer((currentAddr >> 16) & 0xFF);
-      SPI.transfer((currentAddr >> 8) & 0xFF);
-      SPI.transfer(currentAddr & 0xFF);
-      for (uint32_t i = 0; i < bytesRead; i++) {
-        SPI.transfer(pageBuf[i]);
-      }
-      deselect();
-      SPI.endTransaction();
-
+      // Write page to Flash
+      writePage(startAddr + bytesWritten, pageBuf, bytesRead);
       bytesWritten += bytesRead;
     }
 
     Serial.print(F("[Cache] Successfully wrote "));
     Serial.print(bytesWritten);
-    Serial.println(F(" bytes to RAM."));
+    Serial.println(F(" bytes to Flash."));
     return true;
   }
 };
