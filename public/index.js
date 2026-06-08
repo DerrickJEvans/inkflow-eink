@@ -1744,21 +1744,53 @@ function renderHostedWidgetsList(filterText = '') {
     }
 
     // Check if there is a config form template defined for this plugin or custom config fields
-    const hasConfig = typeof widgetConfigTemplates[plugin.id] === 'function' || (plugin.configFields && plugin.configFields.length > 0);
+    const hasConfig = true; // All plugins have at least the refresh period config
     if (hasConfig) {
       const settings = serverConfig.settings[plugin.id] || {};
       let inlineHTML = '';
       if (typeof widgetConfigTemplates[plugin.id] === 'function') {
         inlineHTML = widgetConfigTemplates[plugin.id](settings);
-      } else {
-        inlineHTML = generateDynamicConfigForm(plugin.configFields, settings);
+      } else if (plugin.configFields && plugin.configFields.length > 0) {
+        const filteredFields = plugin.configFields.filter(f => f.key !== 'refreshHours' && f.key !== 'refreshMinutes');
+        inlineHTML = generateDynamicConfigForm(filteredFields, settings);
       }
       
+      // Resolve defaults for refresh period
+      let defaultHours = 0;
+      let defaultMinutes = 0;
+      if (plugin.configFields) {
+        const hField = plugin.configFields.find(f => f.key === 'refreshHours');
+        if (hField && hField.default !== undefined) {
+          defaultHours = parseInt(hField.default) || 0;
+        }
+        const mField = plugin.configFields.find(f => f.key === 'refreshMinutes');
+        if (mField && mField.default !== undefined) {
+          defaultMinutes = parseInt(mField.default) || 0;
+        }
+      }
+
+      const refreshHtml = `
+        <div class="form-group mb-3 refresh-period-group">
+          <label>Cache Refresh Period</label>
+          <div style="display: flex; gap: 10px;">
+            <div style="flex: 1;">
+              <span style="font-size: 10px; opacity: 0.6; display: block; margin-bottom: 2px;">Hours</span>
+              <input type="number" class="inline-cfg-refresh-hours" min="0" placeholder="0" value="${settings.refreshHours !== undefined ? settings.refreshHours : defaultHours}">
+            </div>
+            <div style="flex: 1;">
+              <span style="font-size: 10px; opacity: 0.6; display: block; margin-bottom: 2px;">Minutes</span>
+              <input type="number" class="inline-cfg-refresh-minutes" min="0" max="59" placeholder="0" value="${settings.refreshMinutes !== undefined ? settings.refreshMinutes : defaultMinutes}">
+            </div>
+          </div>
+        </div>
+      `;
+
       const configWrapper = document.createElement('div');
       configWrapper.className = 'hosted-widget-config-container';
       configWrapper.style.display = 'none';
       configWrapper.innerHTML = `
         ${inlineHTML}
+        ${refreshHtml}
         <div class="inline-config-actions">
           <button type="button" class="btn-save-inline-config">Save Options</button>
         </div>
@@ -1943,6 +1975,15 @@ function renderHostedWidgetsList(filterText = '') {
             });
           }
         }
+
+        // Always harvest the refresh period fields for every plugin
+        if (!serverConfig.settings[plugin.id]) {
+          serverConfig.settings[plugin.id] = {};
+        }
+        const hoursVal = parseInt(configWrapper.querySelector('.inline-cfg-refresh-hours').value);
+        const minsVal = parseInt(configWrapper.querySelector('.inline-cfg-refresh-minutes').value);
+        serverConfig.settings[plugin.id].refreshHours = !isNaN(hoursVal) ? hoursVal : 0;
+        serverConfig.settings[plugin.id].refreshMinutes = !isNaN(minsVal) ? minsVal : 0;
 
         btnSave.disabled = true;
         btnSave.innerText = "Saving...";

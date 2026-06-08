@@ -26,12 +26,14 @@ const fetchAndCachePlugin = async (device, pluginId, settings) => {
     const cachePath = getCachePath(device.id, pluginId);
     if (fs.existsSync(cachePath)) {
       const stats = fs.statSync(cachePath);
-      const refreshHours = parseFloat(mergedSettings.refreshHours);
-      if (!isNaN(refreshHours) && refreshHours > 0) {
+      const refreshHours = parseFloat(mergedSettings.refreshHours) || 0;
+      const refreshMinutes = parseFloat(mergedSettings.refreshMinutes) || 0;
+      const totalRefreshMs = (refreshHours * 60 * 60 * 1000) + (refreshMinutes * 60 * 1000);
+
+      if (totalRefreshMs > 0) {
         const cacheAgeMs = Date.now() - stats.mtimeMs;
-        const refreshThresholdMs = refreshHours * 60 * 60 * 1000;
-        if (cacheAgeMs < refreshThresholdMs) {
-          console.log(`[Scheduler] Skipping [${pluginId}] for device [${device.id}] - Cache is fresh (age: ${(cacheAgeMs / 3600000).toFixed(2)}h / target: ${refreshHours}h)`);
+        if (cacheAgeMs < totalRefreshMs) {
+          console.log(`[Scheduler] Skipping [${pluginId}] for device [${device.id}] - Cache is fresh (age: ${(cacheAgeMs / 60000).toFixed(2)}m / target: ${refreshHours}h ${refreshMinutes}m)`);
           return;
         }
       }
