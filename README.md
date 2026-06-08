@@ -42,7 +42,7 @@ Inkflow clients (Python and C++) fetch images in a single API call. The python c
 
 ### 1. Symmetrical Carousel (Rotation) Mode
 Seamlessly cycle through all of your active widgets at full-screen resolution. One widget is displayed per refresh cycle, ensuring maximum legibility, large premium typography, and 0% text truncation.
-* **Weather Forecast**: Open-Meteo local forecasts with daily high/low temperatures, precipitation, and wind.
+* **Weather Forecast**: Open-Meteo local forecasts with daily high/low temperatures, precipitation, wind, and support for dynamic geocoding of UK postcodes.
 * **RSS Feed**: Aggregates headlines from major presets (Tech, UK, World, HN, NYT) or a custom XML RSS feed URL.
 * **Notice Board**: A fully interactive notice board with checklists and chores customizable inline.
 * **TfL Rail Status**: Live London Underground, Overground, DLR, and Elizabeth Line disruption tracker.
@@ -68,6 +68,12 @@ Seamlessly cycle through all of your active widgets at full-screen resolution. O
 * **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
 * **Timeline Carousel Drawer**: Form controls and drag-and-drop rotation sequence timeline expand horizontally at the bottom of the console, giving you maximum width to reorder and calibrate display rotation cycles.
 * **AI Plugin Studio**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations. Saving options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
+
+### 4. Background Cache & Configurable Refresh Periods
+InkFlow operates a decoupled background caching scheduler (`scheduler.js`) to minimize hits on third-party source APIs (such as TfL, weather APIs, or the UK Government Fuel Prices API).
+* **Decoupled Background Caching**: The scheduler runs a check sweep every **4 minutes** in the background.
+* **Granular Refresh Periods**: Every single plugin can be configured with a custom cache expiration window (specified in both hours and minutes) directly from its settings accordion on the Web Control Center.
+* **Smart Bypassing**: Setting a plugin's refresh period to **`0 hours 0 minutes`** disables cache checks for it, meaning the scheduler will fetch fresh data on every 4-minute cycle (the default behavior for most widgets).
 
 ---
 
