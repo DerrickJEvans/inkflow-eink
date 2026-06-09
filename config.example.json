@@ -2,7 +2,7 @@
   "devices": [
     {
       "id": "default_screen",
-      "name": "Living Room Screen",
+      "name": "Server Web Screen",
       "width": 800,
       "height": 480,
       "refreshRate": 1800,
