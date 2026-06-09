@@ -86,6 +86,7 @@ To make deploying and using InkFlow as simple as possible, use the links below t
    - [Option A: Headless OS Image (Automatic Firstboot Setup)](#option-a-headless-os-image-automatic-firstboot-setup)
    - [Option B: Pi Python Client (Pimoroni/Waveshare Hat Setup)](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)
    - [Option C: Arduino & ESP32 Microcontrollers (Battery Powered)](#option-c-arduino--esp32-microcontrollers-ultra-low-power)
+   - [Option D: Combined Server & Client Setup (Single Raspberry Pi)](#option-d-combined-server--client-setup-single-raspberry-pi)
 3. [**🛠️ Step 3: Manage Your Environment (Dashboard & CLI)**](#%EF%B8%8F-master-control-utilities)
 4. [**🧠 Step 4: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
 5. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
@@ -231,6 +232,32 @@ Once the server is running, configure your physical displays to retrieve rendere
    * A captive setup window will open automatically. Choose your home Wi-Fi SSID, enter the password, specify your **InkFlow Server IP** and Port, and click **Save Settings & Connect**!
 4. **Offline Diagnostics**:
    * If the Wi-Fi connection fails or the server is unreachable, the display draws a beautiful visual diagnostic card showing current network info, target IP port, and connection errors, making debugging easy without serial monitor cables.
+
+---
+
+### Option D: Combined Server & Client Setup (Single Raspberry Pi)
+*Ideal if you want to use a single Raspberry Pi to run both the central server AND drive a locally attached E-Paper panel (e.g., as a self-contained smart clock/dashboard device).*
+
+1. **Deploy the Server First**: Follow the steps in [Step 1: Server Deployment](#🖥️-step-1-server-deployment) (Option B is recommended to install the server natively under `/opt/trmnl-pi-server` on Raspberry Pi OS).
+2. **Configure the Local Client**: Navigate to the client subdirectory inside your installation folder:
+   ```bash
+   cd /opt/trmnl-pi-server/client
+   ```
+3. **Run the Client Installer**:
+   ```bash
+   sudo chmod +x inkflow-client.sh
+   ./inkflow-client.sh
+   ```
+   * **Select Option `[1]` (Run Automated Client Setup/Installer)**.
+   * **Interactive Setup**:
+     * **Server IP**: When prompted for the Server IP address, enter **`127.0.0.1`** (since the server is running locally on the same loopback interface).
+     * **Friendly Name**: Choose a descriptive label for your display.
+     * **Screen Size**: Choose the model matching your attached e-paper panel.
+4. **Reboot the Pi**:
+   ```bash
+   sudo reboot
+   ```
+   *After rebooting, both `inkflow-eink.service` (Server) and `inkflow-client.service` (Client) will start concurrently on boot. The local E-Ink client will pull and display the dashboard frames directly from the local loopback server.*
 
 ---
 
