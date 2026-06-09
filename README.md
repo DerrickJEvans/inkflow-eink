@@ -281,6 +281,31 @@ Execute commands from the `/client` directory on your display client:
 * **`./inkflow-client.sh status`**: Scan SPI status, verify `.env` settings, ping the host server, and display MAC address and Wi-Fi signal strength (RSSI).
 * **`./inkflow-client.sh update`**: Updates local display drivers, fetches clean client updates, and restarts services.
 
+### 3. Changing E-Ink Panel Size After Installation
+If you swap your physical E-Paper display panel for a different model after installation, you can update your client configuration using one of two methods:
+
+#### Method A: Interactive Installer (Recommended)
+1. Run the interactive client controller utility from your client folder:
+   ```bash
+   cd client
+   ./inkflow-client.sh
+   ```
+2. Select Option **`[1] Run Automated Client Setup/Installer`**.
+3. Keep your existing Server IP and Friendly Name settings by pressing `Enter`, and select your new screen size option when prompted. The utility will automatically rewrite your configurations and reload the background service.
+
+#### Method B: Manual Environment Edit
+1. Open the client environment configuration file in an editor:
+   ```bash
+   nano client/.env
+   ```
+2. Locate the `TRMNL_SCREEN_TYPE` environment variable and set it to your new panel model:
+   * Choices: **`4in26`** (800x480), **`7in5`** (800x480), **`4in2`** (400x300), or **`2in9`** (296x128).
+   * Example: `TRMNL_SCREEN_TYPE=7in5`
+3. Save the file and restart the client daemon:
+   ```bash
+   ./inkflow-client.sh restart
+   ```
+
 ---
 
 ## 🧠 Hybrid Multi-Provider AI Integration
