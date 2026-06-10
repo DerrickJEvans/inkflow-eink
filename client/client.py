@@ -188,6 +188,8 @@ def poll_server():
     print(f"==========================================\n")
     
     while True:
+        # Prevent high-frequency spinning under unexpected execution paths/errors
+        time.sleep(0.1)
         poll_interval = config.DEFAULT_POLL_INTERVAL
         try:
             print(f"[{time.strftime('%H:%M:%S')}] Connecting to server to fetch fresh image...")
@@ -236,7 +238,14 @@ def poll_server():
             print(f"Retrying in 30 seconds...")
             time.sleep(30)
             continue
+        except Exception as e:
+            print(f"[Unexpected Error] {e}")
+            print(f"Retrying in 30 seconds...")
+            time.sleep(30)
+            continue
             
+        # Ensure we sleep at least 1 second to prevent tight looping if poll_interval is set incorrectly
+        poll_interval = max(1, poll_interval)
         print(f"💤 Sleeping for {poll_interval} seconds...\n")
         time.sleep(poll_interval)
 
