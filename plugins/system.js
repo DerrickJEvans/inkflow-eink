@@ -158,7 +158,7 @@ module.exports = {
             </g>
             
             <g transform="translate(0, 85)">
-              ${drawProgressBar("Free Memory (RAM)", data.ramUsage, data.ramText, 0, 10, width - padding * 2, 14)}
+              ${drawProgressBar("Memory Usage (RAM)", 100 - data.ramUsage, data.ramText, 0, 10, width - padding * 2, 14)}
             </g>
             
             <g transform="translate(0, 150)">
@@ -181,7 +181,7 @@ module.exports = {
           <text x="${width - padding}" y="52" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">Temp: <tspan font-weight="bold">${data.cpuTemp}°C</tspan></text>
           
           ${drawProgressBar("CPU Load", data.cpuUsage, `${data.cpuUsage}%`, padding, 74, barWidth, 8)}
-          ${drawProgressBar("Free RAM", data.ramUsage, data.ramText, padding, 114, barWidth, 8)}
+          ${drawProgressBar("RAM Usage", 100 - data.ramUsage, data.ramText, padding, 114, barWidth, 8)}
           ${drawProgressBar("Disk Space", data.diskUsage, data.diskText, padding, 154, barWidth, 8)}
         </g>
       `;
