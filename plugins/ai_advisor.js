@@ -69,9 +69,9 @@ module.exports = {
 
     let systemText = '';
     if (sysData) {
-      systemText = `CPU Load: ${sysData.cpuUsage || 0}%, Temp: ${sysData.cpuTemp || 0}°C, RAM: ${sysData.ramUsage || 0}%, Disk: ${sysData.diskUsage || 0}%, Uptime: ${sysData.uptime || 'N/A'}`;
+      systemText = `CPU Load: ${sysData.cpuUsage || 0}%, Temp: ${sysData.cpuTemp || 0}°C, RAM Used: ${100 - (sysData.ramUsage || 0)}% (Free: ${sysData.ramUsage || 0}%), Disk: ${sysData.diskUsage || 0}%, Uptime: ${sysData.uptime || 'N/A'}`;
     } else {
-      systemText = "CPU Load: 68.2%, Temp: 74°C, RAM: 84.5%, Disk: 48.2%, Uptime: 4d 12h 30m";
+      systemText = "CPU Load: 68.2%, Temp: 74°C, RAM Used: 15.5% (Free: 84.5%), Disk: 48.2%, Uptime: 4d 12h 30m";
     }
 
     // 2. Generate expert diagnostic recommendations via Gemini
