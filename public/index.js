@@ -145,45 +145,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     cleanupDays.addEventListener('change', handleCleanupChange);
   }
 
-  // Delete device manual trigger
-  const btnDeleteDevice = document.getElementById('btn-delete-device');
-  if (btnDeleteDevice) {
-    btnDeleteDevice.addEventListener('click', async () => {
-      const id = document.getElementById('edit-device-id').value;
-      if (!id) return;
-      
-      if (id === 'default_screen') {
-        showToast("The default screen device is protected and cannot be deleted.", true);
-        return;
-      }
-      
-      if (!confirm(`Are you sure you want to permanently remove device '${id}'? This will purge its cache and remove it from the dashboard console.`)) {
-        return;
-      }
-      
-      try {
-        const res = await fetch('/api/display/delete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ deviceId: id })
-        });
-        const reply = await res.json();
-        if (reply.success) {
-          showToast(`Device '${id}' successfully removed!`);
-          
-          // Clear active device selection and refresh settings
-          activeDeviceId = null;
-          document.getElementById('device-layout-card').style.display = 'none';
-          await fetchSettings();
-        } else {
-          showToast(reply.error || "Failed to delete device", true);
-        }
-      } catch (err) {
-        console.error("Error deleting device:", err);
-        showToast("Server connection error while deleting device", true);
-      }
-    });
-  }
 
   // Device Layout Settings Form Submit
   editDeviceForm.addEventListener('submit', async (e) => {
@@ -196,20 +157,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layoutMode = "rotation";
     const ditherMode = document.getElementById('edit-device-dither').value;
     const invertColors = document.getElementById('edit-device-invert').value === 'true';
-    
-    // Read selected plugins & their custom durations dynamically in customized sequence!
     const activePlugins = [];
     const rotationIntervals = {};
-    
-    document.querySelectorAll('#plugins-selector .widget-card').forEach(row => {
-      const cb = row.querySelector('input[type="checkbox"]');
-      const numInput = row.querySelector('input[type="number"]');
-      if (cb && cb.checked) {
-        activePlugins.push(cb.value);
-      }
-      if (cb && numInput) {
-        rotationIntervals[cb.value] = parseInt(numInput.value) || 30;
-      }
+
+    document.querySelectorAll('#plugins-selector .widget-card').forEach(card => {
+      const pluginId = card.dataset.id;
+      if (!pluginId) return;
+      const minInput = card.querySelector('input.plugin-duration-min');
+      const secInput = card.querySelector('input.plugin-duration-sec');
+      const mins = minInput ? (parseInt(minInput.value) || 0) : 0;
+      const secs = secInput ? (parseInt(secInput.value) || 0) : 30;
+      activePlugins.push(pluginId);
+      rotationIntervals[pluginId] = (mins * 60) + secs;
     });
 
     if (activePlugins.length === 0) {
@@ -414,181 +373,276 @@ async function fetchPlugins() {
   }
 }
 
-// Render dynamic reorderable cards inside a horizontal flex scroll container
+// Render dynamic reorderable cards inside a horizontal flex scroll container and available palette
 function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}) {
-  const container = document.getElementById('plugins-selector');
-  if (!container) return;
+  const containerSelector = document.getElementById('plugins-selector');
+  const containerPalette = document.getElementById('plugins-palette');
+  if (!containerSelector || !containerPalette) return;
 
-  container.innerHTML = '';
+  containerSelector.innerHTML = '';
+  containerPalette.innerHTML = '';
 
-  // Sort availablePlugins so that selected ones come first in their saved sequence, followed by unselected ones
-  const sortedPlugins = [...availablePlugins].sort((a, b) => {
-    const idxA = selectedPluginIds.indexOf(a.id);
-    const idxB = selectedPluginIds.indexOf(b.id);
-    const isSelectedA = idxA > -1;
-    const isSelectedB = idxB > -1;
-    
-    if (isSelectedA && isSelectedB) return idxA - idxB;
-    if (isSelectedA) return -1;
-    if (isSelectedB) return 1;
-    return 0;
-  });
+  // Get active plugins in selected order
+  const activePlugins = selectedPluginIds
+    .map(pId => availablePlugins.find(p => p.id === pId))
+    .filter(Boolean);
 
-  sortedPlugins.forEach(plugin => {
-    const isChecked = selectedPluginIds.includes(plugin.id);
-    const duration = rotationIntervals[plugin.id] || 30; // default to 30s
-    
-    const card = document.createElement('div');
-    card.className = 'widget-card';
-    if (isChecked) {
-      card.classList.add('active-selected');
-    }
-    card.setAttribute('draggable', 'true');
-    card.dataset.id = plugin.id;
-    card.title = plugin.description || '';
-    
-    // Enable/Disable toggle checkbox
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.className = 'widget-card-checkbox';
-    cb.value = plugin.id;
-    cb.checked = isChecked;
-    cb.id = `cb-plugin-${plugin.id}`;
-    
-    // Icon and label
-    const contentWrap = document.createElement('div');
-    contentWrap.style.marginTop = '10px';
-    contentWrap.style.pointerEvents = 'none'; // click flows to card/toggle
-    
-    const icon = document.createElement('div');
-    icon.style.fontSize = '32px';
-    icon.style.marginBottom = '6px';
-    icon.innerText = pluginIcons[plugin.id] || '🧩';
-    
-    const title = document.createElement('div');
-    title.style.fontWeight = 'bold';
-    title.style.fontSize = '12px';
-    title.style.color = '#fff';
-    title.style.whiteSpace = 'nowrap';
-    title.style.overflow = 'hidden';
-    title.style.textOverflow = 'ellipsis';
-    title.style.maxWidth = '145px';
-    title.innerText = plugin.name;
-    
-    contentWrap.appendChild(icon);
-    contentWrap.appendChild(title);
-    
-    // Duration spinner
-    const durationWrap = document.createElement('div');
-    durationWrap.className = 'widget-card-duration';
-    
-    const durationLabel = document.createElement('span');
-    durationLabel.innerText = 'Show:';
-    
-    const numInput = document.createElement('input');
-    numInput.type = 'number';
-    numInput.className = 'plugin-duration-input';
-    numInput.value = duration;
-    numInput.min = '5';
-    numInput.step = '5';
-    
-    const unitLabel = document.createElement('span');
-    unitLabel.innerText = 's';
-    
-    durationWrap.appendChild(durationLabel);
-    durationWrap.appendChild(numInput);
-    durationWrap.appendChild(unitLabel);
-    
-    // Left/Right Sorting Arrow buttons at footer
-    const reorderWrap = document.createElement('div');
-    reorderWrap.className = 'widget-card-reorder';
-    
-    const btnLeft = document.createElement('button');
-    btnLeft.type = 'button';
-    btnLeft.className = 'widget-btn-sort';
-    btnLeft.innerHTML = '←';
-    btnLeft.title = 'Move left';
-    btnLeft.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const prev = card.previousElementSibling;
-      if (prev) {
-        container.insertBefore(card, prev);
-      }
-    });
-    
-    const btnRight = document.createElement('button');
-    btnRight.type = 'button';
-    btnRight.className = 'widget-btn-sort';
-    btnRight.innerHTML = '→';
-    btnRight.title = 'Move right';
-    btnRight.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const next = card.nextElementSibling;
-      if (next) {
-        // Insert card after next element
-        container.insertBefore(next, card);
-      }
-    });
-    
-    reorderWrap.appendChild(btnLeft);
-    reorderWrap.appendChild(btnRight);
-    
-    card.appendChild(cb);
-    card.appendChild(contentWrap);
-    card.appendChild(durationWrap);
-    card.appendChild(reorderWrap);
-    
-    // Toggle active outline highlight on selection change
-    cb.addEventListener('change', () => {
-      if (cb.checked) {
-        card.classList.add('active-selected');
-      } else {
-        card.classList.remove('active-selected');
-      }
-    });
+  // Get inactive plugins for the palette
+  const inactivePlugins = availablePlugins.filter(p => !selectedPluginIds.includes(p.id));
 
-    // Clicking card itself (excluding inputs) toggles checkbox
-    card.addEventListener('click', (e) => {
-      if (e.target !== cb && e.target !== numInput && e.target !== btnLeft && e.target !== btnRight) {
-        cb.checked = !cb.checked;
-        cb.dispatchEvent(new Event('change'));
-      }
-    });
-    
-    // Prevent event bubbling on standard inputs and controls
-    numInput.addEventListener('mousedown', (e) => e.stopPropagation());
-    cb.addEventListener('mousedown', (e) => e.stopPropagation());
-    btnLeft.addEventListener('mousedown', (e) => e.stopPropagation());
-    btnRight.addEventListener('mousedown', (e) => e.stopPropagation());
-    
-    // Drag & Drop Interactions
-    card.addEventListener('dragstart', (e) => {
-      card.classList.add('dragging');
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', plugin.id);
-    });
-    
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-    });
-    
-    card.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      const draggingCard = container.querySelector('.dragging');
-      if (!draggingCard || draggingCard === card) return;
+  // 1. Render Active Rotation Sequence
+  if (activePlugins.length === 0) {
+    containerSelector.innerHTML = `<p class="card-help text-center" style="margin: auto; color: var(--text-secondary);">No active widgets. Click widgets from the palette below to add them!</p>`;
+  } else {
+    activePlugins.forEach(plugin => {
+      const duration = rotationIntervals[plugin.id] || 30; // default to 30s
       
-      const rect = card.getBoundingClientRect();
-      const midpoint = rect.left + rect.width / 2;
+      const card = document.createElement('div');
+      card.className = 'widget-card active-selected';
+      card.setAttribute('draggable', 'true');
+      card.dataset.id = plugin.id;
+      card.title = plugin.description || '';
+
+      // Close/Remove Button
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'widget-card-remove';
+      removeBtn.innerHTML = '✖';
+      removeBtn.title = 'Remove from rotation';
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Remove from list and re-render
+        const index = selectedPluginIds.indexOf(plugin.id);
+        if (index > -1) {
+          selectedPluginIds.splice(index, 1);
+        }
+        renderPluginsSelector(selectedPluginIds, rotationIntervals);
+      });
+      card.appendChild(removeBtn);
+
+      // Icon and label
+      const contentWrap = document.createElement('div');
+      contentWrap.style.marginTop = '10px';
+      contentWrap.style.pointerEvents = 'none';
       
-      if (e.clientX < midpoint) {
-        container.insertBefore(draggingCard, card);
-      } else {
-        container.insertBefore(draggingCard, card.nextElementSibling);
-      }
+      const icon = document.createElement('div');
+      icon.style.fontSize = '32px';
+      icon.style.marginBottom = '6px';
+      icon.innerText = pluginIcons[plugin.id] || '🧩';
+      
+      const title = document.createElement('div');
+      title.style.fontWeight = 'bold';
+      title.style.fontSize = '12px';
+      title.style.color = '#fff';
+      title.style.whiteSpace = 'nowrap';
+      title.style.overflow = 'hidden';
+      title.style.textOverflow = 'ellipsis';
+      title.style.maxWidth = '145px';
+      title.innerText = plugin.name;
+      
+      contentWrap.appendChild(icon);
+      contentWrap.appendChild(title);
+      card.appendChild(contentWrap);
+
+      // Duration spinner (Minutes and Seconds)
+      const durationWrap = document.createElement('div');
+      durationWrap.className = 'widget-card-duration';
+      
+      const durationLabel = document.createElement('span');
+      durationLabel.innerText = 'Show:';
+      
+      const minutes = Math.floor(duration / 60);
+      const seconds = duration % 60;
+
+      const minInput = document.createElement('input');
+      minInput.type = 'number';
+      minInput.className = 'plugin-duration-min';
+      minInput.value = minutes;
+      minInput.min = '0';
+      minInput.style.width = '35px';
+      
+      const minLabel = document.createElement('span');
+      minLabel.innerText = 'm';
+      
+      const secInput = document.createElement('input');
+      secInput.type = 'number';
+      secInput.className = 'plugin-duration-sec';
+      secInput.value = seconds;
+      secInput.min = '0';
+      secInput.max = '59';
+      secInput.step = '5';
+      secInput.style.width = '35px';
+      
+      const secLabel = document.createElement('span');
+      secLabel.innerText = 's';
+      
+      const updateInterval = () => {
+        const mins = parseInt(minInput.value) || 0;
+        const secs = parseInt(secInput.value) || 0;
+        rotationIntervals[plugin.id] = (mins * 60) + secs;
+      };
+
+      minInput.addEventListener('change', updateInterval);
+      secInput.addEventListener('change', updateInterval);
+      
+      durationWrap.appendChild(durationLabel);
+      durationWrap.appendChild(minInput);
+      durationWrap.appendChild(minLabel);
+      durationWrap.appendChild(secInput);
+      durationWrap.appendChild(secLabel);
+      card.appendChild(durationWrap);
+
+      // Left/Right Reordering buttons
+      const reorderWrap = document.createElement('div');
+      reorderWrap.className = 'widget-card-reorder';
+      
+      const btnLeft = document.createElement('button');
+      btnLeft.type = 'button';
+      btnLeft.className = 'widget-btn-sort';
+      btnLeft.innerHTML = '←';
+      btnLeft.title = 'Move left';
+      btnLeft.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const prev = card.previousElementSibling;
+        if (prev) {
+          containerSelector.insertBefore(card, prev);
+          // Sync selectedPluginIds array order
+          const idx = selectedPluginIds.indexOf(plugin.id);
+          if (idx > 0) {
+            const temp = selectedPluginIds[idx];
+            selectedPluginIds[idx] = selectedPluginIds[idx - 1];
+            selectedPluginIds[idx - 1] = temp;
+          }
+        }
+      });
+      
+      const btnRight = document.createElement('button');
+      btnRight.type = 'button';
+      btnRight.className = 'widget-btn-sort';
+      btnRight.innerHTML = '→';
+      btnRight.title = 'Move right';
+      btnRight.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const next = card.nextElementSibling;
+        if (next) {
+          containerSelector.insertBefore(next, card);
+          // Sync selectedPluginIds array order
+          const idx = selectedPluginIds.indexOf(plugin.id);
+          if (idx > -1 && idx < selectedPluginIds.length - 1) {
+            const temp = selectedPluginIds[idx];
+            selectedPluginIds[idx] = selectedPluginIds[idx + 1];
+            selectedPluginIds[idx + 1] = temp;
+          }
+        }
+      });
+      
+      reorderWrap.appendChild(btnLeft);
+      reorderWrap.appendChild(btnRight);
+      card.appendChild(reorderWrap);
+
+      // Prevent event propagation
+      minInput.addEventListener('mousedown', (e) => e.stopPropagation());
+      secInput.addEventListener('mousedown', (e) => e.stopPropagation());
+      btnLeft.addEventListener('mousedown', (e) => e.stopPropagation());
+      btnRight.addEventListener('mousedown', (e) => e.stopPropagation());
+      removeBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+
+      // Drag & Drop
+      card.addEventListener('dragstart', (e) => {
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', plugin.id);
+      });
+      
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+      
+      card.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const draggingCard = containerSelector.querySelector('.dragging');
+        if (!draggingCard || draggingCard === card) return;
+        
+        const rect = card.getBoundingClientRect();
+        const midpoint = rect.left + rect.width / 2;
+        
+        const oldIndex = selectedPluginIds.indexOf(draggingCard.dataset.id);
+        const targetIndex = selectedPluginIds.indexOf(card.dataset.id);
+
+        if (e.clientX < midpoint) {
+          containerSelector.insertBefore(draggingCard, card);
+          if (oldIndex > -1 && targetIndex > -1) {
+            selectedPluginIds.splice(oldIndex, 1);
+            const insertIdx = targetIndex > oldIndex ? targetIndex - 1 : targetIndex;
+            selectedPluginIds.splice(insertIdx, 0, draggingCard.dataset.id);
+          }
+        } else {
+          containerSelector.insertBefore(draggingCard, card.nextElementSibling);
+          if (oldIndex > -1 && targetIndex > -1) {
+            selectedPluginIds.splice(oldIndex, 1);
+            const insertIdx = targetIndex > oldIndex ? targetIndex : targetIndex + 1;
+            selectedPluginIds.splice(insertIdx, 0, draggingCard.dataset.id);
+          }
+        }
+      });
+
+      containerSelector.appendChild(card);
     });
-    
-    container.appendChild(card);
-  });
+  }
+
+  // 2. Render Inactive Palette
+  if (inactivePlugins.length === 0) {
+    containerPalette.innerHTML = `<p class="card-help text-center" style="margin: auto; color: var(--text-secondary);">All available widgets are active in rotation!</p>`;
+  } else {
+    inactivePlugins.forEach(plugin => {
+      const card = document.createElement('div');
+      card.className = 'widget-card';
+      card.dataset.id = plugin.id;
+      card.title = plugin.description || '';
+      card.style.cursor = 'pointer';
+
+      // Icon and label
+      const contentWrap = document.createElement('div');
+      contentWrap.style.marginTop = '10px';
+      contentWrap.style.pointerEvents = 'none';
+      
+      const icon = document.createElement('div');
+      icon.style.fontSize = '32px';
+      icon.style.marginBottom = '6px';
+      icon.innerText = pluginIcons[plugin.id] || '🧩';
+      
+      const title = document.createElement('div');
+      title.style.fontWeight = 'bold';
+      title.style.fontSize = '12px';
+      title.style.color = '#fff';
+      title.style.whiteSpace = 'nowrap';
+      title.style.overflow = 'hidden';
+      title.style.textOverflow = 'ellipsis';
+      title.style.maxWidth = '145px';
+      title.innerText = plugin.name;
+      
+      contentWrap.appendChild(icon);
+      contentWrap.appendChild(title);
+      card.appendChild(contentWrap);
+
+      // Add hint/badge style indicator at the bottom
+      const addHint = document.createElement('div');
+      addHint.style.fontSize = '10px';
+      addHint.style.color = 'var(--accent-cyan)';
+      addHint.style.marginTop = '8px';
+      addHint.style.fontWeight = 'bold';
+      addHint.innerText = '➕ Add';
+      card.appendChild(addHint);
+
+      // Click to add to sequence
+      card.addEventListener('click', () => {
+        selectedPluginIds.push(plugin.id);
+        renderPluginsSelector(selectedPluginIds, rotationIntervals);
+      });
+
+      containerPalette.appendChild(card);
+    });
+  }
 }
 
 // Fetch configs from Express server
@@ -724,12 +778,48 @@ function renderDevicesList() {
       <div class="device-info">
         <span class="name">${dev.name}</span>
         <span class="meta">${metaText}</span>
-        <div style="margin-top: 4px;">
+        <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px;">
           <span class="client-badge ${clientBadgeClass}">${clientBadgeLabel}</span>
+          ${dev.id !== 'default_screen' ? `<button type="button" class="btn-delete-action btn-device-delete" data-device-id="${dev.id}" title="Delete Device" style="margin: 0; padding: 2px 6px; font-size: 10px; line-height: 1; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; height: 18px; width: 18px; text-decoration: none; border: none; cursor: pointer;">🗑️</button>` : ''}
         </div>
       </div>
       <span class="device-badge">${dev.id}</span>
     `;
+    
+    const btnDel = item.querySelector('.btn-device-delete');
+    if (btnDel) {
+      btnDel.addEventListener('click', async (e) => {
+        e.stopPropagation(); // Avoid selecting the device when clicking delete
+        const id = dev.id;
+        if (!confirm(`Are you sure you want to permanently remove device '${dev.name}' (${id})? This will purge its cache and remove it from the dashboard console.`)) {
+          return;
+        }
+        
+        try {
+          const res = await fetch('/api/display/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ deviceId: id })
+          });
+          const reply = await res.json();
+          if (reply.success) {
+            showToast(`Device '${id}' successfully removed!`);
+            
+            // If the deleted device was the active one, clear selection
+            if (activeDeviceId === id) {
+              activeDeviceId = null;
+              document.getElementById('device-layout-card').style.display = 'none';
+            }
+            await fetchSettings();
+          } else {
+            showToast(reply.error || "Failed to delete device", true);
+          }
+        } catch (err) {
+          console.error("Error deleting device:", err);
+          showToast("Server connection error while deleting device", true);
+        }
+      });
+    }
     
     item.addEventListener('click', () => selectDevice(dev.id));
     devicesList.appendChild(item);

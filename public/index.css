@@ -874,6 +874,36 @@ textarea:focus {
   z-index: 2;
 }
 
+.widget-card-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 23, 68, 0.1);
+  border: 1px solid rgba(255, 23, 68, 0.3);
+  color: #ff3d57;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.widget-card-remove:hover {
+  background: #ff1744;
+  border-color: #ff1744;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+
 /* Widget Card Drag handle or sorting buttons at bottom */
 .widget-card-reorder {
   display: flex;

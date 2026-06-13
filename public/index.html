@@ -235,15 +235,23 @@
               <!-- Active Dashboard Widgets Carousel -->
               <div class="form-group mt-4">
                 <label>Active Dashboard Widgets Rotation Sequence</label>
-                <div class="horizontal-widgets-container" id="plugins-selector">
+                <div class="horizontal-widgets-container" id="plugins-selector" style="min-height: 120px;">
                   <div class="loading-spinner"></div>
                 </div>
-                <span class="input-hint">Layout formats automatically based on selection. Drag cards or use arrow buttons to reorder sequence!</span>
+                <span class="input-hint">Drag cards or use arrow buttons to reorder sequence! Click ✖ on a card to remove it from the sequence.</span>
               </div>
 
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+              <!-- Available Widget Palette -->
+              <div class="form-group mt-4">
+                <label>Available Widget Palette</label>
+                <div class="horizontal-widgets-container" id="plugins-palette" style="min-height: 120px; background: rgba(0, 0, 0, 0.15);">
+                  <div class="loading-spinner"></div>
+                </div>
+                <span class="input-hint">Click a widget card above to add it to your active rotation sequence.</span>
+              </div>
+
+              <div style="display: flex; justify-content: flex-start; align-items: center; margin-top: 24px;">
                 <button type="submit" class="btn btn-primary btn-save-layout" style="margin: 0; padding: 12px 28px;">💾 Save Layout</button>
-                <button type="button" class="btn btn-delete-action" id="btn-delete-device" style="margin: 0; padding: 10px 20px; font-size: 12px;">🗑️ Delete Device</button>
               </div>
             </form>
           </div>
