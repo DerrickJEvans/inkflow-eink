@@ -30,7 +30,12 @@ if mpr121_enabled:
         try:
             i2c = busio.I2C(board.SCL, board.SDA)
             mpr121 = adafruit_mpr121.MPR121(i2c)
+            # Set thresholds for all pins to increase sensitivity (7 for touch, 3 for release)
+            for i in range(12):
+                mpr121[i].threshold = 7
+                mpr121[i].release_threshold = 3
             print(f"[MPR121 Startup Check] ✅ MPR121 detected and initialized. Prev pin: {config.MPR121_PREV_PIN}, Next pin: {config.MPR121_NEXT_PIN}")
+
         except Exception as hardware_err:
             print(f"[MPR121 Startup Check] ⚠️  MPR121 hardware not detected or I2C bus error: {hardware_err}")
             print("[MPR121 Startup Check] Disabling touch interface. Client will run in polling-only mode.")

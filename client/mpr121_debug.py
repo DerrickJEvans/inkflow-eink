@@ -22,7 +22,12 @@ try:
     i2c = busio.I2C(board.SCL, board.SDA)
     print("🔍 Initializing MPR121 on I2C address 0x5A (default)...")
     mpr121 = adafruit_mpr121.MPR121(i2c)
+    # Set thresholds for all pins to increase sensitivity (7 for touch, 3 for release)
+    for i in range(12):
+        mpr121[i].threshold = 7
+        mpr121[i].release_threshold = 3
     print("✅ MPR121 initialized successfully!")
+
 except Exception as e:
     print(f"❌ Error initializing MPR121: {e}")
     print("\nTroubleshooting tips:")
