@@ -15,12 +15,12 @@ echo "  📟 InkFlow E-Ink Client Automated Installer  📟"
 echo "===================================================="
 
 # 1. Update package list and install system dependencies
-echo "📦 Installing system dependencies (SPI, Git, PIL, NumPy, Requests)..."
+echo "📦 Installing system dependencies (SPI, I2C, Git, PIL, NumPy, Requests)..."
 apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update
-apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y python3-pip python3-pil python3-numpy python3-spidev python3-requests git
+apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y python3-pip python3-pil python3-numpy python3-spidev python3-requests python3-smbus i2c-tools git
 
-# 2. Enable SPI interface in Pi config
-echo "🔌 Enabling hardware SPI interface..."
+# 2. Enable SPI and I2C interfaces in Pi config
+echo "🔌 Enabling hardware SPI and I2C interfaces..."
 CONFIG_FILE="/boot/firmware/config.txt"
 if [ ! -f "$CONFIG_FILE" ]; then
   CONFIG_FILE="/boot/config.txt"
@@ -32,6 +32,14 @@ else
   echo "dtparam=spi=on" >> "$CONFIG_FILE"
   echo "✅ Enabled SPI in $CONFIG_FILE. Note: Reboot might be required to apply."
 fi
+
+if grep -q "^dtparam=i2c_arm=on" "$CONFIG_FILE"; then
+  echo "✅ I2C is already enabled in $CONFIG_FILE"
+else
+  echo "dtparam=i2c_arm=on" >> "$CONFIG_FILE"
+  echo "✅ Enabled I2C in $CONFIG_FILE. Note: Reboot might be required to apply."
+fi
+
 
 # 3. Handle high-performance Waveshare python driver installation (Sparse Checkout)
 echo "🧬 Installing Waveshare hardware driver (sparse clone to preserve Pi Zero RAM)..."
@@ -50,6 +58,11 @@ pip3 install . --break-system-packages --no-cache-dir
 cd "$WORK_DIR"
 rm -rf "$TEMP_DIR"
 echo "✅ Waveshare hardware driver installed successfully!"
+
+echo "🧬 Installing MPR121 capacitive touch driver..."
+pip3 install adafruit-circuitpython-mpr121 --break-system-packages --no-cache-dir || pip3 install adafruit-circuitpython-mpr121 --no-cache-dir
+echo "✅ MPR121 capacitive touch driver installed successfully!"
+
 
 # 4. Prompt for server address configuration
 echo "----------------------------------------------------"
@@ -98,6 +111,9 @@ SCREEN_TYPE = '4in26'
 DISPLAY_TYPE = 'waveshare'
 INVERT_COLORS = False
 DEFAULT_POLL_INTERVAL = 1800
+MPR121_ENABLED = False
+MPR121_PREV_PIN = 6
+MPR121_NEXT_PIN = 7
 EOF
   echo "✅ Created config.py with server address: ${SERVER_HOST}"
 fi
