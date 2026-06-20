@@ -14,21 +14,36 @@ except ImportError:
     print("[Error] config.py not found in client directory. Please create it.")
     sys.exit(1)
 
-# Initialize MPR121 capacitive touch sensor if enabled
+# Check for MPR121 capacitive touch module availability
 mpr121 = None
-if getattr(config, 'MPR121_ENABLED', False):
-    print("[Hardware Touch] Initializing MPR121 capacitive touch sensor...")
+mpr121_enabled = getattr(config, 'MPR121_ENABLED', False)
+
+if mpr121_enabled:
+    print("[MPR121 Startup Check] Checking for capacitive touch module...")
     try:
+        # Check library installation
         import board
         import busio
         import adafruit_mpr121
-        i2c = busio.I2C(board.SCL, board.SDA)
-        mpr121 = adafruit_mpr121.MPR121(i2c)
-        print(f"[Hardware Touch] MPR121 initialized. Prev pin: {config.MPR121_PREV_PIN}, Next pin: {config.MPR121_NEXT_PIN}")
-    except Exception as e:
-        print(f"[Warning] Failed to initialize MPR121 capacitive touch sensor: {e}")
-        print("[Warning] Disabling MPR121 capacitive touch feature.")
+        
+        # Check hardware connectivity
+        try:
+            i2c = busio.I2C(board.SCL, board.SDA)
+            mpr121 = adafruit_mpr121.MPR121(i2c)
+            print(f"[MPR121 Startup Check] ✅ MPR121 detected and initialized. Prev pin: {config.MPR121_PREV_PIN}, Next pin: {config.MPR121_NEXT_PIN}")
+        except Exception as hardware_err:
+            print(f"[MPR121 Startup Check] ⚠️  MPR121 hardware not detected or I2C bus error: {hardware_err}")
+            print("[MPR121 Startup Check] Disabling touch interface. Client will run in polling-only mode.")
+            mpr121 = None
+            
+    except ImportError as import_err:
+        print(f"[MPR121 Startup Check] ⚠️  MPR121 libraries not found: {import_err}")
+        print("[MPR121 Startup Check] Install with: pip3 install adafruit-circuitpython-mpr121")
+        print("[MPR121 Startup Check] Disabling touch interface. Client will run in polling-only mode.")
         mpr121 = None
+else:
+    print("[MPR121 Startup Check] MPR121 capacitive touch is disabled in configuration.")
+
 
 
 # Dynamic Display Resolution & Model resolution based on SCREEN_TYPE
