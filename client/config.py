@@ -62,3 +62,9 @@ DEFAULT_POLL_INTERVAL = parse_int(os.environ.get('TRMNL_DEFAULT_POLL_INTERVAL', 
 WIDTH = parse_int(os.environ.get('TRMNL_WIDTH', ''))
 HEIGHT = parse_int(os.environ.get('TRMNL_HEIGHT', ''))
 WAVESHARE_MODEL = os.environ.get('TRMNL_WAVESHARE_MODEL', '') or None
+
+# 6. MPR121 Capacitive Touch Settings
+MPR121_ENABLED = parse_bool(os.environ.get('TRMNL_MPR121_ENABLED', 'false'))
+MPR121_PREV_PIN = parse_int(os.environ.get('TRMNL_MPR121_PREV_PIN', '6')) or 6
+MPR121_NEXT_PIN = parse_int(os.environ.get('TRMNL_MPR121_NEXT_PIN', '7')) or 7
+

@@ -14,6 +14,23 @@ except ImportError:
     print("[Error] config.py not found in client directory. Please create it.")
     sys.exit(1)
 
+# Initialize MPR121 capacitive touch sensor if enabled
+mpr121 = None
+if getattr(config, 'MPR121_ENABLED', False):
+    print("[Hardware Touch] Initializing MPR121 capacitive touch sensor...")
+    try:
+        import board
+        import busio
+        import adafruit_mpr121
+        i2c = busio.I2C(board.SCL, board.SDA)
+        mpr121 = adafruit_mpr121.MPR121(i2c)
+        print(f"[Hardware Touch] MPR121 initialized. Prev pin: {config.MPR121_PREV_PIN}, Next pin: {config.MPR121_NEXT_PIN}")
+    except Exception as e:
+        print(f"[Warning] Failed to initialize MPR121 capacitive touch sensor: {e}")
+        print("[Warning] Disabling MPR121 capacitive touch feature.")
+        mpr121 = None
+
+
 # Dynamic Display Resolution & Model resolution based on SCREEN_TYPE
 # Pre-configured screen definitions mapping: type -> (width, height, waveshare_model)
 SCREEN_DEFINITIONS = {
@@ -187,67 +204,114 @@ def poll_server():
     print(f"   Driver Type:   {config.DISPLAY_TYPE.upper()}")
     print(f"==========================================\n")
     
+    last_poll_time = 0
+    poll_interval = getattr(config, 'DEFAULT_POLL_INTERVAL', 1800)
+    force_refresh = True
+    next_action = None
+
+    # Track MPR121 pin state to detect transition (rising edge)
+    prev_touched = False
+    next_touched = False
+
     while True:
         # Prevent high-frequency spinning under unexpected execution paths/errors
         time.sleep(0.1)
-        poll_interval = config.DEFAULT_POLL_INTERVAL
-        try:
-            print(f"[{time.strftime('%H:%M:%S')}] Connecting to server to fetch fresh image...")
+        current_time = time.time()
+        
+        # Check MPR121 touch inputs if enabled and initialized
+        if mpr121 is not None:
+            try:
+                prev_pin = getattr(config, 'MPR121_PREV_PIN', 6)
+                next_pin = getattr(config, 'MPR121_NEXT_PIN', 7)
+                
+                curr_prev_state = mpr121[prev_pin].value
+                curr_next_state = mpr121[next_pin].value
+                
+                # Check for rising edge (off -> on)
+                if curr_prev_state and not prev_touched:
+                    print(f"[{time.strftime('%H:%M:%S')}] 👈 Previous Screen Button (Pin {prev_pin}) touched!")
+                    force_refresh = True
+                    next_action = 'prev'
+                elif curr_next_state and not next_touched:
+                    print(f"[{time.strftime('%H:%M:%S')}] 👉 Next Screen Button (Pin {next_pin}) touched!")
+                    force_refresh = True
+                    next_action = 'next'
+                
+                prev_touched = curr_prev_state
+                next_touched = curr_next_state
+            except Exception as e:
+                print(f"[Warning] Error reading MPR121 pins: {e}")
+                
+        # Check if we should poll the server
+        if force_refresh or (current_time - last_poll_time >= poll_interval):
+            action_to_send = next_action
+            force_refresh = False
+            next_action = None
             
-            # Gather telemetry headers dynamically
-            headers = {
-                'ID': device_id,
-                'Access-Token': device_id,
-                'Device-Name': DEVICE_NAME,
-                'FW-Version': 'InkFlow-Python-v1.2.0',
-                'Battery-Voltage': 'USB'
-            }
-            rssi = get_wifi_rssi()
-            if rssi:
-                headers['RSSI'] = rssi
+            try:
+                print(f"[{time.strftime('%H:%M:%S')}] Connecting to server to fetch fresh image...")
+                
+                # Gather telemetry headers dynamically
+                headers = {
+                    'ID': device_id,
+                    'Access-Token': device_id,
+                    'Device-Name': DEVICE_NAME,
+                    'FW-Version': 'InkFlow-Python-v1.2.0',
+                    'Battery-Voltage': 'USB'
+                }
+                rssi = get_wifi_rssi()
+                if rssi:
+                    headers['RSSI'] = rssi
 
-            response = requests.get(server_url, params=params, headers=headers, timeout=10)
-            
-            if response.status_code == 200:
-                print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(response.content)} bytes)")
+                # Prepare query parameters
+                request_params = params.copy()
+                if action_to_send:
+                    request_params['action'] = action_to_send
+                    request_params['force'] = 'true'
+                    print(f"[{time.strftime('%H:%M:%S')}] Triggering action: {action_to_send}")
+
+                response = requests.get(server_url, params=request_params, headers=headers, timeout=10)
                 
-                # Try to parse refresh rate from header, fallback to configuration
-                if 'X-Refresh-Rate' in response.headers:
-                    try:
-                        poll_interval = int(response.headers['X-Refresh-Rate'])
-                        print(f"[{time.strftime('%H:%M:%S')}] Server set refresh rate: {poll_interval}s")
-                    except ValueError:
-                        pass
-                
-                # Load image from bytes
-                image_data = io.BytesIO(response.content)
-                img = Image.open(image_data)
-                
-                # Direct to selected driver
-                if config.DISPLAY_TYPE == 'waveshare':
-                    display_waveshare(img)
-                elif config.DISPLAY_TYPE == 'inky':
-                    display_inky(img)
+                if response.status_code == 200:
+                    print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(response.content)} bytes)")
+                    
+                    # Try to parse refresh rate from header, fallback to configuration
+                    if 'X-Refresh-Rate' in response.headers:
+                        try:
+                            poll_interval = int(response.headers['X-Refresh-Rate'])
+                            print(f"[{time.strftime('%H:%M:%S')}] Server set refresh rate: {poll_interval}s")
+                        except ValueError:
+                            pass
+                    
+                    # Load image from bytes
+                    image_data = io.BytesIO(response.content)
+                    img = Image.open(image_data)
+                    
+                    # Direct to selected driver
+                    if config.DISPLAY_TYPE == 'waveshare':
+                        display_waveshare(img)
+                    elif config.DISPLAY_TYPE == 'inky':
+                        display_inky(img)
+                    else:
+                        display_mock(img)
                 else:
-                    display_mock(img)
-            else:
-                print(f"[Server Warning] Server responded with status code: {response.status_code}")
+                    print(f"[Server Warning] Server responded with status code: {response.status_code}")
                 
-        except requests.exceptions.RequestException as e:
-            print(f"[Connection Error] Server unreachable: {e}")
-            print(f"Retrying in 30 seconds...")
-            time.sleep(30)
-            continue
-        except Exception as e:
-            print(f"[Unexpected Error] {e}")
-            print(f"Retrying in 30 seconds...")
-            time.sleep(30)
-            continue
-            
-        # Ensure we sleep at least 1 second to prevent tight looping if poll_interval is set incorrectly
-        poll_interval = max(1, poll_interval)
-        print(f"💤 Sleeping for {poll_interval} seconds...\n")
-        time.sleep(poll_interval)
+                # Update last poll time only on a successful or completed attempt
+                last_poll_time = time.time()
+                
+                # Print sleeping status info
+                poll_interval = max(1, poll_interval)
+                print(f"💤 Waiting {poll_interval} seconds or until button press...\n")
+                
+            except requests.exceptions.RequestException as e:
+                print(f"[Connection Error] Server unreachable: {e}")
+                print(f"Retrying in 10 seconds...")
+                last_poll_time = time.time() - poll_interval + 10
+            except Exception as e:
+                print(f"[Unexpected Error] {e}")
+                print(f"Retrying in 10 seconds...")
+                last_poll_time = time.time() - poll_interval + 10
 
 if __name__ == "__main__":
     try:

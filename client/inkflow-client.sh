@@ -43,12 +43,12 @@ install_client() {
     # Enforce strict error checks during the installer sequence to prevent silent failures
     set -e
     
-    echo -e "\n${BLUE}📦 [1/4] Installing system dependencies (SPI, Git, PIL, NumPy)...${NC}"
+    echo -e "\n${BLUE}📦 [1/4] Installing system dependencies (SPI, I2C, Git, PIL, NumPy)...${NC}"
     apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update
-    apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y python3-pip python3-pil python3-numpy python3-spidev git
+    apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y python3-pip python3-pil python3-numpy python3-spidev python3-smbus i2c-tools git
  
-    # 2. Enable SPI interface in Pi config
-    echo -e "\n${BLUE}🔌 [2/4] Enabling hardware SPI interface...${NC}"
+    # 2. Enable SPI and I2C interfaces in Pi config
+    echo -e "\n${BLUE}🔌 [2/4] Enabling hardware SPI and I2C interfaces...${NC}"
     CONFIG_FILE="/boot/firmware/config.txt"
     if [ ! -f "$CONFIG_FILE" ]; then
         CONFIG_FILE="/boot/config.txt"
@@ -60,6 +60,14 @@ install_client() {
         echo "dtparam=spi=on" >> "$CONFIG_FILE"
         echo -e "${GREEN}✅ Enabled SPI in $CONFIG_FILE. (Reboot may be required to apply).${NC}"
     fi
+
+    if grep -q "^dtparam=i2c_arm=on" "$CONFIG_FILE"; then
+        echo -e "${GREEN}✅ I2C is already enabled in $CONFIG_FILE${NC}"
+    else
+        echo "dtparam=i2c_arm=on" >> "$CONFIG_FILE"
+        echo -e "${GREEN}✅ Enabled I2C in $CONFIG_FILE. (Reboot may be required to apply).${NC}"
+    fi
+
 
     # 3. Handle high-performance Waveshare python driver installation
     echo -e "\n${BLUE}🧬 [3/4] Installing Waveshare hardware driver (sparse clone to preserve Pi RAM)...${NC}"
@@ -78,6 +86,11 @@ install_client() {
     cd "$WORK_DIR"
     rm -rf "$TEMP_DIR"
     echo -e "${GREEN}✅ Waveshare hardware driver installed successfully!${NC}"
+
+    echo -e "\n${BLUE}🧬 Installing MPR121 capacitive touch driver...${NC}"
+    pip3 install adafruit-circuitpython-mpr121 --break-system-packages --no-cache-dir || pip3 install adafruit-circuitpython-mpr121 --no-cache-dir
+    echo -e "${GREEN}✅ MPR121 capacitive touch driver installed successfully!${NC}"
+
 
     # 4. Provision .env configurations
     echo -e "\n${BLUE}📡 [4/4] Provisioning Environment Configurations (.env)...${NC}"
@@ -99,6 +112,11 @@ TRMNL_SCREEN_TYPE=4in26
 TRMNL_DISPLAY_TYPE=waveshare
 TRMNL_INVERT_COLORS=false
 TRMNL_DEFAULT_POLL_INTERVAL=1800
+
+# --- MPR121 Capacitive Touch Settings ---
+TRMNL_MPR121_ENABLED=false
+TRMNL_MPR121_PREV_PIN=6
+TRMNL_MPR121_NEXT_PIN=7
 EOF
             echo -e "${GREEN}Created new .env file.${NC}"
         fi
