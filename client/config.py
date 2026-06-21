@@ -68,4 +68,5 @@ MPR121_ENABLED = parse_bool(os.environ.get('TRMNL_MPR121_ENABLED', 'false'))
 MPR121_PREV_PIN = parse_int(os.environ.get('TRMNL_MPR121_PREV_PIN', '6')) or 6
 MPR121_NEXT_PIN = parse_int(os.environ.get('TRMNL_MPR121_NEXT_PIN', '7')) or 7
 MPR121_SETUP_PIN = parse_int(os.environ.get('TRMNL_MPR121_SETUP_PIN', '9')) or 9
+MPR121_DIAG_PIN = parse_int(os.environ.get('TRMNL_MPR121_DIAG_PIN', '8')) or 8
 

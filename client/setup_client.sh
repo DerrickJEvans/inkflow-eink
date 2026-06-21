@@ -127,6 +127,7 @@ TRMNL_MPR121_ENABLED=false
 TRMNL_MPR121_PREV_PIN=6
 TRMNL_MPR121_NEXT_PIN=7
 TRMNL_MPR121_SETUP_PIN=9
+TRMNL_MPR121_DIAG_PIN=8
 EOF
 echo "✅ Created .env configurations file!"
 
@@ -164,6 +165,7 @@ MPR121_ENABLED = os.environ.get('TRMNL_MPR121_ENABLED', 'false').lower() == 'tru
 MPR121_PREV_PIN = int(os.environ.get('TRMNL_MPR121_PREV_PIN', '6'))
 MPR121_NEXT_PIN = int(os.environ.get('TRMNL_MPR121_NEXT_PIN', '7'))
 MPR121_SETUP_PIN = int(os.environ.get('TRMNL_MPR121_SETUP_PIN', '9'))
+MPR121_DIAG_PIN = int(os.environ.get('TRMNL_MPR121_DIAG_PIN', '8'))
 EOF
   echo "✅ Created fallback config.py loader!"
 fi

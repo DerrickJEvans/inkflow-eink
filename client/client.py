@@ -690,6 +690,113 @@ def enter_ap_setup_mode():
         httpd.server_close()
         print("[Setup Portal] Setup portal closed.")
 
+def get_local_ip():
+    """Dynamically resolves local IP address for outbound network interface"""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return "127.0.0.1"
+
+def get_cpu_temp():
+    """Reads physical thermal sensor registers on Linux/Raspberry Pi"""
+    try:
+        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
+            temp = float(f.read().strip()) / 1000.0
+            return f"{temp:.1f}°C"
+    except Exception:
+        return "N/A"
+
+def get_sys_stats():
+    """Queries uptime and CPU load statistics from system registers"""
+    uptime = "N/A"
+    try:
+        with open("/proc/uptime", "r") as f:
+            uptime_seconds = float(f.readline().split()[0])
+            hours = int(uptime_seconds // 3600)
+            minutes = int((uptime_seconds % 3600) // 60)
+            uptime = f"{hours}h {minutes}m"
+    except Exception:
+        pass
+        
+    load = "N/A"
+    try:
+        with open("/proc/loadavg", "r") as f:
+            load = f.readline().split()[0]
+    except Exception:
+        pass
+        
+    return uptime, load
+
+def draw_diagnostics_overlay(last_sync_time):
+    """Renders a comprehensive system diagnostics report on E-Ink screen"""
+    print("[Display] Drawing system diagnostics overlay...")
+    
+    img = Image.new("L", (WIDTH, HEIGHT), 255)
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+    except IOError:
+        font_large = ImageFont.load_default()
+        font_medium = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+        
+    # Draw double border
+    draw.rectangle([5, 5, WIDTH - 6, HEIGHT - 6], outline=0)
+    draw.rectangle([8, 8, WIDTH - 9, HEIGHT - 9], outline=0)
+    
+    # Header
+    draw.text((25, 30), "System Diagnostics Scan", fill=0, font=font_large)
+    draw.text((25, 60), "Active status report of the local client environment:", fill=0, font=font_medium)
+    draw.line([(20, 80), (WIDTH - 20, 80)], fill=0)
+    
+    # Gather specs
+    ip = get_local_ip()
+    mac = get_mac_address()
+    rssi = get_wifi_rssi() or "N/A"
+    temp = get_cpu_temp()
+    uptime, load = get_sys_stats()
+    sync_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(last_sync_time)) if last_sync_time > 0 else "Never"
+    
+    if WIDTH >= 600:
+        # Draw dynamic double columns
+        draw.text((35, 105), f"🖥️ Device Name:  {DEVICE_NAME}", fill=0, font=font_medium)
+        draw.text((35, 135), f"🔌 Server IP:   {config.SERVER_IP}:{config.SERVER_PORT}", fill=0, font=font_medium)
+        draw.text((35, 165), f"🌐 Local IP:    {ip}", fill=0, font=font_medium)
+        draw.text((35, 195), f"📡 WiFi RSSI:   {rssi} dBm", fill=0, font=font_medium)
+        
+        draw.text((WIDTH // 2 + 10, 105), f"🏷️ MAC Address:  {mac}", fill=0, font=font_medium)
+        draw.text((WIDTH // 2 + 10, 135), f"⏳ Sys Uptime:  {uptime}", fill=0, font=font_medium)
+        draw.text((WIDTH // 2 + 10, 165), f"🔥 CPU Temp:    {temp} (Load: {load})", fill=0, font=font_medium)
+        draw.text((WIDTH // 2 + 10, 195), f"⏱️ Last Sync:   {sync_str}", fill=0, font=font_medium)
+    else:
+        # Fallback layout for narrower displays
+        draw.text((25, 95), f"🖥️ Name:  {DEVICE_NAME}", fill=0, font=font_small)
+        draw.text((25, 115), f"🔌 Server: {config.SERVER_IP}:{config.SERVER_PORT}", fill=0, font=font_small)
+        draw.text((25, 135), f"🌐 IP:     {ip}  | MAC: {mac}", fill=0, font=font_small)
+        draw.text((25, 155), f"📡 RSSI:   {rssi} dBm | Temp: {temp}", fill=0, font=font_small)
+        draw.text((25, 175), f"⏳ Uptime: {uptime} | Load: {load}", fill=0, font=font_small)
+        draw.text((25, 195), f"⏱️ Sync:   {sync_str}", fill=0, font=font_small)
+        
+    # Footer Action info
+    draw.line([(20, HEIGHT - 55), (WIDTH - 20, HEIGHT - 55)], fill=0)
+    draw.text((25, HEIGHT - 45), "👉 Touch Pin 8 again to exit diagnostics and trigger a manual screen refresh.", fill=0, font=font_medium)
+    draw.text((25, HEIGHT - 28), "   Diagnostics overlay will automatically exit in 15 seconds.", fill=0, font=font_medium)
+    
+    if config.DISPLAY_TYPE == 'waveshare':
+        display_waveshare(img)
+    elif config.DISPLAY_TYPE == 'inky':
+        display_inky(img)
+    else:
+        display_mock(img)
+
 def poll_server():
     """Main fetch loop"""
     # Dynamically resolve MAC address if configured to do so or if empty
@@ -717,16 +824,27 @@ def poll_server():
     poll_interval = getattr(config, 'DEFAULT_POLL_INTERVAL', 1800)
     force_refresh = True
     next_action = None
+    last_successful_sync_time = 0
+    
+    diagnostics_active = False
+    diagnostics_start_time = 0
 
     # Track MPR121 pin state to detect transition (rising edge)
     prev_touched = False
     next_touched = False
     setup_touched = False
+    diag_touched = False
 
     while True:
         # Prevent high-frequency spinning under unexpected execution paths/errors
         time.sleep(0.1)
         current_time = time.time()
+        
+        # Check if diagnostics screen timed out
+        if diagnostics_active and (current_time - diagnostics_start_time >= 15.0):
+            print(f"[{time.strftime('%H:%M:%S')}] Diagnostics overlay timed out after 15 seconds. Triggering manual refresh...")
+            diagnostics_active = False
+            force_refresh = True
         
         # Check MPR121 touch inputs if enabled and initialized
         if mpr121 is not None:
@@ -734,10 +852,12 @@ def poll_server():
                 prev_pin = getattr(config, 'MPR121_PREV_PIN', 6)
                 next_pin = getattr(config, 'MPR121_NEXT_PIN', 7)
                 setup_pin = getattr(config, 'MPR121_SETUP_PIN', 9)
+                diagnostics_pin = getattr(config, 'MPR121_DIAG_PIN', 8)
                 
                 curr_prev_state = mpr121[prev_pin].value
                 curr_next_state = mpr121[next_pin].value
                 curr_setup_state = mpr121[setup_pin].value
+                curr_diag_state = mpr121[diagnostics_pin].value
                 
                 # Check for rising edge (off -> on)
                 if curr_prev_state and not prev_touched:
@@ -751,15 +871,26 @@ def poll_server():
                 elif curr_setup_state and not setup_touched:
                     print(f"[{time.strftime('%H:%M:%S')}] ⚙️ Setup/AP Mode Button (Pin {setup_pin}) touched! Entering AP setup portal...")
                     enter_ap_setup_mode()
+                elif curr_diag_state and not diag_touched:
+                    print(f"[{time.strftime('%H:%M:%S')}] 📊 Diagnostics Button (Pin {diagnostics_pin}) touched!")
+                    if not diagnostics_active:
+                        diagnostics_active = True
+                        diagnostics_start_time = time.time()
+                        draw_diagnostics_overlay(last_successful_sync_time)
+                    else:
+                        diagnostics_active = False
+                        force_refresh = True
+                        print(f"[{time.strftime('%H:%M:%S')}] Exiting diagnostics, triggering manual refresh...")
                 
                 prev_touched = curr_prev_state
                 next_touched = curr_next_state
                 setup_touched = curr_setup_state
+                diag_touched = curr_diag_state
             except Exception as e:
                 print(f"[Warning] Error reading MPR121 pins: {e}")
                 
         # Check if we should poll the server
-        if force_refresh or (current_time - last_poll_time >= poll_interval):
+        if not diagnostics_active and (force_refresh or (current_time - last_poll_time >= poll_interval)):
             action_to_send = next_action
             force_refresh = False
             next_action = None
@@ -790,6 +921,7 @@ def poll_server():
                 
                 if response.status_code == 200:
                     print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(response.content)} bytes)")
+                    last_successful_sync_time = time.time()
                     
                     # Try to parse refresh rate from header, fallback to configuration
                     if 'X-Refresh-Rate' in response.headers:
