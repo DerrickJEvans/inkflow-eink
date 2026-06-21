@@ -126,6 +126,7 @@ TRMNL_DEFAULT_POLL_INTERVAL=1800
 TRMNL_MPR121_ENABLED=false
 TRMNL_MPR121_PREV_PIN=6
 TRMNL_MPR121_NEXT_PIN=7
+TRMNL_MPR121_SETUP_PIN=9
 EOF
 echo "✅ Created .env configurations file!"
 
@@ -162,6 +163,7 @@ WAVESHARE_MODEL = None
 MPR121_ENABLED = os.environ.get('TRMNL_MPR121_ENABLED', 'false').lower() == 'true'
 MPR121_PREV_PIN = int(os.environ.get('TRMNL_MPR121_PREV_PIN', '6'))
 MPR121_NEXT_PIN = int(os.environ.get('TRMNL_MPR121_NEXT_PIN', '7'))
+MPR121_SETUP_PIN = int(os.environ.get('TRMNL_MPR121_SETUP_PIN', '9'))
 EOF
   echo "✅ Created fallback config.py loader!"
 fi

@@ -5,7 +5,11 @@ import requests
 import io
 import os
 import sys
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageDraw, ImageFont
+import http.server
+import urllib.parse
+import subprocess
+import threading
 
 # Load configurations
 try:
@@ -201,6 +205,471 @@ def get_wifi_rssi():
         pass
     return None
 
+# ==============================================================================
+#                  AP CONFIGURATION PORTAL WIZARD
+# ==============================================================================
+httpd = None
+
+def update_env_file(updates):
+    """Updates the local .env configuration file with the provided dictionary of key-value pairs"""
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+    lines = []
+    if os.path.exists(env_path):
+        with open(env_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            
+    new_lines = []
+    updates_remaining = updates.copy()
+    
+    for line in lines:
+        stripped = line.strip()
+        if '=' in stripped and not stripped.startswith('#'):
+            key, val = stripped.split('=', 1)
+            key = key.strip()
+            if key in updates_remaining:
+                new_lines.append(f"{key}={updates_remaining[key]}\n")
+                del updates_remaining[key]
+                continue
+        new_lines.append(line)
+        
+    # Append any remaining keys that weren't in the original file
+    for key, val in updates_remaining.items():
+        new_lines.append(f"{key}={val}\n")
+        
+    with open(env_path, 'w', encoding='utf-8') as f:
+        f.writelines(new_lines)
+
+def draw_setup_splash():
+    """Renders the setup wizard splash screen onto the display"""
+    print("[Display] Drawing setup wizard splash screen...")
+    
+    img = Image.new("L", (WIDTH, HEIGHT), 255)
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+        font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+    except IOError:
+        font_large = ImageFont.load_default()
+        font_medium = ImageFont.load_default()
+        font_small = ImageFont.load_default()
+        
+    # Draw outer double border
+    draw.rectangle([5, 5, WIDTH - 6, HEIGHT - 6], outline=0)
+    draw.rectangle([8, 8, WIDTH - 9, HEIGHT - 9], outline=0)
+    
+    # Header
+    draw.text((25, 30), "InkFlow E-Ink Setup", fill=0, font=font_large)
+    draw.text((25, 60), "Configure your wireless device portal:", fill=0, font=font_medium)
+    draw.line([(20, 80), (WIDTH - 20, 80)], fill=0)
+    
+    # Steps
+    draw.text((25, 95), "1. Connect your phone/PC to setup WiFi network:", fill=0, font=font_medium)
+    draw.text((45, 120), "SSID: InkFlow-Setup  |  Password: 12345678", fill=0, font=font_large)
+    
+    draw.text((25, 160), "2. Open a browser and navigate to:", fill=0, font=font_medium)
+    draw.text((45, 185), "http://10.42.0.1:8080", fill=0, font=font_large)
+    
+    draw.text((25, 230), "3. Enter your local WiFi details & InkFlow server details.", fill=0, font=font_medium)
+    
+    # Footer / MAC
+    draw.line([(20, HEIGHT - 40), (WIDTH - 20, HEIGHT - 40)], fill=0)
+    mac = get_mac_address()
+    draw.text((25, HEIGHT - 28), f"Device MAC Address: {mac}", fill=0, font=font_medium)
+    
+    if config.DISPLAY_TYPE == 'waveshare':
+        display_waveshare(img)
+    elif config.DISPLAY_TYPE == 'inky':
+        display_inky(img)
+    else:
+        display_mock(img)
+
+def draw_connecting_splash(ssid, server_ip, port):
+    """Renders the connecting status splash screen onto the display"""
+    print("[Display] Drawing connecting status splash screen...")
+    
+    img = Image.new("L", (WIDTH, HEIGHT), 255)
+    draw = ImageDraw.Draw(img)
+    
+    try:
+        font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+        font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)
+    except IOError:
+        font_large = ImageFont.load_default()
+        font_medium = ImageFont.load_default()
+        
+    draw.rectangle([5, 5, WIDTH - 6, HEIGHT - 6], outline=0)
+    
+    draw.text((25, 35), "Connecting Screen...", fill=0, font=font_large)
+    draw.text((25, 70), "Applying new credentials and establishing link:", fill=0, font=font_medium)
+    draw.line([(20, 85), (WIDTH - 20, 85)], fill=0)
+    
+    draw.text((25, 110), f"📡 WiFi SSID:  {ssid}", fill=0, font=font_medium)
+    draw.text((25, 135), f"🌐 Server IP:  {server_ip}", fill=0, font=font_medium)
+    draw.text((25, 160), f"🔌 Port Bind:  {port}", fill=0, font=font_medium)
+    
+    draw.text((25, 200), "Please wait up to 30 seconds for connection...", fill=0, font=font_medium)
+    
+    draw.line([(20, HEIGHT - 40), (WIDTH - 20, HEIGHT - 40)], fill=0)
+    mac = get_mac_address()
+    draw.text((25, HEIGHT - 28), f"MAC Address: {mac}", fill=0, font=font_medium)
+    
+    if config.DISPLAY_TYPE == 'waveshare':
+        display_waveshare(img)
+    elif config.DISPLAY_TYPE == 'inky':
+        display_inky(img)
+    else:
+        display_mock(img)
+
+class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        # Override to suppress standard HTTP logging to keep stdout clean
+        pass
+
+    def do_GET(self):
+        # Redirect all domains (Captive Portal) to root '/' except local routes
+        parsed_url = urllib.parse.urlparse(self.path)
+        if parsed_url.path not in ["/", "/save", "/generate_204", "/fwlink"]:
+            self.send_response(302)
+            self.send_header("Location", "http://10.42.0.1:8080/")
+            self.end_headers()
+            return
+            
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        
+        # Scan wifi networks via nmcli
+        wifi_options = ""
+        try:
+            res = subprocess.run(["nmcli", "-t", "-f", "SSID,SIGNAL", "dev", "wifi"], capture_output=True, text=True, timeout=5)
+            seen = set()
+            for line in res.stdout.strip().split("\n"):
+                if line and ":" in line:
+                    parts = line.split(":", 1)
+                    ssid = parts[0].strip()
+                    signal = parts[1].strip()
+                    if ssid and ssid not in seen:
+                        seen.add(ssid)
+                        wifi_options += f'<option value="{ssid}">{ssid} ({signal}%)</option>\n'
+        except Exception:
+            pass
+
+        mac = get_mac_address()
+        
+        # Serve the premium styled setup web page
+        html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InkFlow E-Ink Setup Wizard</title>
+  <style>
+    :root {{
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }}
+    * {{
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }}
+    body {{
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }}
+    .container {{
+      width: 100%;
+      max-width: 500px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }}
+    .header {{
+      text-align: center;
+      margin-bottom: 25px;
+    }}
+    .header h1 {{
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      background: linear-gradient(135deg, #a5b4fc, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }}
+    .header p {{
+      font-size: 14px;
+      color: var(--text-muted);
+    }}
+    .form-group {{
+      margin-bottom: 20px;
+    }}
+    .form-group label {{
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }}
+    .form-group input, .form-group select {{
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s ease;
+    }}
+    .form-group input:focus, .form-group select:focus {{
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }}
+    .btn-submit {{
+      width: 100%;
+      padding: 14px;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-top: 10px;
+      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+    }}
+    .btn-submit:hover {{
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px -1px rgba(99, 102, 241, 0.3);
+    }}
+    .footer {{
+      text-align: center;
+      margin-top: 25px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>InkFlow Setup Wizard</h1>
+      <p>Configure wireless network and server connections</p>
+    </div>
+    
+    <form action="/save" method="POST">
+      <div class="form-group">
+        <label for="ssid">Scanned WiFi Networks</label>
+        <select id="ssid" name="ssid" onchange="document.getElementById('manual_ssid').value = this.value">
+          <option value="">-- Select Network --</option>
+          {wifi_options}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="manual_ssid">WiFi SSID (or Manual Entry)</label>
+        <input type="text" id="manual_ssid" name="manual_ssid" placeholder="Enter WiFi SSID" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="password">WiFi Password</label>
+        <input type="password" id="password" name="password" placeholder="Enter WiFi Password">
+      </div>
+      
+      <div class="form-group">
+        <label for="server">InkFlow Server Host / IP</label>
+        <input type="text" id="server" name="server" placeholder="e.g. 192.168.1.122 or mydns.local" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="port">Server Port</label>
+        <input type="number" id="port" name="port" value="5000" placeholder="5000" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="devicename">Custom Device Name</label>
+        <input type="text" id="devicename" name="devicename" value="Living Room Pi Panel" placeholder="e.g. Kitchen Display">
+      </div>
+      
+      <button type="submit" class="btn-submit">Save Settings & Connect</button>
+    </form>
+    
+    <div class="footer">
+      Device MAC Address: {mac}
+    </div>
+  </div>
+</body>
+</html>"""
+        self.wfile.write(html.encode("utf-8"))
+
+    def do_POST(self):
+        if self.path == "/save":
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode('utf-8')
+            params = urllib.parse.parse_qs(post_data)
+            
+            ssid = params.get('manual_ssid', [''])[0].strip()
+            password = params.get('password', [''])[0].strip()
+            server_ip = params.get('server', [''])[0].strip()
+            port = params.get('port', ['5000'])[0].strip()
+            device_name = params.get('devicename', [''])[0].strip()
+            
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            
+            response_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration Saved</title>
+  <style>
+    body {{
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }}
+    .card {{
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 450px;
+    }}
+    h1 {{ color: #818cf8; margin-bottom: 15px; font-size: 22px; }}
+    p {{ color: #94a3b8; font-size: 15px; line-height: 1.6; margin-bottom: 20px; }}
+    .loader {{
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top: 4px solid #6366f1;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto 0;
+    }}
+    @keyframes spin {{
+      0% {{ transform: rotate(0deg); }}
+      100% {{ transform: rotate(360deg); }}
+    }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Settings Saved Successfully!</h1>
+    <p>Your InkFlow E-Ink device is now connecting to <strong>{ssid}</strong>.</p>
+    <p>Please check your E-Paper display. It will refresh to show connection status shortly.</p>
+    <div class="loader"></div>
+  </div>
+</body>
+</html>"""
+            self.wfile.write(response_html.encode("utf-8"))
+            
+            # Start background connection routine
+            threading.Thread(target=apply_config_and_reconnect, args=(ssid, password, server_ip, port, device_name)).start()
+
+def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
+    """Saves settings, turns down AP hotspot, connects to user's wifi and restarts the client daemon"""
+    # Draw connecting splash screen on display
+    draw_connecting_splash(ssid, server_ip, port)
+    
+    # Save the settings
+    updates = {
+        'TRMNL_SERVER_IP': server_ip,
+        'TRMNL_SERVER_PORT': port,
+        'TRMNL_DEVICE_NAME': device_name
+    }
+    update_env_file(updates)
+    
+    # Clean up the AP hotspot connection
+    try:
+        subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
+        subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
+    except Exception:
+        pass
+        
+    # Attempt to connect to the new WiFi network
+    if ssid:
+        print(f"[Setup Portal] Connecting to WiFi network: {ssid}...")
+        try:
+            if password:
+                subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid, "password", password], capture_output=True, timeout=30)
+            else:
+                subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid], capture_output=True, timeout=30)
+        except Exception as e:
+            print(f"[Setup Portal] Error connecting to WiFi network: {e}")
+            
+    # Stop the web server
+    global httpd
+    if httpd:
+        print("[Setup Portal] Stopping setup web server...")
+        httpd.shutdown()
+        
+    print("[Setup Portal] Restarting client process to apply configurations...")
+    time.sleep(2)
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
+def enter_ap_setup_mode():
+    """Starts AP mode and serves the captive configuration portal"""
+    print("[Setup Portal] Entering configuration AP mode...")
+    
+    # 1. Show setup wizard splash
+    draw_setup_splash()
+    
+    # 2. Start the access point
+    try:
+        subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
+        subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
+    except Exception:
+        pass
+        
+    print("[Setup Portal] Launching Hotspot SSID 'InkFlow-Setup' (Password: 12345678)...")
+    try:
+        subprocess.run(["sudo", "nmcli", "dev", "wifi", "hotspot", "ssid", "InkFlow-Setup", "password", "12345678"], capture_output=True, timeout=20)
+    except Exception as e:
+        print(f"[Setup Portal] Warning: Hotspot command failed: {e}")
+        
+    # 3. Spawn HTTP server
+    global httpd
+    server_address = ('', 8080)
+    httpd = http.server.HTTPServer(server_address, SetupPortalHandler)
+    print("[Setup Portal] Configuration portal is active at http://10.42.0.1:8080")
+    
+    try:
+        httpd.serve_forever()
+    except Exception as e:
+        print(f"[Setup Portal] Server shutdown: {e}")
+    finally:
+        httpd.server_close()
+        print("[Setup Portal] Setup portal closed.")
+
 def poll_server():
     """Main fetch loop"""
     # Dynamically resolve MAC address if configured to do so or if empty
@@ -232,6 +701,7 @@ def poll_server():
     # Track MPR121 pin state to detect transition (rising edge)
     prev_touched = False
     next_touched = False
+    setup_touched = False
 
     while True:
         # Prevent high-frequency spinning under unexpected execution paths/errors
@@ -243,9 +713,11 @@ def poll_server():
             try:
                 prev_pin = getattr(config, 'MPR121_PREV_PIN', 6)
                 next_pin = getattr(config, 'MPR121_NEXT_PIN', 7)
+                setup_pin = getattr(config, 'MPR121_SETUP_PIN', 9)
                 
                 curr_prev_state = mpr121[prev_pin].value
                 curr_next_state = mpr121[next_pin].value
+                curr_setup_state = mpr121[setup_pin].value
                 
                 # Check for rising edge (off -> on)
                 if curr_prev_state and not prev_touched:
@@ -256,9 +728,13 @@ def poll_server():
                     print(f"[{time.strftime('%H:%M:%S')}] 👉 Next Screen Button (Pin {next_pin}) touched!")
                     force_refresh = True
                     next_action = 'next'
+                elif curr_setup_state and not setup_touched:
+                    print(f"[{time.strftime('%H:%M:%S')}] ⚙️ Setup/AP Mode Button (Pin {setup_pin}) touched! Entering AP setup portal...")
+                    enter_ap_setup_mode()
                 
                 prev_touched = curr_prev_state
                 next_touched = curr_next_state
+                setup_touched = curr_setup_state
             except Exception as e:
                 print(f"[Warning] Error reading MPR121 pins: {e}")
                 
