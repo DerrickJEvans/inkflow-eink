@@ -494,7 +494,10 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
       
       <div class="form-group">
         <label for="password">WiFi Password</label>
-        <input type="password" id="password" name="password" placeholder="Enter WiFi Password">
+        <div style="position: relative;">
+          <input type="password" id="password" name="password" placeholder="Enter WiFi Password" style="padding-right: 60px;">
+          <button type="button" id="togglePassword" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 13px; font-weight: 600; outline: none;">Show</button>
+        </div>
       </div>
       
       <div class="form-group">
@@ -519,6 +522,23 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
       Device MAC Address: {mac}
     </div>
   </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {{
+      const passwordInput = document.getElementById("password");
+      const togglePassword = document.getElementById("togglePassword");
+      if (passwordInput && togglePassword) {{
+        togglePassword.addEventListener("click", function() {{
+          if (passwordInput.type === "password") {{
+            passwordInput.type = "text";
+            togglePassword.textContent = "Hide";
+          }} else {{
+            passwordInput.type = "password";
+            togglePassword.textContent = "Show";
+          }}
+        }});
+      }}
+    }});
+  </script>
 </body>
 </html>"""
         self.wfile.write(html.encode("utf-8"))
