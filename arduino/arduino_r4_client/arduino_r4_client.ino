@@ -322,6 +322,10 @@ void displayCachedImage(int slotIndex) {
   epd.SendData(0xF7); 
   epd.SendCommand(0x20); 
   EPD_WAIT_BUSY(epd);
+  
+  // Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
+  delay(2000);
+  
   epd.Sleep();
   Serial.println(F("[Display] Cache screen update finished."));
 }
@@ -609,6 +613,10 @@ bool fetchAndStreamDisplay(String action) {
   epd.SendCommand(0x20); 
   
   EPD_WAIT_BUSY(epd);
+  
+  // Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
+  delay(2000);
+  
   epd.Sleep();
   
   return true;
@@ -1239,6 +1247,10 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
   epd.SendData(0xF7); 
   epd.SendCommand(0x20); 
   EPD_WAIT_BUSY(epd);
+  
+  // Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
+  delay(2000);
+  
   epd.Sleep();
   
   Serial.println(F("[Display] Splash drawn successfully."));

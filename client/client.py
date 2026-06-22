@@ -127,6 +127,9 @@ def display_waveshare(img):
         print("[Hardware Display] Writing frame buffer to display...")
         epd.display(epd.getbuffer(mono_img))
         
+        # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
+        time.sleep(2)
+        
         print("[Hardware Display] Putting screen to sleep...")
         epd.sleep()
         print("[Hardware Display] Draw cycle complete.")

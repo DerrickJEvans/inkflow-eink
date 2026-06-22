@@ -318,6 +318,9 @@ void updateDisplay() {
     display.drawBitmap(0, 0, imageBuffer, displayWidth, displayHeight, GxEPD_BLACK, GxEPD_WHITE);
   } while (display.nextPage());
   
+  // Delay to let physical pixels stabilize and charge pump voltages settle before powering off
+  delay(2000);
+  
   Serial.println("[Display] Powering down e-ink display SPI panel...");
   display.powerOff();
   Serial.println("[Display] Screen updated successfully!");
