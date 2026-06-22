@@ -63,6 +63,7 @@ Seamlessly cycle through all of your active widgets at full-screen resolution. O
 * **1-Bit Raw Bit-Packing**: Packs dithered pixels (8 pixels per byte, MSB-first) into a tight binary buffer suitable for lightweight transmission on memory-constrained microcontrollers.
 * **Color Inversion**: Easily toggle between `Standard (Black on White)` or `Inverted (White on Black)` rendering in your device settings to flip the contrast dynamically on the fly.
 * **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like ESP32) to sleep at **~10µA current draw** and run on batteries for months.
+* **Post-Refresh Stabilization**: Automatically incorporates a 2-second stabilization delay post-refresh before putting the display to sleep or powering it off. This allows panel voltages to settle naturally, preventing the common "fading text" issue on physical e-paper panels.
 
 ### 3. Premium Glassmorphic Web Control Center
 * **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
@@ -215,8 +216,24 @@ Once the server is running, configure your physical displays to retrieve rendere
    ./inkflow-client.sh
    ```
    * **Select Option `[1]` (Run Automated Client Setup/Installer)**.
-   * **Interactive Setup**: The script will guide you through entering your **Server IP/Host**, **Friendly Device Name**, and selecting your display model (`4in26`, `7in5`, `4in2`, `2in9`) from an easy option list.
-   * *The installer updates system packages, performs a memory-safe partial installation of native display libraries, writes clean variables to a secure `.env` file, and establishes the auto-starting `inkflow-client.service` daemon.*
+    * **Interactive Setup**: The script will guide you through entering your **Server IP/Host**, **Friendly Device Name**, and selecting your display model (`4in26`, `7in5`, `4in2`, `2in9`) from an easy option list.
+    * *The installer updates system packages, performs a memory-safe partial installation of native display libraries, writes clean variables to a secure `.env` file, and establishes the auto-starting `inkflow-client.service` daemon.*
+
+4. **🎛️ MPR121 Capacitive Touch & AP Config (Optional)**:
+   The Python client supports **MPR121 capacitive touch modules** on the Raspberry Pi's I2C interface to control carousel rotation and configuration states.
+   
+   * **Enable Touch Settings**: Add the following settings to your local `client/.env` file:
+     ```ini
+     TRMNL_MPR121_ENABLED=true
+     TRMNL_MPR121_PREV_PIN=6      # Previous Widget Button (default Pin 6)
+     TRMNL_MPR121_NEXT_PIN=7      # Next Widget Button (default Pin 7)
+     TRMNL_MPR121_SETUP_PIN=9     # AP Setup Mode Button (default Pin 9)
+     TRMNL_MPR121_DIAG_PIN=8      # System Diagnostics Button (default Pin 8)
+     ```
+   * **Button Control Actions**:
+     * **Previous / Next (Pins 6 / 7)**: Bypasses the default timer rotation to manually transition back and forth through active layout widgets in the carousel.
+     * **System Diagnostics (Pin 8)**: Renders a detailed overlay containing device stats, network latency, connection status, and polling telemetry directly onto the E-Ink display (touch again to exit).
+     * **AP Setup Portal (Pin 9)**: Drops standard client polling and spawns a local, password-protected WiFi configuration hotspot: **`InkFlow-Setup`** (WPA2 password: `12345678`) on the Raspberry Pi. Connecting to this Hotspot opens the configuration portal at `http://192.168.4.1:80` (or dynamic IP) to easily adjust settings from your mobile phone!
 
 ---
 
