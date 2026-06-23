@@ -4,6 +4,8 @@ An optimized, premium Node.js Express server that aggregates data from multiple 
 
 Designed for self-hosted home LAN environments, InkFlow supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/ESP32 microcontrollers—allowing you to build the ultimate wireless status console.
 
+Python client code and C++ arduino code has been build and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield.
+
 ---
 
 ## 📸 Example Client & Server Setup
@@ -93,7 +95,7 @@ First, deploy the central InkFlow server on a server host (such as a Raspberry P
 > [!NOTE]
 > The GitHub repository is **public**. All clone, checkout, and installation commands run seamlessly without needing any GitHub Personal Access Tokens (PATs) or passwords.
 
-### Option A: Multi-Container Docker Setup (Recommended)
+### Option A: Multi-Container Docker Setup 
 This approach spins up the main InkFlow Node.js server alongside a local, dedicated Ollama AI instance with a single command. It requires zero package managers, compilers, or local dependencies.
 
 1. Clone the repository and navigate into the project directory:
@@ -182,9 +184,8 @@ Once the server is running, configure your physical displays to retrieve rendere
 
 ---
 
-### Option B: Pi Python Client (Pimoroni/Waveshare EPD Setup)
-*Ideal if you are running a standard Raspberry Pi OS on a Pi Zero/Zero 2W with an attached Waveshare or Pimoroni SPI E-Paper Hat.*
-
+### Option B: Pi Python Client 
+Login to Raspberry PI and follow the instructions below
 1. **Enable SPI Bus**: Connect to your client Pi via SSH and enable the hardware SPI interface:
    ```bash
    sudo raspi-config
@@ -240,7 +241,7 @@ Once the server is running, configure your physical displays to retrieve rendere
      * **Arduino UNO R4 AP**: `InkFlow-R4-Setup` (WPA2 password: `12345678`)
    * A captive setup window will open automatically. Choose your home Wi-Fi SSID, enter the password, specify your **InkFlow Server IP** and Port, and click **Save Settings & Connect**!
 4. **Offline Diagnostics**:
-   * If the Wi-Fi connection fails or the server is unreachable, the display draws a beautiful visual diagnostic card showing current network info, target IP port, and connection errors, making debugging easy without serial monitor cables.
+   * If the Wi-Fi connection fails or the server is unreachable, the display draws a visual diagnostic card showing current network info, target IP port, and connection errors, making debugging easy without serial monitor cables.
 
 ---
 
