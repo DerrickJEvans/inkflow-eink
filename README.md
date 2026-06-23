@@ -273,7 +273,7 @@ Login to Raspberry PI and follow the instructions below
 
 ## 🛠️ Master Control Utilities
 
-Manage your client and server configurations easily using the elegant interactive shell panels or quick CLI commands.
+For the linux based server and client there are various CLI scripts to monitor and manage your setup usin interactive shell panels or quick CLI commands.
 
 ### 1. Server CLI Utility (`./inkflow.sh`)
 Execute commands from the project root directory on your server:
@@ -318,7 +318,15 @@ If you swap your physical E-Paper display panel for a different model after inst
 
 ---
 
-## 🧠 Hybrid Multi-Provider AI Integration
+## 🧠 Web control of server
+
+Devices and their assigned widgets can be controlled from the web console on port 5000 of the hosted web server.
+
+<img width="1078" height="1368" alt="webcontrol" src="https://github.com/user-attachments/assets/e363cc2d-7c35-4685-8a4c-2e87b6ea11b2" />
+
+In addition to the devices tab there is a widget studio and control tabs where one can use AI to draft new widgets and also control the features of existing ones.
+
+The third tab is to control the LLM models used to generate widgets and also the LLM models used to summarize information for some widgets. 
 
 InkFlow blends local offline LLMs with cloud-based AI to provide intelligent, low-latency, and zero-cost dashboard widgets.
 
