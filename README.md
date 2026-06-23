@@ -27,8 +27,11 @@ Inkflow clients (Python and C++) fetch images in a single API call. The python c
 
 ## ✨ Core Features Showcase
 
-### 1. Symmetrical Carousel (Rotation) Mode
-Seamlessly cycle through all of your active widgets at full-screen resolution. One widget is displayed per refresh cycle, ensuring maximum legibility, large premium typography, and 0% text truncation.
+### 1. Display specific widget carousels
+Seamlessly cycle through chosen active widgets at full-screen resolution on each connected client. One widget is displayed per refresh cycle at intervals specified per widget per client.
+
+Bundled widgets include
+
 * **Weather Forecast**: Open-Meteo local forecasts with daily high/low temperatures, precipitation, wind, and support for dynamic geocoding of UK postcodes.
 * **RSS Feed**: Aggregates headlines from major presets (Tech, UK, World, HN, NYT) or a custom XML RSS feed URL.
 * **Notice Board**: A fully interactive notice board with checklists and chores customizable inline.
