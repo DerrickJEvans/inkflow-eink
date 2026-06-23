@@ -18,21 +18,8 @@ The image below shows the **reTerminal E1001** running TRMNL firmware (left), **
 
 InkFlow decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, draw, and sleep:
 
-```mermaid
-graph TD
-    A[Plugins: Weather, RSS, Notes, System] --> B[renderer.js: SVG Assembler]
-    B --> C[Sharp Grayscale Rasterization]
-    C --> D[Dither Engine]
-    
-    D --> E[PNG Stream: /api/display/image.png]
-    D --> F[1-Bit Packed Raw Stream: /api/display/raw]
-    
-    E --> G[Python Client / Web UI]
-    F --> H[ESP32 / R4 Deep-Sleep Arduino Client]
-    
-    I[JSON BYOS: /api/display] -->|1. Polls JSON| J[Official TRMNL BYOS Firmware]
-    J -->|2. Fetches PNG| E
-```
+<img width="800" height="505" alt="architecture" src="https://github.com/user-attachments/assets/d95f7fcd-4d0d-40dc-9661-0365a5986160" />
+
 The trmnl client uses the trmnl API to fetch JSON status information which includes the image to fetch separately. 
 Inkflow clients (Python and C++) fetch images in a single API call. The python client fetchs images as PNG files. The C++ client fetches the images as bitstreams for streaming to the eink driver flash memory.
 
