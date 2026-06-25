@@ -37,13 +37,10 @@ int nextRefreshSeconds = fallbackSleepSeconds;
 #define PIN_DIAG   A1
 #define PIN_AP     A2
 
-// Structures for noinit RAM section to pass wakeup button data across NVIC_SystemReset
-struct WakeupData {
-  uint32_t magic;
-  uint8_t buttonPressed; // 1: prev, 2: next, 3: diag, 4: ap, 0: timer
-};
-volatile WakeupData wakeupData __attribute__((section(".noinit")));
-const uint32_t WAKEUP_MAGIC = 0xABBAFEED;
+// Battery backup registers to pass wakeup button data across NVIC_SystemReset/bootloader
+const int VBTBKR_ACTION_INDEX = 16;
+const int VBTBKR_MAGIC_INDEX  = 17;
+const uint8_t VBTBKR_MAGIC_VAL = 0xAB;
 FlashCache cache(FLASH_CS);
 int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
 bool cacheEnabled = false; // Flag to track if the SPI cache is functional after self-test
@@ -201,12 +198,17 @@ void setup() {
   // Read button states (woken by button press or checked on startup)
   delay(100); // Debounce
 
-  // 1. Check if we woke up from a button captured immediately in RAM
+  // 1. Check if we woke up from a button captured in battery backup registers
   int actionCode = 0; // 0: none/timer, 1: prev, 2: next, 3: diag, 4: ap
-  if (wakeupData.magic == WAKEUP_MAGIC) {
-    actionCode = wakeupData.buttonPressed;
-    wakeupData.magic = 0; // Clear magic
-    Serial.print(F("[Power] Wakeup action code from RAM: "));
+  if (R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] == VBTBKR_MAGIC_VAL) {
+    actionCode = R_SYSTEM->VBTBKR[VBTBKR_ACTION_INDEX];
+    
+    // Clear magic immediately to prevent re-processing on subsequent resets
+    R_SYSTEM->PRCR = 0xA502;
+    R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] = 0x00;
+    R_SYSTEM->PRCR = 0xA500;
+    
+    Serial.print(F("[Power] Wakeup action code from VBTBKR: "));
     Serial.println(actionCode);
   }
 
@@ -1309,24 +1311,32 @@ void alarmISR() {
 
 void prevButtonISR() {
   pinMode(PIN_PREV, INPUT); // Immediately stop output drive to prevent short-circuit
-  wakeupData.magic = WAKEUP_MAGIC;
-  wakeupData.buttonPressed = 1;
+  R_SYSTEM->PRCR = 0xA502;
+  R_SYSTEM->VBTBKR[VBTBKR_ACTION_INDEX] = 1;
+  R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] = VBTBKR_MAGIC_VAL;
+  R_SYSTEM->PRCR = 0xA500;
 }
 
 void nextButtonISR() {
   pinMode(PIN_NEXT, INPUT); // Immediately stop output drive to prevent short-circuit
-  wakeupData.magic = WAKEUP_MAGIC;
-  wakeupData.buttonPressed = 2;
+  R_SYSTEM->PRCR = 0xA502;
+  R_SYSTEM->VBTBKR[VBTBKR_ACTION_INDEX] = 2;
+  R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] = VBTBKR_MAGIC_VAL;
+  R_SYSTEM->PRCR = 0xA500;
 }
 
 void diagButtonISR() {
-  wakeupData.magic = WAKEUP_MAGIC;
-  wakeupData.buttonPressed = 3;
+  R_SYSTEM->PRCR = 0xA502;
+  R_SYSTEM->VBTBKR[VBTBKR_ACTION_INDEX] = 3;
+  R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] = VBTBKR_MAGIC_VAL;
+  R_SYSTEM->PRCR = 0xA500;
 }
 
 void apButtonISR() {
-  wakeupData.magic = WAKEUP_MAGIC;
-  wakeupData.buttonPressed = 4;
+  R_SYSTEM->PRCR = 0xA502;
+  R_SYSTEM->VBTBKR[VBTBKR_ACTION_INDEX] = 4;
+  R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] = VBTBKR_MAGIC_VAL;
+  R_SYSTEM->PRCR = 0xA500;
 }
 
 void goToSleep(int seconds) {
@@ -1372,9 +1382,11 @@ void goToSleep(int seconds) {
   digitalWrite(PIN_NEXT, HIGH);
   delay(5); // Settle line state
 
-  // Clear previous wakeup details (default to 0: timer wakeup)
-  wakeupData.magic = 0;
-  wakeupData.buttonPressed = 0;
+  // Clear previous wakeup details in battery backup registers (default to 0: timer wakeup)
+  R_SYSTEM->PRCR = 0xA502;
+  R_SYSTEM->VBTBKR[VBTBKR_ACTION_INDEX] = 0;
+  R_SYSTEM->VBTBKR[VBTBKR_MAGIC_INDEX] = 0;
+  R_SYSTEM->PRCR = 0xA500;
 
   // Attach external pin interrupts to wake on button press (common cathode -> FALLING)
   attachInterrupt(digitalPinToInterrupt(PIN_PREV), prevButtonISR, FALLING);
