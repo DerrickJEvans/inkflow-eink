@@ -136,11 +136,10 @@ The UNO R4 WiFi client features an integrated **Web Setup Portal & EEPROM Wifi M
 > [!TIP]
 > **Developer Reset Mode (Serial)**: If your R4 connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your UNO R4 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe the EEPROM database and restart the Setup AP Portal!
 
-### 🎛️ Modulino Buttons Integration
-If you have connected an I2C **Arduino Modulino Buttons** module to your Uno R4 (e.g. via the Qwiic connector), the board supports physical control controls:
-* **Button A (Left)**: Instantly fetches the **previous** image/plugin in the rotation carousel.
-* **Button B (Center)**: Instantly fetches the **next** image/plugin in the rotation carousel.
-* **Button C (Right)**: Clears all saved network and server credentials from the EEPROM and triggers a software reboot to automatically boot back into the Setup AP Web Portal.
-
-*(Note: Ensure you have installed the `Arduino_Modulino` library via the Library Manager before compiling.)*
+### 🎛️ Physical Button Integration (D2, D3, A1, A2)
+The board supports physical button control inputs mapped to the following pins:
+* **D2 (PIN_PREV / IRQ1)**: Wakes the board from sleep and instantly fetches the **previous** carousel slide (`action=prev`).
+* **D3 (PIN_NEXT / IRQ0)**: Wakes the board from sleep and instantly fetches the **next** carousel slide (`action=next`).
+* **A1 (PIN_DIAG / IRQ6)**: Wakes the board from sleep and displays a detailed **Diagnostics Report overlay** directly on the E-Ink panel for 10 seconds before returning to Software Standby.
+* **A2 (PIN_AP / IRQ7)**: Wakes the board from sleep and forces the launch of the **Setup Wizard AP** to reconfigure WiFi and Server IP settings.
 

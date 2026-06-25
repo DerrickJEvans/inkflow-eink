@@ -22,7 +22,6 @@
 #include <WiFiS3.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
-#include <Arduino_Modulino.h>
 #include "config.h"
 #include "logo.h"
 #include "cache_manager.h"
