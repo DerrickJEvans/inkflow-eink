@@ -36,6 +36,14 @@ int nextRefreshSeconds = fallbackSleepSeconds;
 #define PIN_NEXT   3
 #define PIN_DIAG   A1
 #define PIN_AP     A2
+
+// Structures for noinit RAM section to pass wakeup button data across NVIC_SystemReset
+struct WakeupData {
+  uint32_t magic;
+  uint8_t buttonPressed; // 1: prev, 2: next, 3: diag, 4: ap, 0: timer
+};
+volatile WakeupData wakeupData __attribute__((section(".noinit")));
+const uint32_t WAKEUP_MAGIC = 0xABBAFEED;
 FlashCache cache(FLASH_CS);
 int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
 bool cacheEnabled = false; // Flag to track if the SPI cache is functional after self-test
@@ -192,10 +200,21 @@ void setup() {
 
   // Read button states (woken by button press or checked on startup)
   delay(100); // Debounce
-  bool prevPressed = (digitalRead(PIN_PREV) == LOW);
-  bool nextPressed = (digitalRead(PIN_NEXT) == LOW);
-  bool diagPressed = (digitalRead(PIN_DIAG) == LOW);
-  bool apPressed   = (digitalRead(PIN_AP) == LOW);
+
+  // 1. Check if we woke up from a button captured immediately in RAM
+  int actionCode = 0; // 0: none/timer, 1: prev, 2: next, 3: diag, 4: ap
+  if (wakeupData.magic == WAKEUP_MAGIC) {
+    actionCode = wakeupData.buttonPressed;
+    wakeupData.magic = 0; // Clear magic
+    Serial.print(F("[Power] Wakeup action code from RAM: "));
+    Serial.println(actionCode);
+  }
+
+  // 2. Fallback to reading pins directly (e.g. if we just powered on the board)
+  bool prevPressed = (actionCode == 1) || (digitalRead(PIN_PREV) == LOW);
+  bool nextPressed = (actionCode == 2) || (digitalRead(PIN_NEXT) == LOW);
+  bool diagPressed = (actionCode == 3) || (digitalRead(PIN_DIAG) == LOW);
+  bool apPressed   = (actionCode == 4) || (digitalRead(PIN_AP) == LOW);
 
   if (apPressed) {
     Serial.println(F("[Buttons] AP Button pressed. Force launching Setup Wizard..."));
@@ -1356,6 +1375,25 @@ void goToSleep(int seconds) {
 
   // Re-enable SysTick interrupt
   SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
+
+  // Capture button states IMMEDIATELY upon waking up (before the user releases the button)
+  bool prevPressed = (digitalRead(PIN_PREV) == LOW);
+  bool nextPressed = (digitalRead(PIN_NEXT) == LOW);
+  bool diagPressed = (digitalRead(PIN_DIAG) == LOW);
+  bool apPressed   = (digitalRead(PIN_AP) == LOW);
+
+  wakeupData.magic = WAKEUP_MAGIC;
+  if (prevPressed) {
+    wakeupData.buttonPressed = 1;
+  } else if (nextPressed) {
+    wakeupData.buttonPressed = 2;
+  } else if (diagPressed) {
+    wakeupData.buttonPressed = 3;
+  } else if (apPressed) {
+    wakeupData.buttonPressed = 4;
+  } else {
+    wakeupData.buttonPressed = 0; // RTC timer wakeup
+  }
   
   // 7. Woken up! Detach interrupts
   detachInterrupt(digitalPinToInterrupt(PIN_PREV));
