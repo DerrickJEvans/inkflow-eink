@@ -34,8 +34,8 @@ int nextRefreshSeconds = fallbackSleepSeconds;
 
 #define PIN_PREV   2
 #define PIN_NEXT   3
-#define PIN_DIAG   4
-#define PIN_AP     A0
+#define PIN_DIAG   A1
+#define PIN_AP     A2
 FlashCache cache(FLASH_CS);
 int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
 bool cacheEnabled = false; // Flag to track if the SPI cache is functional after self-test
@@ -1331,7 +1331,16 @@ void goToSleep(int seconds) {
   // 5. Configure Renesas RA4M1 System Standby Control register
   R_SYSTEM->PRCR = 0xA503;       // Unlock system registers
   R_SYSTEM->SBYCR_b.SSBY = 1;    // Select Software Standby Mode
+  R_SYSTEM->OSTDCR = 0x00;       // Disable Oscillation Stop Detection to allow Software Standby
   R_SYSTEM->PRCR = 0xA500;       // Lock system registers
+
+  // Configure Wake Up Interrupt Enable Register (WUPEN)
+  // Bit 0: IRQ0 (PIN_NEXT / D3)
+  // Bit 1: IRQ1 (PIN_PREV / D2)
+  // Bit 6: IRQ6 (PIN_DIAG / A1)
+  // Bit 7: IRQ7 (PIN_AP / A2)
+  // Bit 24: RTCALMWUPEN (RTC Alarm Wakeup)
+  R_ICU->WUPEN = (1UL << 24) | (1UL << 7) | (1UL << 6) | (1UL << 1) | (1UL << 0);
   
   // 6. Execute Wait-For-Interrupt to enter Software Standby
   __asm volatile("wfi");
