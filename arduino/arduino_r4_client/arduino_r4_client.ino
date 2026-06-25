@@ -18,6 +18,7 @@
 */
 
 #include <SPI.h>
+#include <RTC.h>
 #include <WiFiS3.h>
 #include <WiFiUdp.h>
 #include <EEPROM.h>
@@ -31,7 +32,10 @@ WiFiClient client;
 WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
 
-ModulinoButtons buttons;
+#define PIN_PREV   2
+#define PIN_NEXT   3
+#define PIN_DIAG   4
+#define PIN_AP     A0
 FlashCache cache(FLASH_CS);
 int currentCacheSlot = -1; // -1 represents showing live server data, otherwise stores current slot index
 bool cacheEnabled = false; // Flag to track if the SPI cache is functional after self-test
@@ -74,6 +78,8 @@ String parseUrlParam(String body, String paramName);
 String urlDecode(String str);
 unsigned char h2d(char hex);
 void displayCachedImage(int slotIndex);
+void goToSleep(int seconds);
+void showDiagnostics();
 void loadOfflineCache();
 bool connectWiFi();
 
@@ -135,9 +141,14 @@ void setup() {
   delay(1000);
   Serial.println(F("\n--- InkFlow Arduino R4 WiFi Client (Direct Stream) ---"));
 
-  // Initialize Modulino system and buttons card
-  Modulino.begin();
-  buttons.begin();
+  // Initialize physical button pins
+  pinMode(PIN_PREV, INPUT_PULLUP);
+  pinMode(PIN_NEXT, INPUT_PULLUP);
+  pinMode(PIN_DIAG, INPUT_PULLUP);
+  pinMode(PIN_AP,   INPUT_PULLUP);
+
+  // Initialize RTC
+  RTC.begin();
 
   // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise first
   pinMode(RAM_CS,   OUTPUT); digitalWrite(RAM_CS,   HIGH);
@@ -173,111 +184,62 @@ void setup() {
   // Load configuration from EEPROM
   loadConfiguration();
 
+  // Read button states (woken by button press or checked on startup)
+  delay(100); // Debounce
+  bool prevPressed = (digitalRead(PIN_PREV) == LOW);
+  bool nextPressed = (digitalRead(PIN_NEXT) == LOW);
+  bool diagPressed = (digitalRead(PIN_DIAG) == LOW);
+  bool apPressed   = (digitalRead(PIN_AP) == LOW);
+
+  if (apPressed) {
+    Serial.println(F("[Buttons] AP Button pressed. Force launching Setup Wizard..."));
+    startSetupWizard(); // Enters endless loop
+  }
+
   // Initialize WiFi connection
   if (strlen(activeConfig.wifi_ssid) == 0 || strcmp(activeConfig.wifi_ssid, "YOUR_WIFI_SSID") == 0) {
     Serial.println(F("[Config] WiFi SSID unconfigured. Launching Setup Wizard AP..."));
-    startSetupWizard();
-  } else {
-    // Attempt connecting to WiFi
-    if (connectWiFi()) {
-      if (fetchAndStreamDisplay()) {
-        Serial.println(F("[Success] Initial screen synced."));
-      } else {
-        Serial.println(F("[Warning] Initial stream failed. Checking cache..."));
-        loadOfflineCache();
-      }
-    } else {
-      Serial.println(F("[Warning] Initial WiFi connection failed. Checking cache..."));
-      loadOfflineCache();
-    }
+    startSetupWizard(); // Enters endless loop
   }
 
-  lastSyncTime = millis();
+  if (diagPressed) {
+    Serial.println(F("[Buttons] Diagnostics Button pressed. Showing diagnostics report..."));
+    if (connectWiFi()) {
+      showDiagnostics();
+    } else {
+      drawErrorSplashDirect("WiFi Connection Failed", "Check SSID/Password", "Server unreachable");
+    }
+    delay(10000); // Show diagnostics for 10 seconds before sleeping
+    goToSleep(nextRefreshSeconds);
+  }
+
+  // Determine action (prev, next, or standard sync)
+  String action = "";
+  if (prevPressed) {
+    action = "prev";
+  } else if (nextPressed) {
+    action = "next";
+  }
+
+  // Connect and sync
+  if (connectWiFi()) {
+    if (fetchAndStreamDisplay(action)) {
+      Serial.println(F("[Success] Display synced successfully."));
+    } else {
+      Serial.println(F("[Warning] Direct stream failed. Checking cache..."));
+      loadOfflineCache();
+    }
+  } else {
+    Serial.println(F("[Warning] WiFi connection failed. Checking cache..."));
+    loadOfflineCache();
+  }
+
+  // Enter standby sleep mode
+  goToSleep(nextRefreshSeconds);
 }
 
 void loop() {
-  buttons.update();
-
-  // Button A (Left) -> Previous Image in Cache
-  if (buttons.isPressed(0)) {
-    if (!cacheEnabled) {
-      Serial.println(F("[Buttons] Left pressed. Cache is disabled. Fetching previous from server..."));
-      fetchAndStreamDisplay("prev");
-      lastSyncTime = millis(); // Reset sync timer since we just updated the screen
-    } else {
-      CacheHeader header;
-      if (cache.getHeader(header) && header.total_slots > 0) {
-        if (currentCacheSlot == -1) currentCacheSlot = 0;
-        currentCacheSlot = (currentCacheSlot - 1 + header.total_slots) % header.total_slots;
-        Serial.print(F("[Buttons] Left pressed. Browsing to slot "));
-        Serial.println(currentCacheSlot);
-        displayCachedImage(currentCacheSlot);
-        userBrowseTime = millis(); // Mark user browsing active
-      } else {
-        Serial.println(F("[Buttons] Left pressed, but cache is empty."));
-      }
-    }
-    delay(300); // Debounce
-  }
-
-  // Button B (Middle) -> Next Image in Cache
-  if (buttons.isPressed(1)) {
-    if (!cacheEnabled) {
-      Serial.println(F("[Buttons] Middle pressed. Cache is disabled. Fetching next from server..."));
-      fetchAndStreamDisplay("next");
-      lastSyncTime = millis(); // Reset sync timer since we just updated the screen
-    } else {
-      CacheHeader header;
-      if (cache.getHeader(header) && header.total_slots > 0) {
-        if (currentCacheSlot == -1) currentCacheSlot = 0;
-        currentCacheSlot = (currentCacheSlot + 1) % header.total_slots;
-        Serial.print(F("[Buttons] Middle pressed. Browsing to slot "));
-        Serial.println(currentCacheSlot);
-        displayCachedImage(currentCacheSlot);
-        userBrowseTime = millis(); // Mark user browsing active
-      } else {
-        Serial.println(F("[Buttons] Middle pressed, but cache is empty."));
-      }
-    }
-    delay(300); // Debounce
-  }
-
-  // Button C (Right) -> Force configuration reset
-  if (buttons.isPressed(2)) {
-    Serial.println(F("[Buttons] Right pressed. Resetting configuration EEPROM..."));
-    memset(&activeConfig, 0, sizeof(EEPROMConfig));
-    EEPROM.put(0, activeConfig);
-    delay(500);
-    NVIC_SystemReset();
-  }
-
-  // Handle periodic server synchronization
-  unsigned long now = millis();
-  // If user is actively browsing, wait 2 minutes (120s) before resuming auto-sync. Otherwise sync at normal interval
-  unsigned long activeInterval = (now - userBrowseTime < 120000) ? 120000 : ((unsigned long)nextRefreshSeconds * 1000);
-
-  if (now - lastSyncTime >= activeInterval) {
-    lastSyncTime = now;
-    Serial.println(F("[Sync] Checking server for updates..."));
-    
-    if (WiFi.status() != WL_CONNECTED) {
-      Serial.println(F("[Sync] WiFi disconnected. Attempting reconnect..."));
-      connectWiFi();
-    }
-    
-    if (WiFi.status() == WL_CONNECTED) {
-      currentCacheSlot = -1; // Reset to live mode
-      if (fetchAndStreamDisplay()) {
-        Serial.println(F("[Sync] Success. Cache updated and display refreshed."));
-      } else {
-        Serial.println(F("[Sync Warning] Sync failed."));
-      }
-    } else {
-      Serial.println(F("[Sync Warning] WiFi unavailable. Staying in offline cache mode."));
-    }
-  }
-
-  delay(20);
+  // Loop is unused as UNO R4 WiFi wakes from Software Standby, runs setup(), and enters standby again.
 }
 
 void loadOfflineCache() {
@@ -1313,4 +1275,92 @@ unsigned char h2d(char hex) {
   if (hex >= 'a' && hex <= 'f') return hex - 'a' + 10;
   if (hex >= 'A' && hex <= 'F') return hex - 'A' + 10;
   return 0;
+}
+
+// Dummy ISRs for interrupts
+void alarmISR() {
+  // Trigger wakeup
+}
+
+void buttonISR() {
+  // Trigger wakeup
+}
+
+void goToSleep(int seconds) {
+  Serial.print(F("[Power] Preparing to enter standby sleep for "));
+  Serial.print(seconds);
+  Serial.println(F(" seconds..."));
+  
+  // 1. Put E-Paper screen controller to low power sleep
+  epd.Sleep();
+  delay(100);
+  
+  // 2. Terminate WiFi connection and co-processor
+  WiFi.end();
+  delay(200);
+  
+  // 3. Configure the RTC Alarm wake-up source
+  RTCTime currentTime;
+  AlarmMatch matchTime;
+  matchTime.addMatchSecond();
+  matchTime.addMatchMinute();
+  matchTime.addMatchHour();
+  matchTime.addMatchDay();
+  matchTime.addMatchMonth();
+  matchTime.addMatchYear();
+
+  if (RTC.getTime(currentTime)) {
+    unsigned long currentUnix = currentTime.getUnixTime();
+    RTCTime alarmTime;
+    alarmTime.setUnixTime(currentUnix + seconds);
+    RTC.setAlarmCallback(alarmISR, alarmTime, matchTime);
+  } else {
+    Serial.println(F("[Power Warning] RTC time read failed. Using fallback alarm time."));
+    RTCTime defaultTime(25, Month::JUNE, 2026, 12, 0, 0, DayOfWeek::THURSDAY, SaveLight::SAVING_TIME_INACTIVE);
+    RTC.setTime(defaultTime);
+    defaultTime.setUnixTime(defaultTime.getUnixTime() + seconds);
+    RTC.setAlarmCallback(alarmISR, defaultTime, matchTime);
+  }
+  
+  // 4. Attach external pin interrupts to wake on button press (common cathode -> FALLING)
+  attachInterrupt(digitalPinToInterrupt(PIN_PREV), buttonISR, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_NEXT), buttonISR, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_DIAG), buttonISR, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_AP),   buttonISR, FALLING);
+  
+  // 5. Configure Renesas RA4M1 System Standby Control register
+  R_SYSTEM->PRCR = 0xA503;       // Unlock system registers
+  R_SYSTEM->SBYCR_b.SSBY = 1;    // Select Software Standby Mode
+  R_SYSTEM->PRCR = 0xA500;       // Lock system registers
+  
+  // 6. Execute Wait-For-Interrupt to enter Software Standby
+  __asm volatile("wfi");
+  
+  // 7. Woken up! Detach interrupts
+  detachInterrupt(digitalPinToInterrupt(PIN_PREV));
+  detachInterrupt(digitalPinToInterrupt(PIN_NEXT));
+  detachInterrupt(digitalPinToInterrupt(PIN_DIAG));
+  detachInterrupt(digitalPinToInterrupt(PIN_AP));
+  
+  // 8. Trigger clean reboot to re-init WiFi and all board peripherals cleanly
+  Serial.println(F("[Power] Woken up. Rebooting..."));
+  delay(100);
+  NVIC_SystemReset();
+}
+
+void showDiagnostics() {
+  Serial.println(F("[Diagnostics] Displaying system diagnostics overlay..."));
+  
+  // Get IP
+  char localIPStr[16];
+  IPAddress ip = WiFi.localIP();
+  snprintf(localIPStr, sizeof(localIPStr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+  
+  long rssi = WiFi.RSSI();
+  
+  String line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (" + String(rssi) + " dBm)";
+  String line2 = "IP: " + String(localIPStr);
+  String line3 = "Server: " + String(activeConfig.server_host) + ":" + String(activeConfig.server_port);
+  
+  drawErrorSplashDirect(line1, line2, line3);
 }
