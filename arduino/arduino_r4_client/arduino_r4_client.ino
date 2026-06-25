@@ -149,6 +149,12 @@ void setup() {
 
   // Initialize RTC
   RTC.begin();
+  RTCTime currentTime;
+  if (!RTC.getTime(currentTime) || currentTime.getYear() < 2026) {
+    Serial.println(F("[RTC] RTC time invalid or uninitialized. Setting to default..."));
+    RTCTime defaultTime(25, Month::JUNE, 2026, 12, 0, 0, DayOfWeek::THURSDAY, SaveLight::SAVING_TIME_INACTIVE);
+    RTC.setTime(defaultTime);
+  }
 
   // Lock out unused peripheral selectors on the shield to prevent SPI cross-talk noise first
   pinMode(RAM_CS,   OUTPUT); digitalWrite(RAM_CS,   HIGH);
@@ -1342,8 +1348,14 @@ void goToSleep(int seconds) {
   // Bit 24: RTCALMWUPEN (RTC Alarm Wakeup)
   R_ICU->WUPEN = (1UL << 24) | (1UL << 7) | (1UL << 6) | (1UL << 1) | (1UL << 0);
   
+  // Disable SysTick interrupt to prevent it from waking the MCU immediately
+  SysTick->CTRL &= ~SysTick_CTRL_TICKINT_Msk;
+
   // 6. Execute Wait-For-Interrupt to enter Software Standby
   __asm volatile("wfi");
+
+  // Re-enable SysTick interrupt
+  SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
   
   // 7. Woken up! Detach interrupts
   detachInterrupt(digitalPinToInterrupt(PIN_PREV));
