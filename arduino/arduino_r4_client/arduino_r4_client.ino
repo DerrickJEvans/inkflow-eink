@@ -210,9 +210,9 @@ void setup() {
     Serial.println(actionCode);
   }
 
-  // 2. Fallback to reading pins directly (e.g. if we just powered on the board)
-  bool prevPressed = (actionCode == 1) || (digitalRead(PIN_PREV) == LOW);
-  bool nextPressed = (actionCode == 2) || (digitalRead(PIN_NEXT) == LOW);
+  // 2. Fallback to reading pins directly (only trust actionCode for shared pins D2/D3 to avoid stuck LOW logic)
+  bool prevPressed = (actionCode == 1);
+  bool nextPressed = (actionCode == 2);
   bool diagPressed = (actionCode == 3) || (digitalRead(PIN_DIAG) == LOW);
   bool apPressed   = (actionCode == 4) || (digitalRead(PIN_AP) == LOW);
 
@@ -1302,13 +1302,31 @@ unsigned char h2d(char hex) {
   return 0;
 }
 
-// Dummy ISRs for interrupts
+// ISRs for interrupts
 void alarmISR() {
   // Trigger wakeup
 }
 
-void buttonISR() {
-  // Trigger wakeup
+void prevButtonISR() {
+  pinMode(PIN_PREV, INPUT); // Immediately stop output drive to prevent short-circuit
+  wakeupData.magic = WAKEUP_MAGIC;
+  wakeupData.buttonPressed = 1;
+}
+
+void nextButtonISR() {
+  pinMode(PIN_NEXT, INPUT); // Immediately stop output drive to prevent short-circuit
+  wakeupData.magic = WAKEUP_MAGIC;
+  wakeupData.buttonPressed = 2;
+}
+
+void diagButtonISR() {
+  wakeupData.magic = WAKEUP_MAGIC;
+  wakeupData.buttonPressed = 3;
+}
+
+void apButtonISR() {
+  wakeupData.magic = WAKEUP_MAGIC;
+  wakeupData.buttonPressed = 4;
 }
 
 void goToSleep(int seconds) {
@@ -1347,11 +1365,22 @@ void goToSleep(int seconds) {
     RTC.setAlarmCallback(alarmISR, defaultTime, matchTime);
   }
   
-  // 4. Attach external pin interrupts to wake on button press (common cathode -> FALLING)
-  attachInterrupt(digitalPinToInterrupt(PIN_PREV), buttonISR, FALLING);
-  attachInterrupt(digitalPinToInterrupt(PIN_NEXT), buttonISR, FALLING);
-  attachInterrupt(digitalPinToInterrupt(PIN_DIAG), buttonISR, FALLING);
-  attachInterrupt(digitalPinToInterrupt(PIN_AP),   buttonISR, FALLING);
+  // 4. Software Workaround: Force level-shifter lines HIGH before sleep
+  pinMode(PIN_PREV, OUTPUT);
+  digitalWrite(PIN_PREV, HIGH);
+  pinMode(PIN_NEXT, OUTPUT);
+  digitalWrite(PIN_NEXT, HIGH);
+  delay(5); // Settle line state
+
+  // Clear previous wakeup details (default to 0: timer wakeup)
+  wakeupData.magic = 0;
+  wakeupData.buttonPressed = 0;
+
+  // Attach external pin interrupts to wake on button press (common cathode -> FALLING)
+  attachInterrupt(digitalPinToInterrupt(PIN_PREV), prevButtonISR, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_NEXT), nextButtonISR, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_DIAG), diagButtonISR, FALLING);
+  attachInterrupt(digitalPinToInterrupt(PIN_AP),   apButtonISR, FALLING);
   
   // 5. Configure Renesas RA4M1 System Standby Control register
   R_SYSTEM->PRCR = 0xA503;       // Unlock system registers
@@ -1376,24 +1405,9 @@ void goToSleep(int seconds) {
   // Re-enable SysTick interrupt
   SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
 
-  // Capture button states IMMEDIATELY upon waking up (before the user releases the button)
-  bool prevPressed = (digitalRead(PIN_PREV) == LOW);
-  bool nextPressed = (digitalRead(PIN_NEXT) == LOW);
-  bool diagPressed = (digitalRead(PIN_DIAG) == LOW);
-  bool apPressed   = (digitalRead(PIN_AP) == LOW);
-
-  wakeupData.magic = WAKEUP_MAGIC;
-  if (prevPressed) {
-    wakeupData.buttonPressed = 1;
-  } else if (nextPressed) {
-    wakeupData.buttonPressed = 2;
-  } else if (diagPressed) {
-    wakeupData.buttonPressed = 3;
-  } else if (apPressed) {
-    wakeupData.buttonPressed = 4;
-  } else {
-    wakeupData.buttonPressed = 0; // RTC timer wakeup
-  }
+  // Immediately release output drive upon wakeup to prevent short circuits
+  pinMode(PIN_PREV, INPUT);
+  pinMode(PIN_NEXT, INPUT);
   
   // 7. Woken up! Detach interrupts
   detachInterrupt(digitalPinToInterrupt(PIN_PREV));
