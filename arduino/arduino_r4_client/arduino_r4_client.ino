@@ -1417,15 +1417,15 @@ void goToSleep(int seconds) {
   // Re-enable SysTick interrupt
   SysTick->CTRL |= SysTick_CTRL_TICKINT_Msk;
 
-  // Immediately release output drive upon wakeup to prevent short circuits
-  pinMode(PIN_PREV, INPUT);
-  pinMode(PIN_NEXT, INPUT);
-  
-  // 7. Woken up! Detach interrupts
+  // 7. Woken up! Detach interrupts immediately first to prevent false falling edges when releasing output driven pins
   detachInterrupt(digitalPinToInterrupt(PIN_PREV));
   detachInterrupt(digitalPinToInterrupt(PIN_NEXT));
   detachInterrupt(digitalPinToInterrupt(PIN_DIAG));
   detachInterrupt(digitalPinToInterrupt(PIN_AP));
+
+  // Immediately release output drive upon wakeup to prevent short circuits
+  pinMode(PIN_PREV, INPUT);
+  pinMode(PIN_NEXT, INPUT);
   
   // 8. Trigger clean reboot to re-init WiFi and all board peripherals cleanly
   Serial.println(F("[Power] Woken up. Rebooting..."));
