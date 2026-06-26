@@ -385,9 +385,26 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        # Redirect all domains (Captive Portal) to root '/' except local routes
+        global last_connection_error
         parsed_url = urllib.parse.urlparse(self.path)
-        if parsed_url.path not in ["/", "/save", "/generate_204", "/fwlink"]:
+        
+        # Check for async connection status endpoint
+        if parsed_url.path == "/status":
+            self.send_response(200)
+            self.send_header("Content-type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            
+            if last_connection_error:
+                response = f'{{"status": "failed", "error": "{last_connection_error}"}}'
+            else:
+                response = '{"status": "connecting"}'
+                
+            self.wfile.write(response.encode("utf-8"))
+            return
+
+        # Redirect all domains (Captive Portal) to root '/' except local routes
+        if parsed_url.path not in ["/", "/save", "/generate_204", "/fwlink", "/status"]:
             self.send_response(302)
             self.send_header("Location", "http://10.42.0.1:8080/")
             self.end_headers()
@@ -416,7 +433,6 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
         mac = get_mac_address()
         
         # Check for connection errors from previous attempts
-        global last_connection_error
         error_banner = ""
         if last_connection_error:
             error_banner = f"""
@@ -687,6 +703,23 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
     <p>Please check your E-Paper display. It will refresh to show connection status shortly.</p>
     <div class="loader"></div>
   </div>
+  <script>
+    function checkStatus() {{
+      fetch('/status')
+        .then(response => response.json())
+        .then(data => {{
+          if (data.status === 'failed') {{
+            window.location.href = '/';
+          }} else {{
+            setTimeout(checkStatus, 2000);
+          }}
+        }})
+        .catch(err => {{
+          setTimeout(checkStatus, 2000);
+        }});
+    }}
+    setTimeout(checkStatus, 5000);
+  </script>
 </body>
 </html>"""
             self.wfile.write(response_html.encode("utf-8"))
