@@ -453,9 +453,9 @@ def draw_connecting_splash(ssid, server_ip, port, step=0):
     draw.text((25, HEIGHT - 28), f"Device MAC Address: {mac}", fill=0, font=font_medium)
     
     if config.DISPLAY_TYPE == 'waveshare':
-        # Keep screen awake during intermediate updates (step 0, 1, 2) to preserve controller RAM state.
-        # Put it to sleep only on the final step (step 3) or if it's not a waveshare display.
-        display_waveshare(img, partial=(step >= 1), sleep_after=(step == 3))
+        # Always do a clean full refresh and put the screen to sleep for this single update.
+        # This completely prevents hardware timing conflicts or SPI lockups.
+        display_waveshare(img, partial=False, sleep_after=True)
     elif config.DISPLAY_TYPE == 'inky':
         display_inky(img)
     else:
@@ -813,8 +813,9 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
     """Saves settings, turns down AP hotspot, connects to user's wifi and restarts the client daemon"""
     global last_connection_error
     try:
-        # Draw connecting splash screen on display (Step 0: saving settings)
-        draw_connecting_splash(ssid, server_ip, port, step=0)
+        # Draw connecting splash screen ONCE showing the WiFi connection progress (Step 2)
+        # Doing this exactly once avoids timing issues and locks up with Waveshare E-Paper refreshes.
+        draw_connecting_splash(ssid, server_ip, port, step=2)
         
         # Save the settings
         updates = {
@@ -824,9 +825,6 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
         }
         update_env_file(updates)
         
-        # Step 1: Settings saved, now disconnecting setup AP hotspot
-        draw_connecting_splash(ssid, server_ip, port, step=1)
-        
         # Clean up the AP hotspot connection
         try:
             subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
@@ -834,9 +832,6 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
         except Exception:
             pass
             
-        # Step 2: AP hotspot down, now connecting to WiFi network
-        draw_connecting_splash(ssid, server_ip, port, step=2)
-        
         # Attempt to connect to the new WiFi network
         connected = False
         if ssid:
@@ -860,10 +855,6 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
                 print(f"[Setup Portal] Error connecting to WiFi network: {e}")
                 
         if connected:
-            # Step 3: WiFi connected! Starting daemon.
-            draw_connecting_splash(ssid, server_ip, port, step=3)
-            time.sleep(2)
-            
             # Stop the web server
             global httpd
             if httpd:
