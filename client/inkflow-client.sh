@@ -91,6 +91,10 @@ install_client() {
     pip3 install adafruit-circuitpython-mpr121 --break-system-packages --no-cache-dir || pip3 install adafruit-circuitpython-mpr121 --no-cache-dir
     echo -e "${GREEN}✅ MPR121 capacitive touch driver installed successfully!${NC}"
 
+    echo -e "\n${BLUE}🧬 Installing qrcode driver...${NC}"
+    pip3 install qrcode --break-system-packages --no-cache-dir || pip3 install qrcode --no-cache-dir
+    echo -e "${GREEN}✅ qrcode driver installed successfully!${NC}"
+
 
     # 4. Provision .env configurations
     echo -e "\n${BLUE}📡 [4/4] Provisioning Environment Configurations (.env)...${NC}"

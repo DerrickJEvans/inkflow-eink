@@ -63,6 +63,10 @@ echo "🧬 Installing MPR121 capacitive touch driver..."
 pip3 install adafruit-circuitpython-mpr121 --break-system-packages --no-cache-dir || pip3 install adafruit-circuitpython-mpr121 --no-cache-dir
 echo "✅ MPR121 capacitive touch driver installed successfully!"
 
+echo "🧬 Installing qrcode driver..."
+pip3 install qrcode --break-system-packages --no-cache-dir || pip3 install qrcode --no-cache-dir
+echo "✅ qrcode driver installed successfully!"
+
 # 4. Prompt for server and screen configurations
 echo "----------------------------------------------------"
 read -p "📡 Enter the InkFlow server address (e.g. inkflow.local or 192.168.1.100) [inkflow.local]: " SERVER_HOST

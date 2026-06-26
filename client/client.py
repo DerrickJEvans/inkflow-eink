@@ -212,6 +212,7 @@ def get_wifi_rssi():
 #                  AP CONFIGURATION PORTAL WIZARD
 # ==============================================================================
 httpd = None
+last_connection_error = None
 
 def update_env_file(updates):
     """Updates the local .env configuration file with the provided dictionary of key-value pairs"""
@@ -242,7 +243,7 @@ def update_env_file(updates):
     with open(env_path, 'w', encoding='utf-8') as f:
         f.writelines(new_lines)
 
-def draw_setup_splash():
+def draw_setup_splash(error_msg=None):
     """Renders the setup wizard splash screen onto the display"""
     print("[Display] Drawing setup wizard splash screen...")
     
@@ -276,6 +277,47 @@ def draw_setup_splash():
     
     draw.text((25, 230), "3. Enter your local WiFi details & InkFlow server details.", fill=0, font=font_medium)
     
+    # Connection QR Code on the right
+    try:
+        import qrcode
+        qr = qrcode.QRCode(version=1, box_size=4, border=2)
+        qr.add_data("WIFI:S:InkFlow-Setup;T:WPA;P:12345678;;")
+        qr.make(fit=True)
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_img = qr_img.convert("L").resize((150, 150))
+        img.paste(qr_img, (600, 95))
+        draw.text((615, 255), "Scan to Connect", fill=0, font=font_medium)
+    except ImportError:
+        pass
+    
+    # Connection error box
+    if error_msg:
+        # Draw error notice box in the blank area below step 3
+        draw.rectangle([20, 270, WIDTH - 20, 370], outline=0, width=2)
+        draw.rectangle([22, 272, WIDTH - 22, 305], fill=0)
+        draw.text((35, 280), "⚠️ CONNECTION ERROR", fill=255, font=font_medium)
+        
+        # Word wrap the error message if it's too long
+        if len(error_msg) > 70:
+            words = error_msg.split()
+            lines_to_draw = []
+            current_line = ""
+            for word in words:
+                if len(current_line) + len(word) + 1 < 70:
+                    current_line += (word + " ")
+                else:
+                    lines_to_draw.append(current_line.strip())
+                    current_line = word + " "
+            if current_line:
+                lines_to_draw.append(current_line.strip())
+            
+            y_offset = 315
+            for line in lines_to_draw[:2]: # limit to 2 lines
+                draw.text((35, y_offset), line, fill=0, font=font_medium)
+                y_offset += 25
+        else:
+            draw.text((35, 320), error_msg, fill=0, font=font_medium)
+            
     # Footer / MAC
     draw.line([(20, HEIGHT - 40), (WIDTH - 20, HEIGHT - 40)], fill=0)
     mac = get_mac_address()
@@ -361,6 +403,16 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
 
         mac = get_mac_address()
         
+        # Check for connection errors from previous attempts
+        global last_connection_error
+        error_banner = ""
+        if last_connection_error:
+            error_banner = f"""
+            <div class="alert">
+              ⚠️ <strong>Connection Failed:</strong> {last_connection_error}
+            </div>
+            """
+        
         # Serve the premium styled setup web page
         html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -403,6 +455,16 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
       border-radius: 16px;
       padding: 30px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }}
+    .alert {{
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.5;
     }}
     .header {{
       text-align: center;
@@ -480,6 +542,8 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
       <h1>InkFlow Setup Wizard</h1>
       <p>Configure wireless network and server connections</p>
     </div>
+    
+    {error_banner}
     
     <form action="/save" method="POST">
       <div class="form-group">
@@ -639,29 +703,65 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
         pass
         
     # Attempt to connect to the new WiFi network
+    connected = False
     if ssid:
         print(f"[Setup Portal] Connecting to WiFi network: {ssid}...")
         try:
             if password:
-                subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid, "password", password], capture_output=True, timeout=30)
+                res = subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid, "password", password], capture_output=True, text=True, timeout=30)
             else:
-                subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid], capture_output=True, timeout=30)
+                res = subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid], capture_output=True, text=True, timeout=30)
+            
+            if res.returncode == 0:
+                connected = True
+                print("[Setup Portal] WiFi connection successful!")
+            else:
+                print(f"[Setup Portal] WiFi connection failed: {res.stderr or res.stdout}")
+        except FileNotFoundError:
+            # Handle local development / testing environments where nmcli is not available
+            print("[Setup Portal] nmcli not found. Assuming connection success for local/mock development.")
+            connected = True
         except Exception as e:
             print(f"[Setup Portal] Error connecting to WiFi network: {e}")
             
-    # Stop the web server
-    global httpd
-    if httpd:
-        print("[Setup Portal] Stopping setup web server...")
-        httpd.shutdown()
+    if connected:
+        # Stop the web server
+        global httpd
+        if httpd:
+            print("[Setup Portal] Stopping setup web server...")
+            httpd.shutdown()
+            
+        print("[Setup Portal] Restarting client process to apply configurations...")
+        time.sleep(2)
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+    else:
+        global last_connection_error
+        last_connection_error = f"Failed to connect to '{ssid}'. Please check credentials and try again."
         
-    print("[Setup Portal] Restarting client process to apply configurations...")
-    time.sleep(2)
-    os.execv(sys.executable, [sys.executable] + sys.argv)
+        # Clean up the failed connection profile
+        try:
+            subprocess.run(["sudo", "nmcli", "con", "delete", "id", ssid], capture_output=True, timeout=10)
+        except Exception:
+            pass
+            
+        # Re-activate the setup AP hotspot
+        print("[Setup Portal] WiFi connection failed. Re-activating AP setup hotspot...")
+        try:
+            subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
+            subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
+            subprocess.run(["sudo", "nmcli", "dev", "wifi", "hotspot", "ssid", "InkFlow-Setup", "password", "12345678"], capture_output=True, timeout=20)
+        except Exception as e:
+            print(f"[Setup Portal] Warning: Re-activating hotspot failed: {e}")
+            
+        # Redraw the setup splash screen with the error message
+        draw_setup_splash(error_msg=last_connection_error)
 
 def enter_ap_setup_mode():
     """Starts AP mode and serves the captive configuration portal"""
     print("[Setup Portal] Entering configuration AP mode...")
+    
+    global last_connection_error
+    last_connection_error = None
     
     # 1. Show setup wizard splash
     draw_setup_splash()
