@@ -269,42 +269,53 @@ def draw_setup_splash(error_msg=None):
     draw.line([(20, 80), (WIDTH - 20, 80)], fill=0)
     
     # Steps
-    draw.text((25, 95), "1. Connect your phone/PC to setup WiFi network:", fill=0, font=font_medium)
-    draw.text((45, 120), "SSID: InkFlow-Setup", fill=0, font=font_large)
-    draw.text((45, 145), "Password: 12345678", fill=0, font=font_large)
+    draw.text((25, 95), "1. Connect to WiFi setup network:", fill=0, font=font_medium)
+    draw.text((45, 120), "SSID: InkFlow-Setup (Password: 12345678)", fill=0, font=font_large)
+    draw.text((45, 150), "(Or scan QR code [1] on the right)", fill=0, font=font_medium)
     
-    draw.text((25, 180), "2. Open a browser and navigate to:", fill=0, font=font_medium)
-    draw.text((45, 205), "http://10.42.0.1:8080", fill=0, font=font_large)
+    draw.text((25, 180), "2. Open the setup portal browser page:", fill=0, font=font_medium)
+    draw.text((45, 205), "Go to: http://10.42.0.1:8080", fill=0, font=font_large)
+    draw.text((45, 235), "(Or scan QR code [2] on the right after connecting)", fill=0, font=font_medium)
     
-    draw.text((25, 250), "3. Enter your local WiFi details & InkFlow server details.", fill=0, font=font_medium)
+    draw.text((25, 265), "3. Enter your WiFi & server details to connect.", fill=0, font=font_medium)
     
-    # Connection QR Code on the right
+    # Connection QR Codes on the right
     try:
         import qrcode
-        qr = qrcode.QRCode(version=1, box_size=4, border=2)
-        qr.add_data("WIFI:S:InkFlow-Setup;T:WPA;P:12345678;;")
-        qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="black", back_color="white")
-        qr_img = qr_img.convert("L").resize((130, 130))
-        img.paste(qr_img, (620, 95))
-        draw.text((625, 230), "Scan to Connect", fill=0, font=font_medium)
+        
+        # 1. WiFi QR Code
+        qr_wifi = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr_wifi.add_data("WIFI:S:InkFlow-Setup;T:WPA;P:12345678;;")
+        qr_wifi.make(fit=True)
+        qr_wifi_img = qr_wifi.make_image(fill_color="black", back_color="white")
+        qr_wifi_img = qr_wifi_img.convert("L").resize((110, 110))
+        img.paste(qr_wifi_img, (620, 95))
+        draw.text((615, 210), "[1] Scan to Connect", fill=0, font=font_medium)
+        
+        # 2. URL QR Code
+        qr_url = qrcode.QRCode(version=1, box_size=3, border=2)
+        qr_url.add_data("http://10.42.0.1:8080")
+        qr_url.make(fit=True)
+        qr_url_img = qr_url.make_image(fill_color="black", back_color="white")
+        qr_url_img = qr_url_img.convert("L").resize((110, 110))
+        img.paste(qr_url_img, (620, 250))
+        draw.text((610, 365), "[2] Scan to Open Portal", fill=0, font=font_medium)
     except ImportError:
         pass
     
-    # Connection error box
+    # Connection error box (drawn only on the left to avoid overlapping QR codes)
     if error_msg:
-        # Draw error notice box in the blank area below step 3
-        draw.rectangle([20, 285, WIDTH - 20, 385], outline=0, width=2)
-        draw.rectangle([22, 287, WIDTH - 22, 320], fill=0)
-        draw.text((35, 295), "⚠️ CONNECTION ERROR", fill=255, font=font_medium)
+        draw.rectangle([20, 295, 580, 430], outline=0, width=2)
+        draw.rectangle([22, 297, 578, 330], fill=0)
+        draw.text((35, 305), "⚠️ CONNECTION ERROR", fill=255, font=font_medium)
         
-        # Word wrap the error message if it's too long
-        if len(error_msg) > 70:
+        # Word wrap the error message if it's too long (fits ~50 chars in the narrower box)
+        if len(error_msg) > 50:
             words = error_msg.split()
             lines_to_draw = []
             current_line = ""
             for word in words:
-                if len(current_line) + len(word) + 1 < 70:
+                if len(current_line) + len(word) + 1 < 50:
                     current_line += (word + " ")
                 else:
                     lines_to_draw.append(current_line.strip())
@@ -312,12 +323,12 @@ def draw_setup_splash(error_msg=None):
             if current_line:
                 lines_to_draw.append(current_line.strip())
             
-            y_offset = 330
-            for line in lines_to_draw[:2]: # limit to 2 lines
+            y_offset = 345
+            for line in lines_to_draw[:3]: # limit to 3 lines
                 draw.text((35, y_offset), line, fill=0, font=font_medium)
                 y_offset += 25
         else:
-            draw.text((35, 335), error_msg, fill=0, font=font_medium)
+            draw.text((35, 345), error_msg, fill=0, font=font_medium)
             
     # Footer / MAC
     draw.line([(20, HEIGHT - 40), (WIDTH - 20, HEIGHT - 40)], fill=0)
