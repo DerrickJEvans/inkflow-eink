@@ -102,7 +102,7 @@ def display_mock(img):
     print(f"[Mock Display] Image written to local file: {os.path.abspath(filename)}")
     render_ascii_preview(img)
 
-def display_waveshare(img, partial=False):
+def display_waveshare(img, partial=False, sleep_after=True):
     """Pushes image to Waveshare SPI E-Paper display"""
     model = WAVESHARE_MODEL
     print(f"[Hardware Display] Loading Waveshare EPD driver: {model}")
@@ -147,11 +147,13 @@ def display_waveshare(img, partial=False):
             epd.display(epd.getbuffer(mono_img))
             
         # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
-        time.sleep(2)
-        
-        print("[Hardware Display] Putting screen to sleep...")
-        epd.sleep()
-        print("[Hardware Display] Draw cycle complete.")
+        if sleep_after:
+            time.sleep(2)
+            print("[Hardware Display] Putting screen to sleep...")
+            epd.sleep()
+            print("[Hardware Display] Draw cycle complete (screen put to sleep).")
+        else:
+            print("[Hardware Display] Draw cycle complete (screen kept awake for subsequent updates).")
     except ImportError:
         print(f"[Error] Waveshare drivers not found for model '{model}'!")
         print("Install them by running: pip install git+https://github.com/waveshare/e-Paper.git#egg=waveshare-epd&subdirectory=RaspberryPi_JetsonNano/python")
@@ -446,7 +448,9 @@ def draw_connecting_splash(ssid, server_ip, port, step=0):
     draw.text((25, HEIGHT - 28), f"Device MAC Address: {mac}", fill=0, font=font_medium)
     
     if config.DISPLAY_TYPE == 'waveshare':
-        display_waveshare(img, partial=(step >= 1))
+        # Keep screen awake during intermediate updates (step 0, 1, 2) to preserve controller RAM state.
+        # Put it to sleep only on the final step (step 3) or if it's not a waveshare display.
+        display_waveshare(img, partial=(step >= 1), sleep_after=(step == 3))
     elif config.DISPLAY_TYPE == 'inky':
         display_inky(img)
     else:
