@@ -219,8 +219,19 @@ def update_env_file(updates):
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
     lines = []
     if os.path.exists(env_path):
-        with open(env_path, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
+        try:
+            with open(env_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+        except PermissionError:
+            try:
+                import getpass
+                current_user = getpass.getuser()
+                subprocess.run(["sudo", "chown", current_user, env_path], capture_output=True, timeout=5)
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+            except Exception as e:
+                print(f"[Error] Failed to read .env or fix ownership: {e}")
+                return
             
     new_lines = []
     updates_remaining = updates.copy()
@@ -240,8 +251,19 @@ def update_env_file(updates):
     for key, val in updates_remaining.items():
         new_lines.append(f"{key}={val}\n")
         
-    with open(env_path, 'w', encoding='utf-8') as f:
-        f.writelines(new_lines)
+    try:
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+    except PermissionError:
+        try:
+            import getpass
+            current_user = getpass.getuser()
+            subprocess.run(["sudo", "chown", current_user, env_path], capture_output=True, timeout=5)
+            with open(env_path, 'w', encoding='utf-8') as f:
+                f.writelines(new_lines)
+            print(f"[Config] Successfully corrected ownership of {env_path} and saved settings.")
+        except Exception as e:
+            print(f"[Error] Failed to write .env or fix ownership: {e}")
 
 def draw_setup_splash(error_msg=None):
     """Renders the setup wizard splash screen onto the display"""
@@ -729,76 +751,95 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
 
 def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
     """Saves settings, turns down AP hotspot, connects to user's wifi and restarts the client daemon"""
-    # Draw connecting splash screen on display
-    draw_connecting_splash(ssid, server_ip, port)
-    
-    # Save the settings
-    updates = {
-        'TRMNL_SERVER_IP': server_ip,
-        'TRMNL_SERVER_PORT': port,
-        'TRMNL_DEVICE_NAME': device_name
-    }
-    update_env_file(updates)
-    
-    # Clean up the AP hotspot connection
+    global last_connection_error
     try:
-        subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
-        subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
-    except Exception:
-        pass
+        # Draw connecting splash screen on display
+        draw_connecting_splash(ssid, server_ip, port)
         
-    # Attempt to connect to the new WiFi network
-    connected = False
-    if ssid:
-        print(f"[Setup Portal] Connecting to WiFi network: {ssid}...")
+        # Save the settings
+        updates = {
+            'TRMNL_SERVER_IP': server_ip,
+            'TRMNL_SERVER_PORT': port,
+            'TRMNL_DEVICE_NAME': device_name
+        }
+        update_env_file(updates)
+        
+        # Clean up the AP hotspot connection
         try:
-            if password:
-                res = subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid, "password", password], capture_output=True, text=True, timeout=30)
-            else:
-                res = subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid], capture_output=True, text=True, timeout=30)
+            subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
+            subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
+        except Exception:
+            pass
             
-            if res.returncode == 0:
+        # Attempt to connect to the new WiFi network
+        connected = False
+        if ssid:
+            print(f"[Setup Portal] Connecting to WiFi network: {ssid}...")
+            try:
+                if password:
+                    res = subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid, "password", password], capture_output=True, text=True, timeout=30)
+                else:
+                    res = subprocess.run(["sudo", "nmcli", "dev", "wifi", "connect", ssid], capture_output=True, text=True, timeout=30)
+                
+                if res.returncode == 0:
+                    connected = True
+                    print("[Setup Portal] WiFi connection successful!")
+                else:
+                    print(f"[Setup Portal] WiFi connection failed: {res.stderr or res.stdout}")
+            except FileNotFoundError:
+                # Handle local development / testing environments where nmcli is not available
+                print("[Setup Portal] nmcli not found. Assuming connection success for local/mock development.")
                 connected = True
-                print("[Setup Portal] WiFi connection successful!")
-            else:
-                print(f"[Setup Portal] WiFi connection failed: {res.stderr or res.stdout}")
-        except FileNotFoundError:
-            # Handle local development / testing environments where nmcli is not available
-            print("[Setup Portal] nmcli not found. Assuming connection success for local/mock development.")
-            connected = True
-        except Exception as e:
-            print(f"[Setup Portal] Error connecting to WiFi network: {e}")
+            except Exception as e:
+                print(f"[Setup Portal] Error connecting to WiFi network: {e}")
+                
+        if connected:
+            # Stop the web server
+            global httpd
+            if httpd:
+                print("[Setup Portal] Stopping setup web server...")
+                httpd.shutdown()
+                
+            print("[Setup Portal] Restarting client process to apply configurations...")
+            time.sleep(2)
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+        else:
+            last_connection_error = f"Failed to connect to '{ssid}'. Please check credentials and try again."
             
-    if connected:
-        # Stop the web server
-        global httpd
-        if httpd:
-            print("[Setup Portal] Stopping setup web server...")
-            httpd.shutdown()
+            # Clean up the failed connection profile
+            try:
+                subprocess.run(["sudo", "nmcli", "con", "delete", "id", ssid], capture_output=True, timeout=10)
+            except Exception:
+                pass
+                
+            # Re-activate the setup AP hotspot
+            print("[Setup Portal] WiFi connection failed. Re-activating AP setup hotspot...")
+            try:
+                subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
+                subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
+                subprocess.run(["sudo", "nmcli", "dev", "wifi", "hotspot", "ssid", "InkFlow-Setup", "password", "12345678"], capture_output=True, timeout=20)
+            except Exception as e:
+                print(f"[Setup Portal] Warning: Re-activating hotspot failed: {e}")
+                
+            # Redraw the setup splash screen with the error message
+            draw_setup_splash(error_msg=last_connection_error)
             
-        print("[Setup Portal] Restarting client process to apply configurations...")
-        time.sleep(2)
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-    else:
-        global last_connection_error
-        last_connection_error = f"Failed to connect to '{ssid}'. Please check credentials and try again."
+    except Exception as err:
+        print(f"[Setup Portal] Unexpected error in connection routine: {err}")
+        last_connection_error = f"System error: {err}"
         
-        # Clean up the failed connection profile
+        # Clean up failed profile and restore hotspot on crash
         try:
             subprocess.run(["sudo", "nmcli", "con", "delete", "id", ssid], capture_output=True, timeout=10)
         except Exception:
             pass
-            
-        # Re-activate the setup AP hotspot
-        print("[Setup Portal] WiFi connection failed. Re-activating AP setup hotspot...")
         try:
             subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
             subprocess.run(["sudo", "nmcli", "con", "delete", "Hotspot"], capture_output=True, timeout=10)
             subprocess.run(["sudo", "nmcli", "dev", "wifi", "hotspot", "ssid", "InkFlow-Setup", "password", "12345678"], capture_output=True, timeout=20)
-        except Exception as e:
-            print(f"[Setup Portal] Warning: Re-activating hotspot failed: {e}")
+        except Exception:
+            pass
             
-        # Redraw the setup splash screen with the error message
         draw_setup_splash(error_msg=last_connection_error)
 
 def enter_ap_setup_mode():
