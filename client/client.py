@@ -126,9 +126,15 @@ def display_waveshare(img, partial=False, sleep_after=True):
                 
         has_partial_support = (init_part_func is not None and display_part_func is not None)
         
-        # Force full refresh and sleep if partial updates are not supported by the driver
+        # Force full refresh if partial updates are not supported by the driver
         actual_partial = partial and has_partial_support
-        actual_sleep_after = sleep_after if has_partial_support else True
+        
+        # Respect user configured sleep behavior (especially for screens that fade on sleep)
+        configured_sleep = getattr(config, 'SLEEP_AFTER', True)
+        if not configured_sleep:
+            actual_sleep_after = False
+        else:
+            actual_sleep_after = sleep_after if has_partial_support else True
         
         # Convert image to grayscale, resize, and convert to 1-bit monochrome
         processed_img = img.convert("L").resize((epd.width, epd.height))
@@ -153,7 +159,10 @@ def display_waveshare(img, partial=False, sleep_after=True):
             
         # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
         if actual_sleep_after:
-            time.sleep(2)
+            sleep_delay = getattr(config, 'SLEEP_DELAY', 2.0)
+            if sleep_delay > 0:
+                print(f"[Hardware Display] Waiting {sleep_delay} seconds for screen voltages to settle...")
+                time.sleep(sleep_delay)
             print("[Hardware Display] Putting screen to sleep...")
             epd.sleep()
             print("[Hardware Display] Draw cycle complete (screen put to sleep).")

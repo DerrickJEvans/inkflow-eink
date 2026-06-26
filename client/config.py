@@ -38,6 +38,13 @@ def parse_int(val):
     except ValueError:
         return None
 
+# Helper function to parse floats safely
+def parse_float(val):
+    try:
+        return float(val) if val else None
+    except ValueError:
+        return None
+
 # ==============================================================================
 #                               CONFIG VARIABLES
 # ==============================================================================
@@ -57,6 +64,10 @@ DISPLAY_TYPE = os.environ.get('TRMNL_DISPLAY_TYPE', 'waveshare')
 # 4. Color Contrast & Sleep Settings
 INVERT_COLORS = parse_bool(os.environ.get('TRMNL_INVERT_COLORS', 'false'))
 DEFAULT_POLL_INTERVAL = parse_int(os.environ.get('TRMNL_DEFAULT_POLL_INTERVAL', '1800')) or 1800
+SLEEP_AFTER = parse_bool(os.environ.get('TRMNL_SLEEP_AFTER', 'true'))
+SLEEP_DELAY = parse_float(os.environ.get('TRMNL_SLEEP_DELAY', '2.0'))
+if SLEEP_DELAY is None:
+    SLEEP_DELAY = 2.0
 
 # 5. Manual Hardware Resolution Overrides
 WIDTH = parse_int(os.environ.get('TRMNL_WIDTH', ''))
