@@ -102,7 +102,7 @@ def display_mock(img):
     print(f"[Mock Display] Image written to local file: {os.path.abspath(filename)}")
     render_ascii_preview(img)
 
-def display_waveshare(img):
+def display_waveshare(img, partial=False):
     """Pushes image to Waveshare SPI E-Paper display"""
     model = WAVESHARE_MODEL
     print(f"[Hardware Display] Loading Waveshare EPD driver: {model}")
@@ -111,9 +111,20 @@ def display_waveshare(img):
         epd_module = __import__(f"waveshare_epd.{model}", fromlist=["EPD"])
         epd = epd_module.EPD()
         
-        print("[Hardware Display] Initializing Waveshare EPD...")
-        epd.init()
+        # Check for partial update capabilities in the driver
+        init_part_func = None
+        display_part_func = None
         
+        if partial:
+            for init_name in ['init_Partial', 'init_part', 'init_part_refresh']:
+                if hasattr(epd, init_name):
+                    init_part_func = getattr(epd, init_name)
+                    break
+            for display_name in ['display_Partial', 'display_Part', 'display_part']:
+                if hasattr(epd, display_name):
+                    display_part_func = getattr(epd, display_name)
+                    break
+                    
         # Convert image to grayscale, resize, and convert to 1-bit monochrome
         processed_img = img.convert("L").resize((epd.width, epd.height))
         
@@ -124,9 +135,17 @@ def display_waveshare(img):
             
         mono_img = processed_img.convert("1")
         
-        print("[Hardware Display] Writing frame buffer to display...")
-        epd.display(epd.getbuffer(mono_img))
-        
+        if partial and init_part_func and display_part_func:
+            print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
+            init_part_func()
+            print("[Hardware Display] Writing partial frame buffer to display...")
+            display_part_func(epd.getbuffer(mono_img))
+        else:
+            print("[Hardware Display] Initializing Waveshare EPD (Full Refresh)...")
+            epd.init()
+            print("[Hardware Display] Writing full frame buffer to display...")
+            epd.display(epd.getbuffer(mono_img))
+            
         # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
         time.sleep(2)
         
@@ -407,7 +426,7 @@ def draw_connecting_splash(ssid, server_ip, port, step=0):
     draw.text((25, HEIGHT - 28), f"Device MAC Address: {mac}", fill=0, font=font_medium)
     
     if config.DISPLAY_TYPE == 'waveshare':
-        display_waveshare(img)
+        display_waveshare(img, partial=(step >= 1))
     elif config.DISPLAY_TYPE == 'inky':
         display_inky(img)
     else:
