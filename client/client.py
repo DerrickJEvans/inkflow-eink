@@ -115,16 +115,21 @@ def display_waveshare(img, partial=False, sleep_after=True):
         init_part_func = None
         display_part_func = None
         
-        if partial:
-            for init_name in ['init_Partial', 'init_part', 'init_part_refresh']:
-                if hasattr(epd, init_name):
-                    init_part_func = getattr(epd, init_name)
-                    break
-            for display_name in ['display_Partial', 'display_Part', 'display_part']:
-                if hasattr(epd, display_name):
-                    display_part_func = getattr(epd, display_name)
-                    break
-                    
+        for init_name in ['init_Partial', 'init_part', 'init_part_refresh']:
+            if hasattr(epd, init_name):
+                init_part_func = getattr(epd, init_name)
+                break
+        for display_name in ['display_Partial', 'display_Part', 'display_part']:
+            if hasattr(epd, display_name):
+                display_part_func = getattr(epd, display_name)
+                break
+                
+        has_partial_support = (init_part_func is not None and display_part_func is not None)
+        
+        # Force full refresh and sleep if partial updates are not supported by the driver
+        actual_partial = partial and has_partial_support
+        actual_sleep_after = sleep_after if has_partial_support else True
+        
         # Convert image to grayscale, resize, and convert to 1-bit monochrome
         processed_img = img.convert("L").resize((epd.width, epd.height))
         
@@ -135,7 +140,7 @@ def display_waveshare(img, partial=False, sleep_after=True):
             
         mono_img = processed_img.convert("1")
         
-        if partial and init_part_func and display_part_func:
+        if actual_partial:
             print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
             init_part_func()
             print("[Hardware Display] Writing partial frame buffer to display...")
@@ -147,7 +152,7 @@ def display_waveshare(img, partial=False, sleep_after=True):
             epd.display(epd.getbuffer(mono_img))
             
         # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
-        if sleep_after:
+        if actual_sleep_after:
             time.sleep(2)
             print("[Hardware Display] Putting screen to sleep...")
             epd.sleep()
