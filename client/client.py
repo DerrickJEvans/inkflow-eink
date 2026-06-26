@@ -364,9 +364,9 @@ def draw_setup_splash(error_msg=None):
     else:
         display_mock(img)
 
-def draw_connecting_splash(ssid, server_ip, port):
+def draw_connecting_splash(ssid, server_ip, port, step=0):
     """Renders the connecting status splash screen onto the display"""
-    print("[Display] Drawing connecting status splash screen...")
+    print(f"[Display] Drawing connecting status splash screen (Step {step})...")
     
     img = Image.new("L", (WIDTH, HEIGHT), 255)
     draw = ImageDraw.Draw(img)
@@ -384,15 +384,27 @@ def draw_connecting_splash(ssid, server_ip, port):
     draw.text((25, 70), "Applying new credentials and establishing link:", fill=0, font=font_medium)
     draw.line([(20, 85), (WIDTH - 20, 85)], fill=0)
     
-    draw.text((25, 110), f"📡 WiFi SSID:  {ssid}", fill=0, font=font_medium)
-    draw.text((25, 135), f"🌐 Server IP:  {server_ip}", fill=0, font=font_medium)
-    draw.text((25, 160), f"🔌 Port Bind:  {port}", fill=0, font=font_medium)
+    draw.text((25, 105), f"WiFi SSID:  {ssid}", fill=0, font=font_medium)
+    draw.text((25, 130), f"Server IP:  {server_ip}", fill=0, font=font_medium)
+    draw.text((25, 155), f"Port Bind:  {port}", fill=0, font=font_medium)
     
-    draw.text((25, 200), "Please wait up to 30 seconds for connection...", fill=0, font=font_medium)
+    draw.line([(20, 185), (WIDTH - 20, 185)], fill=0)
+    draw.text((25, 195), "Connection Progress:", fill=0, font=font_medium)
+    
+    # Progress steps based on step level (using safe ASCII status indicators)
+    s0 = "[OK] Saved configuration settings" if step >= 1 else "[>>] Saving configuration settings..."
+    s1 = "[OK] Disconnected setup AP hotspot" if step >= 2 else ("[>>] Disconnecting setup AP hotspot..." if step == 1 else "[  ] Disconnect setup AP hotspot")
+    s2 = "[OK] Connected to WiFi network" if step >= 3 else ("[>>] Connecting to WiFi network..." if step == 2 else "[  ] Connect to WiFi network")
+    s3 = "[>>] Starting client sync daemon..." if step == 3 else "[  ] Start client sync daemon"
+    
+    draw.text((45, 225), s0, fill=0, font=font_medium)
+    draw.text((45, 255), s1, fill=0, font=font_medium)
+    draw.text((45, 285), s2, fill=0, font=font_medium)
+    draw.text((45, 315), s3, fill=0, font=font_medium)
     
     draw.line([(20, HEIGHT - 40), (WIDTH - 20, HEIGHT - 40)], fill=0)
     mac = get_mac_address()
-    draw.text((25, HEIGHT - 28), f"MAC Address: {mac}", fill=0, font=font_medium)
+    draw.text((25, HEIGHT - 28), f"Device MAC Address: {mac}", fill=0, font=font_medium)
     
     if config.DISPLAY_TYPE == 'waveshare':
         display_waveshare(img)
@@ -753,8 +765,8 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
     """Saves settings, turns down AP hotspot, connects to user's wifi and restarts the client daemon"""
     global last_connection_error
     try:
-        # Draw connecting splash screen on display
-        draw_connecting_splash(ssid, server_ip, port)
+        # Draw connecting splash screen on display (Step 0: saving settings)
+        draw_connecting_splash(ssid, server_ip, port, step=0)
         
         # Save the settings
         updates = {
@@ -764,6 +776,9 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
         }
         update_env_file(updates)
         
+        # Step 1: Settings saved, now disconnecting setup AP hotspot
+        draw_connecting_splash(ssid, server_ip, port, step=1)
+        
         # Clean up the AP hotspot connection
         try:
             subprocess.run(["sudo", "nmcli", "con", "down", "Hotspot"], capture_output=True, timeout=10)
@@ -771,6 +786,9 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
         except Exception:
             pass
             
+        # Step 2: AP hotspot down, now connecting to WiFi network
+        draw_connecting_splash(ssid, server_ip, port, step=2)
+        
         # Attempt to connect to the new WiFi network
         connected = False
         if ssid:
@@ -794,6 +812,10 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
                 print(f"[Setup Portal] Error connecting to WiFi network: {e}")
                 
         if connected:
+            # Step 3: WiFi connected! Starting daemon.
+            draw_connecting_splash(ssid, server_ip, port, step=3)
+            time.sleep(2)
+            
             # Stop the web server
             global httpd
             if httpd:
@@ -801,7 +823,7 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
                 httpd.shutdown()
                 
             print("[Setup Portal] Restarting client process to apply configurations...")
-            time.sleep(2)
+            time.sleep(1)
             os.execv(sys.executable, [sys.executable] + sys.argv)
         else:
             last_connection_error = f"Failed to connect to '{ssid}'. Please check credentials and try again."
