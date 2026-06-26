@@ -331,7 +331,17 @@ def draw_setup_splash(error_msg=None):
         qr_wifi_img = qr_wifi.make_image(fill_color="black", back_color="white")
         qr_wifi_img = qr_wifi_img.convert("L").resize((110, 110))
         img.paste(qr_wifi_img, (620, 95))
-        draw.text((615, 210), "[1] Scan to Connect", fill=0, font=font_medium)
+        
+        wifi_label = "[1] Scan to Connect"
+        try:
+            bbox = draw.textbbox((0, 0), wifi_label, font=font_small)
+            wifi_w = bbox[2] - bbox[0]
+        except AttributeError:
+            try:
+                wifi_w = font_small.getsize(wifi_label)[0]
+            except AttributeError:
+                wifi_w = len(wifi_label) * 7
+        draw.text((675 - wifi_w // 2, 210), wifi_label, fill=0, font=font_small)
         
         # 2. URL QR Code
         qr_url = qrcode.QRCode(version=1, box_size=3, border=2)
@@ -340,7 +350,17 @@ def draw_setup_splash(error_msg=None):
         qr_url_img = qr_url.make_image(fill_color="black", back_color="white")
         qr_url_img = qr_url_img.convert("L").resize((110, 110))
         img.paste(qr_url_img, (620, 250))
-        draw.text((610, 365), "[2] Scan to Open Portal", fill=0, font=font_medium)
+        
+        url_label = "[2] Scan to Open Portal"
+        try:
+            bbox = draw.textbbox((0, 0), url_label, font=font_small)
+            url_w = bbox[2] - bbox[0]
+        except AttributeError:
+            try:
+                url_w = font_small.getsize(url_label)[0]
+            except AttributeError:
+                url_w = len(url_label) * 7
+        draw.text((675 - url_w // 2, 365), url_label, fill=0, font=font_small)
     except ImportError:
         pass
     
