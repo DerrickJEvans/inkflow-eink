@@ -24,12 +24,14 @@
 #include <EEPROM.h>
 #include "config.h"
 #include "logo.h"
+#include "qr_codes.h"
 #include "cache_manager.h"
 
 Epd epd;
 WiFiClient client;
 WiFiServer server(80); // Global Web Server instance
 int nextRefreshSeconds = fallbackSleepSeconds;
+String lastConnectionError = "";
 
 #define PIN_PREV   2
 #define PIN_NEXT   3
@@ -74,7 +76,7 @@ bool fetchAndStreamDisplay(String action = "");
 void startSetupWizard();
 void processDNS();
 void drawSplashDirect(int mode, String param1 = "", String param2 = "", String param3 = "");
-void drawSetupSplashDirect();
+void drawSetupSplashDirect(String errorMsg = "");
 void drawConnectingSplashDirect(String ssid, String host, int port);
 void drawScanSplashDirect();
 void drawErrorSplashDirect(String errorMsg, String detail1, String detail2);
@@ -643,6 +645,7 @@ bool connectWiFi() {
     return true;
   } else {
     Serial.println(F("\n[Error] Unable to connect. Launching Setup AP Portal..."));
+    lastConnectionError = "Failed to connect to network '" + String(activeConfig.wifi_ssid) + "'. Check password and signal strength.";
     drawErrorSplashDirect("WiFi Connection Failed", "SSID: " + String(activeConfig.wifi_ssid), "Check network or credentials!");
     delay(5000); // Give user time to read the error screen
     startSetupWizard(); // Endless AP soft loop
@@ -682,7 +685,7 @@ void startSetupWizard() {
   delay(1000); // Allow co-processor to power down and reboot cleanly
   
   // Render setup instructions onto the E-Ink Screen physically
-  drawSetupSplashDirect();
+  drawSetupSplashDirect(lastConnectionError);
   
   // Start soft Access Point "InkFlow-R4-Setup" with WPA2 security for absolute visibility & stability
   if (!WiFi.beginAP("InkFlow-R4-Setup", "12345678")) {
@@ -842,6 +845,13 @@ void startSetupWizard() {
         client.println(F(".form-group input:focus,.form-group select:focus{border-color:var(--primary);}.btn-submit{width:100%;padding:14px;background:var(--primary);border:none;border-radius:8px;color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;}"));
         client.println(F(".btn-submit:hover{background:var(--primary-hover);}.footer{text-align:center;margin-top:25px;font-size:12px;color:var(--text-muted);}</style></head>"));
         client.println(F("<body><div class=\"container\"><div class=\"header\"><h1>InkFlow R4 Setup</h1><p>Configure wireless networks & InkFlow server</p></div>"));
+        
+        if (lastConnectionError.length() > 0) {
+          client.print(F("<div style=\"background:#ef4444;border:1px solid #dc2626;border-radius:8px;padding:12px;margin-bottom:20px;font-size:14px;color:#fff;text-align:left;\">⚠️ "));
+          client.print(lastConnectionError);
+          client.println(F("</div>"));
+        }
+        
         client.println(F("<form action=\"/save\" method=\"POST\"><div class=\"form-group\"><label>WiFi SSID</label>"));
         client.println(F("<select onchange=\"document.getElementById('manual_ssid').value = this.value;\" style=\"width:100%;padding:12px 16px;background:rgba(15,23,42,0.6);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:15px;outline:none;margin-bottom:10px;\">"));
         client.println(F("<option value=\"\">-- Select Scanned Network --</option>"));
@@ -994,23 +1004,35 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
   char line2[65] = {0};
   char line3[65] = {0};
 
-  TextElement elements[15];
+  TextElement elements[20];
   int numElements = 0;
 
   if (mode == 0) {
     if (displayWidth >= 800) {
-      elements[numElements++] = {"InkFlow R4 Setup Portal", 40, 40, 2};
-      elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
-      elements[numElements++] = {"1. Connect your phone or PC to the setup WiFi network:", 40, 110, 1};
-      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 80, 140, 2};
-      elements[numElements++] = {"WiFi Password: 12345678", 80, 175, 1};
-      elements[numElements++] = {"2. The setup wizard should open automatically.", 40, 220, 1};
-      elements[numElements++] = {"   If it does not, open a web browser and visit:", 40, 240, 1};
-      elements[numElements++] = {"http://192.168.4.1", 80, 270, 2};
-      elements[numElements++] = {"3. Choose your WiFi network, enter password, and configure", 40, 320, 1};
-      elements[numElements++] = {"   the InkFlow server IP (e.g. 192.168.1.122) and port.", 40, 340, 1};
+      elements[numElements++] = {"InkFlow R4 Setup Portal", 40, 30, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 60, 1};
+      elements[numElements++] = {"1. Connect your phone or PC to the setup WiFi network:", 40, 95, 1};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup (Password: 12345678)", 80, 120, 1};
+      elements[numElements++] = {"(Or scan QR code [1] on the right)", 80, 150, 1};
+      
+      elements[numElements++] = {"2. Open the setup portal browser page:", 40, 180, 1};
+      elements[numElements++] = {"Go to: http://192.168.4.1", 80, 205, 2};
+      elements[numElements++] = {"(Or scan QR code [2] on the right after connecting)", 80, 235, 1};
+      
+      elements[numElements++] = {"3. Choose your WiFi network, enter password, and configure", 40, 265, 1};
+      elements[numElements++] = {"   the InkFlow server IP (e.g. 192.168.1.122) and port.", 40, 285, 1};
+
+      // Draw Connection Error Banner if SSID connection failed
+      if (param1 != "") {
+        elements[numElements++] = {"WARNING: Connection failed. Check credentials in portal.", 40, 315, 1};
+      }
+      
       elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
       elements[numElements++] = {macLine, 40, 420, 1};
+
+      // Add QR Code Captions on the right (centered under 110x110 QR codes centered at x = 675)
+      elements[numElements++] = {"[1] Scan to Connect", 600, 210, 1};
+      elements[numElements++] = {"[2] Scan to Open Portal", 585, 365, 1};
     } else if (displayWidth >= 400) {
       elements[numElements++] = {"InkFlow R4 Setup", 20, 20, 2};
       elements[numElements++] = {"----------------------------------------", 20, 45, 1};
@@ -1185,21 +1207,54 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
           }
         }
 
-        // 3. Render Logo element
+        // 3. Render Logo/QR element
         if (!isBlack) {
           if (displayWidth >= 800) {
-            int logoX = 580;
-            int logoY = 120;
-            int logoWidth = 160;
-            int logoHeight = 160;
-            if (x >= logoX && x < logoX + logoWidth && y >= logoY && y < logoY + logoHeight) {
-              int lx = x - logoX;
-              int ly = y - logoY;
-              int byteIdx = (ly * logoWidth + lx) / 8;
-              int bitIdx = 7 - ((ly * logoWidth + lx) % 8);
-              uint8_t byteVal = logo_160x160[byteIdx];
-              if (((byteVal >> bitIdx) & 1) == 0) {
-                isBlack = true;
+            if (mode == 0) {
+              // Draw the two QR codes on the right (centered at x = 675)
+              int qrX = 620;
+              int qrY1 = 95;
+              int qrY2 = 250;
+              int qrWidth = 110;
+              int qrHeight = 110;
+              
+              if (x >= qrX && x < qrX + qrWidth && y >= qrY1 && y < qrY1 + qrHeight) {
+                int lx = x - qrX;
+                int ly = y - qrY1;
+                // Formatted as 14 bytes per row (110 pixels padded to 112 bits / 14 bytes)
+                int byteIdx = ly * 14 + (lx / 8);
+                int bitIdx = 7 - (lx % 8);
+                uint8_t byteVal = qr_wifi_110x110[byteIdx];
+                if (((byteVal >> bitIdx) & 1) == 0) {
+                  isBlack = true;
+                }
+              }
+              else if (x >= qrX && x < qrX + qrWidth && y >= qrY2 && y < qrY2 + qrHeight) {
+                int lx = x - qrX;
+                int ly = y - qrY2;
+                // Formatted as 14 bytes per row (110 pixels padded to 112 bits / 14 bytes)
+                int byteIdx = ly * 14 + (lx / 8);
+                int bitIdx = 7 - (lx % 8);
+                uint8_t byteVal = qr_url_110x110[byteIdx];
+                if (((byteVal >> bitIdx) & 1) == 0) {
+                  isBlack = true;
+                }
+              }
+            } else {
+              // Draw the standard 160x160 logo
+              int logoX = 580;
+              int logoY = 120;
+              int logoWidth = 160;
+              int logoHeight = 160;
+              if (x >= logoX && x < logoX + logoWidth && y >= logoY && y < logoY + logoHeight) {
+                int lx = x - logoX;
+                int ly = y - logoY;
+                int byteIdx = (ly * logoWidth + lx) / 8;
+                int bitIdx = 7 - ((ly * logoWidth + lx) % 8);
+                uint8_t byteVal = logo_160x160[byteIdx];
+                if (((byteVal >> bitIdx) & 1) == 0) {
+                  isBlack = true;
+                }
               }
             }
           } else if (displayWidth >= 400) {
@@ -1244,8 +1299,8 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
   Serial.println(F("[Display] Splash drawn successfully."));
 }
 
-void drawSetupSplashDirect() {
-  drawSplashDirect(0);
+void drawSetupSplashDirect(String errorMsg) {
+  drawSplashDirect(0, errorMsg);
 }
 
 void drawConnectingSplashDirect(String ssid, String host, int port) {
