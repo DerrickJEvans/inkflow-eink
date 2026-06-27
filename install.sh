@@ -115,7 +115,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=${SUDO_USER_NAME}
+User=root
 WorkingDirectory=${PROJECT_DIR}
 Environment=NODE_ENV=production PORT=5000 HOST=0.0.0.0
 ExecStart=/usr/bin/node server.js

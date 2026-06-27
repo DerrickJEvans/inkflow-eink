@@ -32,12 +32,49 @@ let configPath = path.join(__dirname, 'config.json');
 let configExamplePath = path.join(__dirname, 'config.example.json');
 let config = { devices: [], settings: {} };
 
+// Attempt to use boot partition config on Linux for permanent retention across OverlayFS wipes
+if (process.platform === 'linux') {
+  const bootFirmwarePath = '/boot/firmware/config.json';
+  const bootPath = '/boot/config.json';
+
+  if (fs.existsSync(bootFirmwarePath)) {
+    configPath = bootFirmwarePath;
+  } else if (fs.existsSync(bootPath)) {
+    configPath = bootPath;
+  } else if (fs.existsSync('/boot/firmware')) {
+    try {
+      fs.accessSync('/boot/firmware', fs.constants.W_OK);
+      configPath = bootFirmwarePath;
+    } catch (e) {
+      console.log("/boot/firmware is not writable. Defaulting to local config.");
+    }
+  } else if (fs.existsSync('/boot')) {
+    try {
+      fs.accessSync('/boot', fs.constants.W_OK);
+      configPath = bootPath;
+    } catch (e) {
+      console.log("/boot is not writable. Defaulting to local config.");
+    }
+  }
+}
+
 if (!fs.existsSync(configPath) && fs.existsSync(configExamplePath)) {
   try {
     fs.copyFileSync(configExamplePath, configPath);
-    console.log("Created config.json from config.example.json");
+    console.log(`Created config.json at: ${configPath}`);
   } catch (err) {
-    console.error("Error copying config.example.json to config.json:", err);
+    console.error(`Error copying config.example.json to ${configPath}:`, err);
+    // If copying to boot partition failed, fallback to local config.json
+    const localConfigPath = path.join(__dirname, 'config.json');
+    if (configPath !== localConfigPath) {
+      try {
+        fs.copyFileSync(configExamplePath, localConfigPath);
+        configPath = localConfigPath;
+        console.log(`Created fallback local config.json at: ${configPath}`);
+      } catch (localErr) {
+        console.error("Error creating local fallback config.json:", localErr);
+      }
+    }
   }
 }
 
@@ -74,7 +111,18 @@ const saveConfig = () => {
   try {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
   } catch (err) {
-    console.error("Error saving config.json:", err);
+    console.error(`Error saving config.json to ${configPath}:`, err);
+    // If writing to the primary path failed, fallback to local config.json
+    const fallbackPath = path.join(__dirname, 'config.json');
+    if (configPath !== fallbackPath) {
+      console.log(`Attempting fallback to local config: ${fallbackPath}`);
+      try {
+        fs.writeFileSync(fallbackPath, JSON.stringify(config, null, 2), 'utf8');
+        console.log("Successfully saved configuration to local fallback path.");
+      } catch (fallbackErr) {
+        console.error("Error saving fallback config.json:", fallbackErr);
+      }
+    }
   }
 };
 
