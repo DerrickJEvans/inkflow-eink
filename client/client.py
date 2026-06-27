@@ -108,98 +108,101 @@ def display_mock(img):
     render_ascii_preview(img)
 
 def apply_trmnl_hardware_optimizations(epd, model):
+    """No-op: optimizations moved to custom initialization to run before booster power on."""
+    pass
+
+def init_trmnl_hardware_7in5(epd):
     """
-    Applies register-level hardware overrides from TRMNL C++ firmware
-    to optimize contrast, border crispness, and pixel response times.
+    Performs register-level hardware initialization matching the C++ driver.
+    Crucial to configure booster/voltages BEFORE turning on power (0x04) to avoid charge pump crashes.
     """
-    print(f"[Hardware Display] Applying low-level TRMNL register optimizations for: {model}...")
-    try:
-        # Helper wrappers to handle CamelCase vs snake_case on different waveshare drivers
-        def send_cmd(command):
-            for method_name in ['send_command', 'SendCommand']:
-                if hasattr(epd, method_name):
-                    getattr(epd, method_name)(command)
-                    return
-            raise AttributeError("EPD object lacks command sender")
+    print("[Hardware Display] Executing custom C++ TRMNL hardware initialization sequence...")
+    
+    # 1. Reset EPD controller
+    for method_name in ['reset', 'Reset']:
+        if hasattr(epd, method_name):
+            getattr(epd, method_name)()
+            break
             
-        def send_val(data):
-            for method_name in ['send_data', 'SendData']:
-                if hasattr(epd, method_name):
-                    getattr(epd, method_name)(data)
-                    return
-            raise AttributeError("EPD object lacks data sender")
+    # Helper wrappers to handle case variations dynamically
+    def send_cmd(command):
+        for method_name in ['send_command', 'SendCommand']:
+            if hasattr(epd, method_name):
+                getattr(epd, method_name)(command)
+                return
+        raise AttributeError("EPD object lacks command sender")
+        
+    def send_val(data):
+        for method_name in ['send_data', 'SendData']:
+            if hasattr(epd, method_name):
+                getattr(epd, method_name)(data)
+                return
+        raise AttributeError("EPD object lacks data sender")
+        
+    def wait_busy():
+        for method_name in ['ReadBusy', 'read_busy', 'wait_busy']:
+            if hasattr(epd, method_name):
+                getattr(epd, method_name)()
+                return
 
-        if '7in5' in model:
-            # 7.5" V2 Panel Optimizations (from TRMNL firmware backup_7in5/epd7in5_V2.cpp)
-            # Power setting (Gate/Source voltage, VGH/VGL/VSH/VSL)
-            send_cmd(0x01)
-            send_val(0x17)
-            send_val(0x17)  # VGH/VGL voltage
-            send_val(0x3F)  # VSH
-            send_val(0x3F)  # VSL
-            send_val(0x11)  # VSHR
-            
-            # VCOM DC setting
-            send_cmd(0x82)
-            send_val(0x24)
-            
-            # Booster setting
-            send_cmd(0x06)
-            send_val(0x27)
-            send_val(0x27)
-            send_val(0x2F)
-            send_val(0x17)
-            
-            # OSC Setting (frequency adjustment)
-            send_cmd(0x30)
-            send_val(0x06)
-            
-            # VCOM AND DATA INTERVAL SETTING
-            send_cmd(0x50)
-            send_val(0x10)  # VCOM settings
-            send_val(0x07)  # Border set to crisp solid white/black
-            
-            # TCON Setting
-            send_cmd(0X60)
-            send_val(0x22)
-
-        elif '4in26' in model:
-            # 4.26" Panel Optimizations (from TRMNL firmware epd4in26.cpp)
-            # soft start settings
-            send_cmd(0x0C)
-            send_val(0xAE)
-            send_val(0xC7)
-            send_val(0xC3)
-            send_val(0xC0)
-            send_val(0x80)
-            
-            # Border configuration
-            send_cmd(0x3C)
-            send_val(0x01)  # Clean borders without noise
-            
-        elif '4in2' in model:
-            # 4.2" Panel Optimizations
-            # VCOM and Data Interval Setting
-            send_cmd(0x50)
-            send_val(0x17)  # Stable voltage interval
-            
-            # Border setting
-            send_cmd(0x3C)
-            send_val(0x01)
-
-        elif '2in9' in model:
-            # 2.9" Panel Optimizations
-            # VCOM and Data Interval Setting
-            send_cmd(0x50)
-            send_val(0x97)  # Optimized default for 2.9"
-            
-            # Border Setting
-            send_cmd(0x3C)
-            send_val(0x01)
-
-        print("[Hardware Display] Low-level optimizations successfully applied.")
-    except Exception as err:
-        print(f"[Warning] Failed to apply hardware register optimizations: {err}")
+    # 2. Power setting
+    send_cmd(0x01)
+    send_val(0x17)
+    send_val(0x17)  # VGH/VGL voltage
+    send_val(0x3F)  # VSH
+    send_val(0x3F)  # VSL
+    send_val(0x11)  # VSHR
+    
+    # 3. VCOM DC Setting
+    send_cmd(0x82)
+    send_val(0x24)
+    
+    # 4. Booster Setting
+    send_cmd(0x06)
+    send_val(0x27)
+    send_val(0x27)
+    send_val(0x2F)
+    send_val(0x17)
+    
+    # 5. OSC Setting (frequency adjustment)
+    send_cmd(0x30)
+    send_val(0x06)
+    
+    # 6. Power On
+    send_cmd(0x04)
+    time.sleep(0.1)
+    wait_busy()
+    
+    # 7. Panel Setting
+    send_cmd(0x00)
+    send_val(0x3F)
+    
+    # 8. Resolution Setting (tres)
+    send_cmd(0x61)
+    send_val(0x03)  # source 800
+    send_val(0x20)
+    send_val(0x01)  # gate 480
+    send_val(0xE0)
+    
+    # 9. Dual-stage Resolution config
+    send_cmd(0x15)
+    send_val(0x00)
+    
+    # 10. VCOM and Data Interval Setting
+    send_cmd(0x50)
+    send_val(0x10)
+    send_val(0x00)  # Match C++ border setting (0x00) to prevent charge traps
+    
+    # 11. TCON Setting
+    send_cmd(0X60)
+    send_val(0x22)
+    
+    # 12. Resolution Setting (second round)
+    send_cmd(0x65)
+    send_val(0x00)
+    send_val(0x00)
+    send_val(0x00)
+    send_val(0x00)
 
 def display_waveshare(img, partial=False, sleep_after=True):
     """Pushes image to Waveshare SPI E-Paper display"""
@@ -262,13 +265,15 @@ def display_waveshare(img, partial=False, sleep_after=True):
         if actual_partial:
             print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
             init_part_func()
-            apply_trmnl_hardware_optimizations(epd, model)
             print("[Hardware Display] Writing partial frame buffer to display...")
             display_part_func(buffer)
         else:
             print("[Hardware Display] Initializing Waveshare EPD (Full Refresh)...")
-            epd.init()
-            apply_trmnl_hardware_optimizations(epd, model)
+            if '7in5' in model:
+                init_trmnl_hardware_7in5(epd)
+            else:
+                epd.init()
+                apply_trmnl_hardware_optimizations(epd, model)
             print("[Hardware Display] Writing full frame buffer to display...")
             epd.display(buffer)
             
