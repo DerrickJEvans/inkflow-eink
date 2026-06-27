@@ -233,7 +233,9 @@ Login to Raspberry PI and follow the instructions below
    * **Button Control Actions**:
      * **Previous / Next (Pins 6 / 7)**: Bypasses the default timer rotation to manually transition back and forth through active layout widgets in the carousel.
      * **System Diagnostics (Pin 8)**: Renders a detailed overlay containing device stats, network latency, connection status, and polling telemetry directly onto the E-Ink display (touch again to exit).
-     * **AP Setup Portal (Pin 9)**: Drops standard client polling and spawns a local, password-protected WiFi configuration hotspot: **`InkFlow-Setup`** (WPA2 password: `12345678`) on the Raspberry Pi. Connecting to this Hotspot opens the configuration portal at `http://192.168.4.1:80` (or dynamic IP) to easily adjust settings from your mobile phone!
+      * **AP Setup Portal (Pin 9)**: Spawns a local WPA2 WiFi configuration hotspot: **`InkFlow-Setup`** (password: `12345678`) on the Pi. It features a sequential 2-step setup screen:
+        * **Step 1 (WiFi Connection)**: Renders only the WiFi login QR code.
+        * **Step 2 (Portal URL)**: Automatically refreshes the E-Ink display when your phone connects, showing only the portal URL QR code (`http://10.42.0.1:8080`) to easily adjust settings without code edits!
 
 ---
 
@@ -243,10 +245,12 @@ Login to Raspberry PI and follow the instructions below
 1. Open the Arduino IDE and load the source files from the [**`arduino/`**](arduino) directory (choose `arduino_client.ino` for ESP32 or `arduino_r4_client.ino` for UNO R4).
 2. Open `config.h` to choose your target display dimensions, compile, and upload the sketch to your board.
 3. **Captive WiFi Setup Portal**:
-   * Once booted, the device hosts its own network. Connect your phone or computer to the Access Point:
+   * Once booted, the device hosts its own setup network.
      * **ESP32 AP**: `InkFlow-Setup` (Open network)
      * **Arduino UNO R4 AP**: `InkFlow-R4-Setup` (WPA2 password: `12345678`)
-   * A captive setup window will open automatically. Choose your home Wi-Fi SSID, enter the password, specify your **InkFlow Server IP** and Port, and click **Save Settings & Connect**!
+   * **Sequential Setup (UNO R4)**: The R4 screen runs in two stages to prevent QR scanning conflicts:
+     * **Step 1 (WiFi Connection)**: Displays only the WiFi QR code to automatically connect your phone to the hotspot.
+     * **Step 2 (Portal URL)**: The screen automatically updates upon connection to show a confirmation and only the URL QR code (`http://192.168.4.1`). Scan it or browse to the portal to configure your home Wi-Fi and server IP!
 4. **Offline Diagnostics**:
    * If the Wi-Fi connection fails or the server is unreachable, the display draws a visual diagnostic card showing current network info, target IP port, and connection errors, making debugging easy without serial monitor cables.
 
