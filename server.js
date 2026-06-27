@@ -1055,7 +1055,7 @@ app.get('/api/display/preview-plugin.png', async (req, res) => {
   }
 });
 
-// Direct RAW 1-bit monochrome byte stream URL (for ESP32 client)
+// Direct RAW 1-bit monochrome byte stream URL (for ESP32, UNO R4, and Python clients)
 app.get('/api/display/raw', async (req, res) => {
   try {
     const deviceId = req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');

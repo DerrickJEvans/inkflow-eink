@@ -5,6 +5,7 @@ import requests
 import io
 import os
 import sys
+import json
 from PIL import Image, ImageOps, ImageDraw, ImageFont
 import http.server
 import urllib.parse
@@ -97,6 +98,8 @@ def render_ascii_preview(img):
 
 def display_mock(img):
     """Save image locally as a preview file"""
+    if isinstance(img, (bytes, bytearray)):
+        img = Image.frombytes("1", (WIDTH, HEIGHT), img)
     filename = "debug_preview.png"
     img.save(filename)
     print(f"[Mock Display] Image written to local file: {os.path.abspath(filename)}")
@@ -136,26 +139,34 @@ def display_waveshare(img, partial=False, sleep_after=True):
         else:
             actual_sleep_after = sleep_after if has_partial_support else True
         
-        # Convert image to grayscale, resize, and convert to 1-bit monochrome
-        processed_img = img.convert("L").resize((epd.width, epd.height))
+        # Check if incoming data is a raw byte stream
+        is_raw_bytes = isinstance(img, (bytes, bytearray))
         
-        # Invert colors if configured (some Waveshare models require this, others don't)
-        if getattr(config, 'INVERT_COLORS', False):
-            print("[Hardware Display] Inverting color bits...")
-            processed_img = ImageOps.invert(processed_img)
+        if is_raw_bytes:
+            print("[Hardware Display] Processing raw 1-bit pixel stream directly...")
+            buffer = list(img)
+        else:
+            # Convert image to grayscale, resize, and convert to 1-bit monochrome
+            processed_img = img.convert("L").resize((epd.width, epd.height))
             
-        mono_img = processed_img.convert("1")
+            # Invert colors if configured (some Waveshare models require this, others don't)
+            if getattr(config, 'INVERT_COLORS', False):
+                print("[Hardware Display] Inverting color bits...")
+                processed_img = ImageOps.invert(processed_img)
+                
+            mono_img = processed_img.convert("1")
+            buffer = epd.getbuffer(mono_img)
         
         if actual_partial:
             print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
             init_part_func()
             print("[Hardware Display] Writing partial frame buffer to display...")
-            display_part_func(epd.getbuffer(mono_img))
+            display_part_func(buffer)
         else:
             print("[Hardware Display] Initializing Waveshare EPD (Full Refresh)...")
             epd.init()
             print("[Hardware Display] Writing full frame buffer to display...")
-            epd.display(epd.getbuffer(mono_img))
+            epd.display(buffer)
             
         # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
         if actual_sleep_after:
@@ -172,14 +183,20 @@ def display_waveshare(img, partial=False, sleep_after=True):
         print(f"[Error] Waveshare drivers not found for model '{model}'!")
         print("Install them by running: pip install git+https://github.com/waveshare/e-Paper.git#egg=waveshare-epd&subdirectory=RaspberryPi_JetsonNano/python")
         print("Falling back to local mockup preview file.")
+        if isinstance(img, (bytes, bytearray)):
+            img = Image.frombytes("1", (WIDTH, HEIGHT), img)
         display_mock(img)
     except Exception as e:
         print(f"[Error] Waveshare hardware error: {e}")
         print("Falling back to local mockup preview file.")
+        if isinstance(img, (bytes, bytearray)):
+            img = Image.frombytes("1", (WIDTH, HEIGHT), img)
         display_mock(img)
 
 def display_inky(img):
     """Pushes image to Pimoroni Inky pHAT / wHAT displays"""
+    if isinstance(img, (bytes, bytearray)):
+        img = Image.frombytes("1", (WIDTH, HEIGHT), img)
     print("[Hardware Display] Loading Pimoroni Inky auto-driver...")
     try:
         from inky.auto import auto
@@ -242,6 +259,63 @@ def get_wifi_rssi():
     except Exception:
         pass
     return None
+
+# ==============================================================================
+#                  LOCAL CACHING UTILITIES
+# ==============================================================================
+def get_cache_dir():
+    cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    return cache_dir
+
+def read_cache_manifest():
+    cache_dir = get_cache_dir()
+    manifest_path = os.path.join(cache_dir, 'cache_manifest.json')
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"[Cache Warning] Failed to parse cache manifest: {e}")
+    return {}
+
+def write_cache_manifest(manifest):
+    cache_dir = get_cache_dir()
+    manifest_path = os.path.join(cache_dir, 'cache_manifest.json')
+    try:
+        with open(manifest_path, 'w', encoding='utf-8') as f:
+            json.dump(manifest, f, indent=2)
+    except Exception as e:
+        print(f"[Cache Error] Failed to write cache manifest: {e}")
+
+def get_cached_slide(index):
+    cache_dir = get_cache_dir()
+    slide_path = os.path.join(cache_dir, f"slide_{index}.raw")
+    if os.path.exists(slide_path):
+        try:
+            with open(slide_path, 'rb') as f:
+                return f.read()
+        except Exception as e:
+            print(f"[Cache Error] Failed to read cached slide {index}: {e}")
+    return None
+
+def save_cached_slide(index, raw_bytes):
+    cache_dir = get_cache_dir()
+    slide_path = os.path.join(cache_dir, f"slide_{index}.raw")
+    try:
+        with open(slide_path, 'wb') as f:
+            f.write(raw_bytes)
+    except Exception as e:
+        print(f"[Cache Error] Failed to write cached slide {index}: {e}")
+
+def clear_cache_slides():
+    cache_dir = get_cache_dir()
+    for filename in os.listdir(cache_dir):
+        if filename.startswith("slide_") and filename.endswith(".raw"):
+            try:
+                os.remove(os.path.join(cache_dir, filename))
+            except Exception:
+                pass
 
 # ==============================================================================
 #                  AP CONFIGURATION PORTAL WIZARD
@@ -1111,7 +1185,7 @@ def poll_server():
         print("[WiFi] Resolving dynamic hardware MAC address for device registration...")
         device_id = get_mac_address()
 
-    server_url = f"http://{config.SERVER_IP}:{config.SERVER_PORT}/api/display/image.png"
+    server_url = f"http://{config.SERVER_IP}:{config.SERVER_PORT}/api/display/raw"
     params = {
         'device': device_id,
         'width': WIDTH,
@@ -1131,6 +1205,8 @@ def poll_server():
     force_refresh = True
     next_action = None
     last_successful_sync_time = 0
+    consecutive_failures = 0
+    offline_index = -1
     
     diagnostics_active = False
     diagnostics_start_time = 0
@@ -1223,49 +1299,136 @@ def poll_server():
                     request_params['force'] = 'true'
                     print(f"[{time.strftime('%H:%M:%S')}] Triggering action: {action_to_send}")
 
-                response = requests.get(server_url, params=request_params, headers=headers, timeout=10)
+                response = requests.get(server_url, params=request_params, headers=headers, stream=True, timeout=10)
                 
-                if response.status_code == 200:
-                    print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(response.content)} bytes)")
-                    last_successful_sync_time = time.time()
-                    
-                    # Try to parse refresh rate from header, fallback to configuration
-                    if 'X-Refresh-Rate' in response.headers:
-                        try:
-                            poll_interval = int(response.headers['X-Refresh-Rate'])
-                            print(f"[{time.strftime('%H:%M:%S')}] Server set refresh rate: {poll_interval}s")
-                        except ValueError:
-                            pass
-                    
-                    # Load image from bytes
-                    image_data = io.BytesIO(response.content)
-                    img = Image.open(image_data)
-                    
-                    # Direct to selected driver
-                    if config.DISPLAY_TYPE == 'waveshare':
-                        display_waveshare(img)
-                    elif config.DISPLAY_TYPE == 'inky':
-                        display_inky(img)
-                    else:
-                        display_mock(img)
-                else:
+                if response.status_code != 200:
                     print(f"[Server Warning] Server responded with status code: {response.status_code}")
+                    response.close()
+                    raise requests.exceptions.RequestException(f"Bad status code {response.status_code}")
                 
-                # Update last poll time only on a successful or completed attempt
+                consecutive_failures = 0  # Reset on successful request
+                
+                carousel_sig = response.headers.get('X-Carousel-Signature')
+                image_index_val = response.headers.get('X-Image-Index')
+                total_images_val = response.headers.get('X-Total-Images')
+                refresh_rate_val = response.headers.get('X-Refresh-Rate')
+                
+                # Try to parse refresh rate from header, fallback to configuration
+                if refresh_rate_val:
+                    try:
+                        poll_interval = int(refresh_rate_val)
+                        print(f"[{time.strftime('%H:%M:%S')}] Server set refresh rate: {poll_interval}s")
+                    except ValueError:
+                        pass
+                
+                image_index = None
+                total_images = None
+                if image_index_val is not None:
+                    try:
+                        image_index = int(image_index_val)
+                    except ValueError:
+                        pass
+                if total_images_val is not None:
+                    try:
+                        total_images = int(total_images_val)
+                    except ValueError:
+                        pass
+                
+                is_cached = False
+                raw_bytes = None
+                
+                if carousel_sig and image_index is not None:
+                    manifest = read_cache_manifest()
+                    if manifest.get('carousel_signature') != carousel_sig:
+                        print(f"[{time.strftime('%H:%M:%S')}] 🔄 Carousel signature mismatch. Invalidating local cache...")
+                        clear_cache_slides()
+                        manifest = {
+                            'carousel_signature': carousel_sig,
+                            'total_images': total_images or 1,
+                            'width': WIDTH,
+                            'height': HEIGHT
+                        }
+                        write_cache_manifest(manifest)
+                        
+                    raw_bytes = get_cached_slide(image_index)
+                    if raw_bytes is not None:
+                        is_cached = True
+                        print(f"[{time.strftime('%H:%M:%S')}] 💾 Cache hit! Loading Slide {image_index} from local storage...")
+                        response.close()
+                
+                if not is_cached:
+                    try:
+                        raw_bytes = response.content
+                    finally:
+                        response.close()
+                    
+                    print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(raw_bytes)} bytes)")
+                    
+                    # Safety Padding/Truncating Catch
+                    expected_size = int((WIDTH * HEIGHT) / 8)
+                    if len(raw_bytes) < expected_size:
+                        missing = expected_size - len(raw_bytes)
+                        print(f"[{time.strftime('%H:%M:%S')}] ⚠️  [Padding] Stream truncated. Received {len(raw_bytes)} bytes, expected {expected_size}. Padding with {missing} bytes of white...")
+                        raw_bytes += b'\xff' * missing
+                    elif len(raw_bytes) > expected_size:
+                        print(f"[{time.strftime('%H:%M:%S')}] ⚠️  [Truncate] Received {len(raw_bytes)} bytes, expected {expected_size}. Truncating to fit screen size...")
+                        raw_bytes = raw_bytes[:expected_size]
+                    
+                    if carousel_sig and image_index is not None:
+                        save_cached_slide(image_index, raw_bytes)
+                        print(f"[{time.strftime('%H:%M:%S')}] 💾 Saved Slide {image_index} to local disk cache.")
+                
+                last_successful_sync_time = time.time()
+                
+                # Direct to selected driver
+                if config.DISPLAY_TYPE == 'waveshare':
+                    display_waveshare(raw_bytes)
+                elif config.DISPLAY_TYPE == 'inky':
+                    display_inky(raw_bytes)
+                else:
+                    display_mock(raw_bytes)
+                
+                # Update last poll time only on a successful attempt
                 last_poll_time = time.time()
                 
                 # Print sleeping status info
                 poll_interval = max(1, poll_interval)
                 print(f"💤 Waiting {poll_interval} seconds or until button press...\n")
                 
-            except requests.exceptions.RequestException as e:
-                print(f"[Connection Error] Server unreachable: {e}")
-                print(f"Retrying in 10 seconds...")
-                last_poll_time = time.time() - poll_interval + 10
-            except Exception as e:
-                print(f"[Unexpected Error] {e}")
-                print(f"Retrying in 10 seconds...")
-                last_poll_time = time.time() - poll_interval + 10
+            except (requests.exceptions.RequestException, Exception) as e:
+                consecutive_failures += 1
+                is_req_err = isinstance(e, requests.exceptions.RequestException)
+                err_label = "Connection Error" if is_req_err else "Unexpected Error"
+                print(f"[{time.strftime('%H:%M:%S')}] ⚠️  [{err_label}] {e}")
+                
+                # Try offline carousel fallback
+                manifest = read_cache_manifest()
+                total_cached = manifest.get('total_images', 0)
+                carousel_sig = manifest.get('carousel_signature')
+                
+                rotated_offline = False
+                if total_cached > 0 and carousel_sig:
+                    offline_index = (offline_index + 1) % total_cached
+                    raw_bytes = get_cached_slide(offline_index)
+                    if raw_bytes is not None:
+                        print(f"[{time.strftime('%H:%M:%S')}] 📡 [Offline Mode] Server unreachable. Rotating to cached Slide {offline_index} (total: {total_cached})...")
+                        if config.DISPLAY_TYPE == 'waveshare':
+                            display_waveshare(raw_bytes)
+                        elif config.DISPLAY_TYPE == 'inky':
+                            display_inky(raw_bytes)
+                        else:
+                            display_mock(raw_bytes)
+                        rotated_offline = True
+                
+                if consecutive_failures >= 3:
+                    print(f"[{time.strftime('%H:%M:%S')}] ⚠️  {consecutive_failures} consecutive sync failures. Triggering automatic diagnostics overlay...")
+                    draw_diagnostics_overlay(last_successful_sync_time)
+                    last_poll_time = time.time()
+                    poll_interval = 30  # Polling with 30s delay to prevent spamming
+                else:
+                    # Retry in 10 seconds
+                    print(f"Retrying in 10 seconds (consecutive failures: {consecutive_failures})...")
+                    last_poll_time = time.time() - poll_interval + 10
 
 if __name__ == "__main__":
     try:
