@@ -920,11 +920,44 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
             
         draw_setup_splash(error_msg=last_connection_error)
 
+def check_hotspot_connections():
+    """Parses /proc/net/arp to see if any client is connected to the 10.42.0.X subnet"""
+    try:
+        if not os.path.exists("/proc/net/arp"):
+            return False
+        with open("/proc/net/arp", "r") as f:
+            lines = f.readlines()
+        for line in lines[1:]:  # Skip header row
+            parts = line.split()
+            if len(parts) >= 6:
+                ip = parts[0]
+                mac = parts[3]
+                flags = parts[2]
+                # Check for client IPs in the NetworkManager hotspot subnet (10.42.0.2 to 10.42.0.254)
+                if ip.startswith("10.42.0.") and ip != "10.42.0.1":
+                    if mac != "00:00:00:00:00:00" and flags != "0x0":
+                        return True
+    except Exception as e:
+        print(f"[Setup Portal] Error checking ARP table: {e}")
+    return False
+
+def connection_monitor_thread():
+    """Background thread to poll ARP table and update the E-Ink display on client connection"""
+    global client_connected
+    print("[Setup Portal] Connection monitor thread started.")
+    while httpd and not client_connected:
+        if check_hotspot_connections():
+            client_connected = True
+            print("[Setup Portal] Detected client connection via ARP table. Swapping screen...")
+            draw_setup_splash(error_msg=last_connection_error, step=2)
+            break
+        time.sleep(2)
+
 def enter_ap_setup_mode():
     """Starts AP mode and serves the captive configuration portal"""
     print("[Setup Portal] Entering configuration AP mode...")
     
-    global last_connection_error, client_connected
+    global last_connection_error, client_connected, httpd
     last_connection_error = None
     client_connected = False
     
@@ -945,10 +978,14 @@ def enter_ap_setup_mode():
         print(f"[Setup Portal] Warning: Hotspot command failed: {e}")
         
     # 3. Spawn HTTP server
-    global httpd
     server_address = ('', 8080)
     httpd = http.server.HTTPServer(server_address, SetupPortalHandler)
     print("[Setup Portal] Configuration portal is active at http://10.42.0.1:8080")
+    
+    # Spawn background connection monitor thread
+    import threading
+    monitor = threading.Thread(target=connection_monitor_thread, daemon=True)
+    monitor.start()
     
     try:
         httpd.serve_forever()
@@ -956,6 +993,7 @@ def enter_ap_setup_mode():
         print(f"[Setup Portal] Server shutdown: {e}")
     finally:
         httpd.server_close()
+        httpd = None
         print("[Setup Portal] Setup portal closed.")
 
 def get_local_ip():
