@@ -221,12 +221,13 @@ def display_waveshare(img, partial=False, sleep_after=True):
                 objects_to_check.append(impl)
             for obj in objects_to_check:
                 for attr_name in dir(obj):
-                    attr = getattr(obj, attr_name)
-                    if hasattr(attr, 'close'):
-                        try:
-                            attr.close()
-                        except Exception:
-                            pass
+                    if attr_name.endswith('_PIN') or attr_name == 'SPI':
+                        attr = getattr(obj, attr_name)
+                        if hasattr(attr, 'close'):
+                            try:
+                                attr.close()
+                            except Exception:
+                                pass
                             
         for mod in ['waveshare_epd.epdconfig', f'waveshare_epd.{model}']:
             if mod in sys.modules:
