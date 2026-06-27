@@ -65,6 +65,46 @@ const applyFloydSteinbergDither = (grayscaleBuffer, width, height, ditherMode = 
     return dithered;
   }
 
+  if (ditherMode === 'bayer-4' || ditherMode === 'bayer-8' || ditherMode === 'bayer') {
+    const isBayer4 = ditherMode === 'bayer-4';
+    if (isBayer4) {
+      const bayer4 = [
+        [ 0,  8,  2, 10],
+        [12,  4, 14,  6],
+        [ 3, 11,  1,  9],
+        [15,  7, 13,  5]
+      ];
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          const val = bayer4[y % 4][x % 4];
+          const threshold = (val * 16) + 8;
+          dithered[idx] = grayscaleBuffer[idx] < threshold ? 0 : 255;
+        }
+      }
+    } else {
+      const bayer8 = [
+        [ 0, 48, 12, 60,  3, 51, 15, 63],
+        [32, 16, 44, 28, 35, 19, 47, 31],
+        [ 8, 56,  4, 52, 11, 59,  7, 55],
+        [40, 24, 36, 20, 43, 27, 39, 23],
+        [ 2, 50, 14, 62,  1, 49, 13, 61],
+        [34, 18, 46, 30, 33, 17, 45, 29],
+        [10, 58,  6, 54,  9, 57,  5, 53],
+        [42, 26, 38, 22, 41, 25, 37, 21]
+      ];
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          const val = bayer8[y % 8][x % 8];
+          const threshold = (val * 4) + 2;
+          dithered[idx] = grayscaleBuffer[idx] < threshold ? 0 : 255;
+        }
+      }
+    }
+    return dithered;
+  }
+
   const temp = new Int16Array(grayscaleBuffer);
   
   if (ditherMode === 'atkinson') {
@@ -228,6 +268,28 @@ const generateSVG = async (device, settings) => {
   // Assemble full SVG document
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <style>
+        /* Less intense fill for large black background blocks */
+        rect[fill="black"], rect[fill="BLACK"],
+        rect[fill="#000"], rect[fill="#000000"] {
+          fill: #222222;
+        }
+
+        /* Antialiasing for white text on dark background by outlining with a grey border */
+        text[fill="white"], text[fill="WHITE"],
+        text[fill="#fff"], text[fill="#FFF"],
+        text[fill="#ffffff"], text[fill="#FFFFFF"],
+        [fill="white"] text, [fill="WHITE"] text,
+        [fill="#fff"] text, [fill="#FFF"] text,
+        [fill="#ffffff"] text, [fill="#FFFFFF"] text,
+        tspan[fill="white"], tspan[fill="WHITE"],
+        tspan[fill="#fff"], tspan[fill="#FFF"],
+        tspan[fill="#ffffff"], tspan[fill="#FFFFFF"] {
+          stroke: #808080;
+          stroke-width: 1px;
+          paint-order: stroke fill;
+        }
+      </style>
       <!-- Crisp white background for e-ink contrast -->
       <rect width="100%" height="100%" fill="white" />
       
@@ -285,6 +347,7 @@ const renderDeviceImage = async (device, settings) => {
 
 module.exports = {
   renderDeviceImage,
+  applyFloydSteinbergDither,
   PLUGINS,
   loadPlugins
 };
