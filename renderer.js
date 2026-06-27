@@ -323,9 +323,10 @@ const renderDeviceImage = async (device, settings) => {
     return `<rect ${newAttrs}>`;
   });
 
-  // 2. Sharp Grayscale Rasterization
+  // 2. Sharp Grayscale Rasterization (Flatten transparent SVG to white background)
   const rawGrayscale = await sharp(Buffer.from(svgString))
     .resize(w, h)
+    .flatten({ background: '#ffffff' })
     .grayscale()
     .raw()
     .toBuffer();
