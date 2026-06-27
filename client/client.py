@@ -274,13 +274,20 @@ def display_waveshare(img, partial=False, sleep_after=True):
             
         # Delay to let physical pixels stabilize and charge pump voltages settle before sleeping
         if actual_sleep_after:
-            sleep_delay = getattr(config, 'SLEEP_DELAY', 2.0)
+            sleep_delay = getattr(config, 'SLEEP_DELAY', 6.0)
             if sleep_delay > 0:
                 print(f"[Hardware Display] Waiting {sleep_delay} seconds for screen voltages to settle...")
                 time.sleep(sleep_delay)
             print("[Hardware Display] Putting screen to sleep...")
             epd.sleep()
-            print("[Hardware Display] Draw cycle complete (screen put to sleep).")
+            
+            # Clean up GPIO pins and SPI port to prevent leakage current from Pi to HAT
+            for method_name in ['Dev_Exit', 'dev_exit', 'module_exit']:
+                if hasattr(epd, method_name):
+                    print("[Hardware Display] Cleaning up GPIO pins (preventing leakage current)...")
+                    getattr(epd, method_name)()
+                    break
+            print("[Hardware Display] Draw cycle complete (screen put to sleep & GPIOs cleaned up).")
         else:
             print("[Hardware Display] Draw cycle complete (screen kept awake for subsequent updates).")
     except ImportError:
