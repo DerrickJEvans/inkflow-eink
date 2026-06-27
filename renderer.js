@@ -269,12 +269,6 @@ const generateSVG = async (device, settings) => {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
       <style>
-        /* Less intense fill for large black background blocks */
-        rect[fill="black"], rect[fill="BLACK"],
-        rect[fill="#000"], rect[fill="#000000"] {
-          fill: #222222;
-        }
-
         /* Antialiasing for white text on dark background by outlining with a grey border */
         text[fill="white"], text[fill="WHITE"],
         text[fill="#fff"], text[fill="#FFF"],
@@ -310,7 +304,24 @@ const renderDeviceImage = async (device, settings) => {
   const h = device.height || 480;
 
   // 1. Create the scalable vector graphic
-  const svgString = await generateSVG(device, settings);
+  let svgString = await generateSVG(device, settings);
+
+  // Less intense fill for large black background blocks (height >= 20) to prevent telemetry fade
+  svgString = svgString.replace(/<rect\s+([^>]+)>/gi, (match, attrs) => {
+    if (!/fill=["']black["']/i.test(attrs) && !/fill=["']#000(?:000)?["']/i.test(attrs)) {
+      return match;
+    }
+    const heightMatch = attrs.match(/height=["'](\d+(?:\.\d+)?)["']/i);
+    if (heightMatch) {
+      const hVal = parseFloat(heightMatch[1]);
+      if (hVal < 20) {
+        return match;
+      }
+    }
+    let newAttrs = attrs.replace(/fill=["']black["']/gi, 'fill="#222222"');
+    newAttrs = newAttrs.replace(/fill=["']#000(?:000)?["']/gi, 'fill="#222222"');
+    return `<rect ${newAttrs}>`;
+  });
 
   // 2. Sharp Grayscale Rasterization
   const rawGrayscale = await sharp(Buffer.from(svgString))
