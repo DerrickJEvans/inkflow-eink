@@ -306,23 +306,6 @@ const renderDeviceImage = async (device, settings) => {
   // 1. Create the scalable vector graphic
   let svgString = await generateSVG(device, settings);
 
-  // Less intense fill for large black background blocks (height >= 20) to prevent telemetry fade
-  svgString = svgString.replace(/<rect\s+([^>]+)>/gi, (match, attrs) => {
-    if (!/fill=["']black["']/i.test(attrs) && !/fill=["']#000(?:000)?["']/i.test(attrs)) {
-      return match;
-    }
-    const heightMatch = attrs.match(/height=["'](\d+(?:\.\d+)?)["']/i);
-    if (heightMatch) {
-      const hVal = parseFloat(heightMatch[1]);
-      if (hVal < 20) {
-        return match;
-      }
-    }
-    let newAttrs = attrs.replace(/fill=["']black["']/gi, 'fill="#222222"');
-    newAttrs = newAttrs.replace(/fill=["']#000(?:000)?["']/gi, 'fill="#222222"');
-    return `<rect ${newAttrs}>`;
-  });
-
   // 2. Sharp Grayscale Rasterization (Flatten transparent SVG to white background)
   const rawGrayscale = await sharp(Buffer.from(svgString))
     .resize(w, h)
