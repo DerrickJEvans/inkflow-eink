@@ -209,6 +209,16 @@ def display_waveshare(img, partial=False, sleep_after=True):
     model = WAVESHARE_MODEL
     print(f"[Hardware Display] Loading Waveshare EPD driver: {model}")
     try:
+        # Force reload waveshare modules to ensure a fresh SPI file descriptor is opened
+        import sys
+        import importlib
+        for mod in ['waveshare_epd.epdconfig', f'waveshare_epd.{model}']:
+            if mod in sys.modules:
+                try:
+                    importlib.reload(sys.modules[mod])
+                except Exception as e:
+                    print(f"[Warning] Failed to reload module {mod}: {e}")
+
         # Dynamically import waveshare e-paper drivers
         epd_module = __import__(f"waveshare_epd.{model}", fromlist=["EPD"])
         epd = epd_module.EPD()
