@@ -212,6 +212,22 @@ def display_waveshare(img, partial=False, sleep_after=True):
         # Force reload waveshare modules to ensure a fresh SPI file descriptor is opened
         import sys
         import importlib
+        cfg_mod = sys.modules.get('waveshare_epd.epdconfig')
+        if cfg_mod:
+            print("[Hardware Display] Releasing active gpiozero pin objects before module reload...")
+            impl = getattr(cfg_mod, 'implementation', None)
+            objects_to_check = [cfg_mod]
+            if impl:
+                objects_to_check.append(impl)
+            for obj in objects_to_check:
+                for attr_name in dir(obj):
+                    attr = getattr(obj, attr_name)
+                    if hasattr(attr, 'close'):
+                        try:
+                            attr.close()
+                        except Exception:
+                            pass
+                            
         for mod in ['waveshare_epd.epdconfig', f'waveshare_epd.{model}']:
             if mod in sys.modules:
                 try:
