@@ -248,6 +248,7 @@ def get_wifi_rssi():
 # ==============================================================================
 httpd = None
 last_connection_error = None
+client_connected = False
 
 def update_env_file(updates):
     """Updates the local .env configuration file with the provided dictionary of key-value pairs"""
@@ -300,9 +301,9 @@ def update_env_file(updates):
         except Exception as e:
             print(f"[Error] Failed to write .env or fix ownership: {e}")
 
-def draw_setup_splash(error_msg=None):
+def draw_setup_splash(error_msg=None, step=1):
     """Renders the setup wizard splash screen onto the display"""
-    print("[Display] Drawing setup wizard splash screen...")
+    print(f"[Display] Drawing setup wizard splash screen (Step {step}/2)...")
     
     img = Image.new("L", (WIDTH, HEIGHT), 255)
     draw = ImageDraw.Draw(img)
@@ -321,64 +322,65 @@ def draw_setup_splash(error_msg=None):
     draw.rectangle([8, 8, WIDTH - 9, HEIGHT - 9], outline=0)
     
     # Header
-    draw.text((25, 30), "InkFlow E-Ink Setup", fill=0, font=font_large)
+    draw.text((25, 30), f"InkFlow E-Ink Setup (Step {step}/2)", fill=0, font=font_large)
     draw.text((25, 60), "Configure your wireless device portal:", fill=0, font=font_medium)
     draw.line([(20, 80), (WIDTH - 20, 80)], fill=0)
     
-    # Steps
-    draw.text((25, 95), "1. Connect to WiFi setup network:", fill=0, font=font_medium)
-    draw.text((45, 120), "SSID: InkFlow-Setup (Password: 12345678)", fill=0, font=font_large)
-    draw.text((45, 150), "(Or scan QR code [1] on the right)", fill=0, font=font_medium)
-    
-    draw.text((25, 180), "2. Open the setup portal browser page:", fill=0, font=font_medium)
-    draw.text((45, 205), "Go to: http://10.42.0.1:8080", fill=0, font=font_large)
-    draw.text((45, 235), "(Or scan QR code [2] on the right after connecting)", fill=0, font=font_medium)
-    
-    draw.text((25, 265), "3. Enter your WiFi & server details to connect.", fill=0, font=font_medium)
-    
-    # Connection QR Codes on the right
-    try:
-        import qrcode
+    if step == 1:
+        # Steps for WiFi connection
+        draw.text((25, 95), "1. Connect your phone or PC to the setup WiFi network:", fill=0, font=font_medium)
+        draw.text((45, 125), "SSID: InkFlow-Setup (Password: 12345678)", fill=0, font=font_large)
+        draw.text((45, 160), "(Or scan the WiFi QR code on the right to connect)", fill=0, font=font_medium)
         
-        # 1. WiFi QR Code
-        qr_wifi = qrcode.QRCode(version=1, box_size=3, border=2)
-        qr_wifi.add_data("WIFI:S:InkFlow-Setup;T:WPA;P:12345678;;")
-        qr_wifi.make(fit=True)
-        qr_wifi_img = qr_wifi.make_image(fill_color="black", back_color="white")
-        qr_wifi_img = qr_wifi_img.convert("L").resize((110, 110))
-        img.paste(qr_wifi_img, (620, 95))
+        draw.text((25, 205), "2. Once connected, this screen will automatically refresh", fill=0, font=font_medium)
+        draw.text((45, 230), "and display the setup portal link and QR code.", fill=0, font=font_medium)
+    else:
+        # Steps for Setup Portal opening
+        draw.text((25, 95), "🟢 DEVICE CONNECTED SUCCESSFULLY!", fill=0, font=font_large)
         
-        wifi_label = "[1] Scan to Connect"
+        draw.text((25, 140), "2. Open the setup portal browser page to configure device:", fill=0, font=font_medium)
+        draw.text((45, 170), "Go to: http://10.42.0.1:8080", fill=0, font=font_large)
+        draw.text((45, 205), "(Or scan the URL QR code on the right to open portal)", fill=0, font=font_medium)
+        
+        draw.text((25, 250), "3. Enter your WiFi network password, server address, and save.", fill=0, font=font_medium)
+    
+    # Connection QR Code on the right (Only for screens 800px wide or larger)
+    if WIDTH >= 800:
         try:
-            bbox = draw.textbbox((0, 0), wifi_label, font=font_small)
-            wifi_w = bbox[2] - bbox[0]
-        except AttributeError:
+            import qrcode
+            
+            if step == 1:
+                # 1. WiFi QR Code
+                qr_wifi = qrcode.QRCode(version=1, box_size=3, border=2)
+                qr_wifi.add_data("WIFI:S:InkFlow-Setup;T:WPA;P:12345678;;")
+                qr_wifi.make(fit=True)
+                qr_wifi_img = qr_wifi.make_image(fill_color="black", back_color="white")
+                qr_wifi_img = qr_wifi_img.convert("L").resize((110, 110))
+                img.paste(qr_wifi_img, (620, 170))
+                
+                label = "Scan to Connect"
+            else:
+                # 2. URL QR Code
+                qr_url = qrcode.QRCode(version=1, box_size=3, border=2)
+                qr_url.add_data("http://10.42.0.1:8080")
+                qr_url.make(fit=True)
+                qr_url_img = qr_url.make_image(fill_color="black", back_color="white")
+                qr_url_img = qr_url_img.convert("L").resize((110, 110))
+                img.paste(qr_url_img, (620, 170))
+                
+                label = "Scan to Open Portal"
+                
             try:
-                wifi_w = font_small.getsize(wifi_label)[0]
+                bbox = draw.textbbox((0, 0), label, font=font_small)
+                lbl_w = bbox[2] - bbox[0]
             except AttributeError:
-                wifi_w = len(wifi_label) * 7
-        draw.text((675 - wifi_w // 2, 210), wifi_label, fill=0, font=font_small)
-        
-        # 2. URL QR Code
-        qr_url = qrcode.QRCode(version=1, box_size=3, border=2)
-        qr_url.add_data("http://10.42.0.1:8080")
-        qr_url.make(fit=True)
-        qr_url_img = qr_url.make_image(fill_color="black", back_color="white")
-        qr_url_img = qr_url_img.convert("L").resize((110, 110))
-        img.paste(qr_url_img, (620, 250))
-        
-        url_label = "[2] Scan to Open Portal"
-        try:
-            bbox = draw.textbbox((0, 0), url_label, font=font_small)
-            url_w = bbox[2] - bbox[0]
-        except AttributeError:
-            try:
-                url_w = font_small.getsize(url_label)[0]
-            except AttributeError:
-                url_w = len(url_label) * 7
-        draw.text((675 - url_w // 2, 365), url_label, fill=0, font=font_small)
-    except ImportError:
-        pass
+                try:
+                    lbl_w = font_small.getsize(label)[0]
+                except AttributeError:
+                    lbl_w = len(label) * 7
+            draw.text((675 - lbl_w // 2, 290), label, fill=0, font=font_small)
+        except ImportError:
+            pass
     
     # Connection error box (drawn only on the left to avoid overlapping QR codes)
     if error_msg:
@@ -476,9 +478,15 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     def do_GET(self):
-        global last_connection_error
+        global last_connection_error, client_connected
         parsed_url = urllib.parse.urlparse(self.path)
         
+        # Trigger display refresh to Step 2 (Portal URL) on first client connection
+        if not client_connected and parsed_url.path != "/status":
+            client_connected = True
+            print("[Setup Portal] Client connected. Redrawing screen to show Portal URL QR code...")
+            draw_setup_splash(error_msg=last_connection_error, step=2)
+            
         # Check for async connection status endpoint
         if parsed_url.path == "/status":
             self.send_response(200)
@@ -916,8 +924,9 @@ def enter_ap_setup_mode():
     """Starts AP mode and serves the captive configuration portal"""
     print("[Setup Portal] Entering configuration AP mode...")
     
-    global last_connection_error
+    global last_connection_error, client_connected
     last_connection_error = None
+    client_connected = False
     
     # 1. Show setup wizard splash
     draw_setup_splash()
