@@ -300,12 +300,7 @@ def display_waveshare(img, partial=False, sleep_after=True):
             print("[Hardware Display] Writing partial frame buffer to display...")
             display_part_func(buffer)
         else:
-            print("[Hardware Display] Initializing Waveshare EPD (Full Refresh)...")
-            if '7in5' in model:
-                init_trmnl_hardware_7in5(epd)
-            else:
-                epd.init()
-                apply_trmnl_hardware_optimizations(epd, model)
+            epd.init()
             print("[Hardware Display] Writing full frame buffer to display...")
             epd.display(buffer)
             
