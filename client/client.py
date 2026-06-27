@@ -100,6 +100,8 @@ def display_mock(img):
     """Save image locally as a preview file"""
     if isinstance(img, (bytes, bytearray)):
         img = Image.frombytes("1", (WIDTH, HEIGHT), img)
+        if getattr(config, 'INVERT_COLORS', False):
+            img = ImageOps.invert(img.convert("L")).convert("1")
     filename = "debug_preview.png"
     img.save(filename)
     print(f"[Mock Display] Image written to local file: {os.path.abspath(filename)}")
@@ -238,7 +240,13 @@ def display_waveshare(img, partial=False, sleep_after=True):
         
         if is_raw_bytes:
             print("[Hardware Display] Processing raw 1-bit pixel stream directly...")
-            buffer = list(img)
+            # The official Waveshare Python EPD library performs a bitwise NOT (inversion)
+            # internally on the buffer before sending to SPI, whereas the C++ firmware does not.
+            # We compensate for this default library inversion, while respecting user settings.
+            if not getattr(config, 'INVERT_COLORS', False):
+                buffer = [~b & 0xFF for b in img]
+            else:
+                buffer = list(img)
         else:
             # Convert image to grayscale, resize, and convert to 1-bit monochrome
             processed_img = img.convert("L").resize((epd.width, epd.height))
@@ -281,18 +289,24 @@ def display_waveshare(img, partial=False, sleep_after=True):
         print("Falling back to local mockup preview file.")
         if isinstance(img, (bytes, bytearray)):
             img = Image.frombytes("1", (WIDTH, HEIGHT), img)
+            if getattr(config, 'INVERT_COLORS', False):
+                img = ImageOps.invert(img.convert("L")).convert("1")
         display_mock(img)
     except Exception as e:
         print(f"[Error] Waveshare hardware error: {e}")
         print("Falling back to local mockup preview file.")
         if isinstance(img, (bytes, bytearray)):
             img = Image.frombytes("1", (WIDTH, HEIGHT), img)
+            if getattr(config, 'INVERT_COLORS', False):
+                img = ImageOps.invert(img.convert("L")).convert("1")
         display_mock(img)
 
 def display_inky(img):
     """Pushes image to Pimoroni Inky pHAT / wHAT displays"""
     if isinstance(img, (bytes, bytearray)):
         img = Image.frombytes("1", (WIDTH, HEIGHT), img)
+        if getattr(config, 'INVERT_COLORS', False):
+            img = ImageOps.invert(img.convert("L")).convert("1")
     print("[Hardware Display] Loading Pimoroni Inky auto-driver...")
     try:
         from inky.auto import auto
