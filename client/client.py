@@ -109,10 +109,97 @@ def display_mock(img):
 
 def apply_trmnl_hardware_optimizations(epd, model):
     """
-    Applies register-level hardware overrides from TRMNL C++ firmware.
-    Disabled by default on Python client to prevent mismatch with manufacturer OTP LUTs.
+    Applies register-level hardware overrides from TRMNL C++ firmware
+    to optimize contrast, border crispness, and pixel response times.
     """
-    pass
+    print(f"[Hardware Display] Applying low-level TRMNL register optimizations for: {model}...")
+    try:
+        # Helper wrappers to handle CamelCase vs snake_case on different waveshare drivers
+        def send_cmd(command):
+            for method_name in ['send_command', 'SendCommand']:
+                if hasattr(epd, method_name):
+                    getattr(epd, method_name)(command)
+                    return
+            raise AttributeError("EPD object lacks command sender")
+            
+        def send_val(data):
+            for method_name in ['send_data', 'SendData']:
+                if hasattr(epd, method_name):
+                    getattr(epd, method_name)(data)
+                    return
+            raise AttributeError("EPD object lacks data sender")
+
+        if '7in5' in model:
+            # 7.5" V2 Panel Optimizations (from TRMNL firmware backup_7in5/epd7in5_V2.cpp)
+            # Power setting (Gate/Source voltage, VGH/VGL/VSH/VSL)
+            send_cmd(0x01)
+            send_val(0x17)
+            send_val(0x17)  # VGH/VGL voltage
+            send_val(0x3F)  # VSH
+            send_val(0x3F)  # VSL
+            send_val(0x11)  # VSHR
+            
+            # VCOM DC setting
+            send_cmd(0x82)
+            send_val(0x24)
+            
+            # Booster setting
+            send_cmd(0x06)
+            send_val(0x27)
+            send_val(0x27)
+            send_val(0x2F)
+            send_val(0x17)
+            
+            # OSC Setting (frequency adjustment)
+            send_cmd(0x30)
+            send_val(0x06)
+            
+            # VCOM AND DATA INTERVAL SETTING
+            send_cmd(0x50)
+            send_val(0x10)  # VCOM settings
+            send_val(0x07)  # Border set to crisp solid white/black
+            
+            # TCON Setting
+            send_cmd(0X60)
+            send_val(0x22)
+
+        elif '4in26' in model:
+            # 4.26" Panel Optimizations (from TRMNL firmware epd4in26.cpp)
+            # soft start settings
+            send_cmd(0x0C)
+            send_val(0xAE)
+            send_val(0xC7)
+            send_val(0xC3)
+            send_val(0xC0)
+            send_val(0x80)
+            
+            # Border configuration
+            send_cmd(0x3C)
+            send_val(0x01)  # Clean borders without noise
+            
+        elif '4in2' in model:
+            # 4.2" Panel Optimizations
+            # VCOM and Data Interval Setting
+            send_cmd(0x50)
+            send_val(0x17)  # Stable voltage interval
+            
+            # Border setting
+            send_cmd(0x3C)
+            send_val(0x01)
+
+        elif '2in9' in model:
+            # 2.9" Panel Optimizations
+            # VCOM and Data Interval Setting
+            send_cmd(0x50)
+            send_val(0x97)  # Optimized default for 2.9"
+            
+            # Border Setting
+            send_cmd(0x3C)
+            send_val(0x01)
+
+        print("[Hardware Display] Low-level optimizations successfully applied.")
+    except Exception as err:
+        print(f"[Warning] Failed to apply hardware register optimizations: {err}")
 
 def display_waveshare(img, partial=False, sleep_after=True):
     """Pushes image to Waveshare SPI E-Paper display"""
