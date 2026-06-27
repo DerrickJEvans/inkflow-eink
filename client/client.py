@@ -118,6 +118,11 @@ def init_trmnl_hardware_7in5(epd):
     """
     print("[Hardware Display] Executing custom C++ TRMNL hardware initialization sequence...")
     
+    # Initialize low-level SPI and GPIO config first!
+    import waveshare_epd.epdconfig as epdconfig
+    if epdconfig.module_init() != 0:
+        raise IOError("Waveshare SPI/GPIO module_init failed")
+        
     # 1. Reset EPD controller
     for method_name in ['reset', 'Reset']:
         if hasattr(epd, method_name):
