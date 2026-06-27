@@ -77,6 +77,7 @@ void startSetupWizard();
 void processDNS();
 void drawSplashDirect(int mode, String param1 = "", String param2 = "", String param3 = "");
 void drawSetupSplashDirect(String errorMsg = "");
+void drawPortalSplashDirect();
 void drawConnectingSplashDirect(String ssid, String host, int port);
 void drawScanSplashDirect();
 void drawErrorSplashDirect(String errorMsg, String detail1, String detail2);
@@ -706,12 +707,19 @@ void startSetupWizard() {
   
   Serial.println(F("[Setup AP] Listening for connection requests on Port 80..."));
   
+  bool clientConnected = false;
+  
   while (true) {
     // Process DNS capture queries
     processDNS();
     
     WiFiClient client = server.available();
     if (client) {
+      if (!clientConnected) {
+        clientConnected = true;
+        Serial.println(F("[Setup AP] Client connected. Swapping screen to Portal URL QR..."));
+        drawPortalSplashDirect();
+      }
       Serial.println(F("[Web Server] Client connected."));
       String reqMethod = "";
       String reqPath = "";
@@ -1009,18 +1017,15 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
 
   if (mode == 0) {
     if (displayWidth >= 800) {
-      elements[numElements++] = {"InkFlow R4 Setup Portal", 40, 30, 2};
+      elements[numElements++] = {"InkFlow R4 Setup Portal (Step 1/2)", 40, 30, 2};
       elements[numElements++] = {"--------------------------------------------------------", 40, 60, 1};
-      elements[numElements++] = {"1. Connect your phone or PC to the setup WiFi network:", 40, 95, 1};
-      elements[numElements++] = {"SSID: InkFlow-R4-Setup (Password: 12345678)", 80, 120, 1};
-      elements[numElements++] = {"(Or scan QR code [1] on the right)", 80, 150, 1};
+      elements[numElements++] = {"1. Connect your phone or PC to the setup WiFi network:", 40, 110, 1};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 80, 140, 2};
+      elements[numElements++] = {"Password: 12345678", 80, 175, 2};
+      elements[numElements++] = {"(Or scan the WiFi QR code on the right to connect)", 80, 215, 1};
       
-      elements[numElements++] = {"2. Open the setup portal browser page:", 40, 180, 1};
-      elements[numElements++] = {"Go to: http://192.168.4.1", 80, 205, 2};
-      elements[numElements++] = {"(Or scan QR code [2] on the right after connecting)", 80, 235, 1};
-      
-      elements[numElements++] = {"3. Choose your WiFi network, enter password, and configure", 40, 265, 1};
-      elements[numElements++] = {"   the InkFlow server IP (e.g. 192.168.1.122) and port.", 40, 285, 1};
+      elements[numElements++] = {"2. Once connected, this screen will automatically refresh", 40, 255, 1};
+      elements[numElements++] = {"   and display the setup portal link and QR code.", 40, 275, 1};
 
       // Draw Connection Error Banner if SSID connection failed
       if (param1 != "") {
@@ -1030,26 +1035,55 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
       elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
       elements[numElements++] = {macLine, 40, 420, 1};
 
-      // Add QR Code Captions on the right (centered under 110x110 QR codes centered at x = 675)
-      elements[numElements++] = {"[1] Scan to Connect", 600, 210, 1};
-      elements[numElements++] = {"[2] Scan to Open Portal", 585, 365, 1};
+      // Add QR Code Caption on the right
+      elements[numElements++] = {"Scan to Connect", 615, 305, 1};
     } else if (displayWidth >= 400) {
-      elements[numElements++] = {"InkFlow R4 Setup", 20, 20, 2};
+      elements[numElements++] = {"InkFlow R4 Setup (1/2)", 20, 20, 2};
       elements[numElements++] = {"----------------------------------------", 20, 45, 1};
-      elements[numElements++] = {"1. Connect phone/PC to WiFi:", 20, 70, 1};
-      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 40, 90, 2};
-      elements[numElements++] = {"Password: 12345678", 40, 115, 1};
-      elements[numElements++] = {"2. Open web browser and visit:", 20, 135, 1};
-      elements[numElements++] = {"http://192.168.4.1", 40, 155, 2};
-      elements[numElements++] = {"3. Set home WiFi & server IP.", 20, 200, 1};
+      elements[numElements++] = {"1. Connect phone/PC to WiFi:", 20, 80, 1};
+      elements[numElements++] = {"SSID: InkFlow-R4-Setup", 40, 110, 2};
+      elements[numElements++] = {"Password: 12345678", 40, 140, 1};
+      elements[numElements++] = {"Screen will refresh upon connection...", 20, 180, 1};
       elements[numElements++] = {"----------------------------------------", 20, 230, 1};
       elements[numElements++] = {macLine, 20, 260, 1};
     } else { // 296x128
-      elements[numElements++] = {"InkFlow R4 Setup", 10, 10, 1};
+      elements[numElements++] = {"InkFlow R4 Setup (1/2)", 10, 10, 1};
       elements[numElements++] = {"SSID: InkFlow-R4-Setup", 10, 35, 1};
       elements[numElements++] = {"Password: 12345678", 10, 50, 1};
-      elements[numElements++] = {"Visit: http://192.168.4.1", 10, 70, 1};
-      elements[numElements++] = {"Submit WiFi/Server details!", 10, 90, 1};
+      elements[numElements++] = {"Waiting for connection...", 10, 75, 1};
+      elements[numElements++] = {macLine, 10, 110, 1};
+    }
+  } else if (mode == 5) {
+    if (displayWidth >= 800) {
+      elements[numElements++] = {"InkFlow R4 Setup Portal (Step 2/2)", 40, 30, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 60, 1};
+      elements[numElements++] = {"SSID CONNECTED SUCCESSFULLY!", 40, 110, 2};
+      elements[numElements++] = {"Open the setup web page to configure your dashboard:", 40, 150, 1};
+      elements[numElements++] = {"Go to: http://192.168.4.1", 80, 180, 2};
+      elements[numElements++] = {"(Or scan the URL QR code on the right)", 80, 215, 1};
+      
+      elements[numElements++] = {"Select your home WiFi network, enter password, and set", 40, 255, 1};
+      elements[numElements++] = {"the InkFlow server IP and port. The panel will then reboot.", 40, 275, 1};
+      
+      elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
+      elements[numElements++] = {macLine, 40, 420, 1};
+
+      // Add QR Code Caption on the right
+      elements[numElements++] = {"Scan to Open Portal", 595, 305, 1};
+    } else if (displayWidth >= 400) {
+      elements[numElements++] = {"InkFlow R4 Setup (2/2)", 20, 20, 2};
+      elements[numElements++] = {"----------------------------------------", 20, 45, 1};
+      elements[numElements++] = {"SSID CONNECTED!", 20, 80, 2};
+      elements[numElements++] = {"2. Open browser and visit:", 20, 120, 1};
+      elements[numElements++] = {"http://192.168.4.1", 40, 145, 2};
+      elements[numElements++] = {"Configure WiFi & Server IP details.", 20, 190, 1};
+      elements[numElements++] = {"----------------------------------------", 20, 230, 1};
+      elements[numElements++] = {macLine, 20, 260, 1};
+    } else { // 296x128
+      elements[numElements++] = {"InkFlow R4 Setup (2/2)", 10, 10, 1};
+      elements[numElements++] = {"SSID CONNECTED!", 10, 35, 1};
+      elements[numElements++] = {"Visit: http://192.168.4.1", 10, 60, 1};
+      elements[numElements++] = {"Submit WiFi/Server details!", 10, 85, 1};
       elements[numElements++] = {macLine, 10, 110, 1};
     }
   } else if (mode == 1) {
@@ -1210,32 +1244,20 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
         // 3. Render Logo/QR element
         if (!isBlack) {
           if (displayWidth >= 800) {
-            if (mode == 0) {
-              // Draw the two QR codes on the right (centered at x = 675)
+            if (mode == 0 || mode == 5) {
+              // Draw a single QR code centered vertically on the right
               int qrX = 620;
-              int qrY1 = 95;
-              int qrY2 = 250;
+              int qrY = 185;
               int qrWidth = 110;
               int qrHeight = 110;
               
-              if (x >= qrX && x < qrX + qrWidth && y >= qrY1 && y < qrY1 + qrHeight) {
+              if (x >= qrX && x < qrX + qrWidth && y >= qrY && y < qrY + qrHeight) {
                 int lx = x - qrX;
-                int ly = y - qrY1;
+                int ly = y - qrY;
                 // Formatted as 14 bytes per row (110 pixels padded to 112 bits / 14 bytes)
                 int byteIdx = ly * 14 + (lx / 8);
                 int bitIdx = 7 - (lx % 8);
-                uint8_t byteVal = qr_wifi_110x110[byteIdx];
-                if (((byteVal >> bitIdx) & 1) == 0) {
-                  isBlack = true;
-                }
-              }
-              else if (x >= qrX && x < qrX + qrWidth && y >= qrY2 && y < qrY2 + qrHeight) {
-                int lx = x - qrX;
-                int ly = y - qrY2;
-                // Formatted as 14 bytes per row (110 pixels padded to 112 bits / 14 bytes)
-                int byteIdx = ly * 14 + (lx / 8);
-                int bitIdx = 7 - (lx % 8);
-                uint8_t byteVal = qr_url_110x110[byteIdx];
+                uint8_t byteVal = (mode == 0) ? qr_wifi_110x110[byteIdx] : qr_url_110x110[byteIdx];
                 if (((byteVal >> bitIdx) & 1) == 0) {
                   isBlack = true;
                 }
@@ -1301,6 +1323,10 @@ void drawSplashDirect(int mode, String param1, String param2, String param3) {
 
 void drawSetupSplashDirect(String errorMsg) {
   drawSplashDirect(0, errorMsg);
+}
+
+void drawPortalSplashDirect() {
+  drawSplashDirect(5);
 }
 
 void drawConnectingSplashDirect(String ssid, String host, int port) {
