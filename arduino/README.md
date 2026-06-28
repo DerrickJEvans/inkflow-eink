@@ -2,12 +2,12 @@
 
 This subfolder houses highly optimized **Arduino C++ clients** designed to turn cheap wireless microcontrollers connected to Waveshare E-Paper displays into low-power wireless status consoles:
 
-### 1. ⚡ Option A: ESP32 Client (`arduino_client/`)
+### 1. ⚡ Option A: ESP32 Client (`esp32_client/`)
 * **Features**: Uses the GxEPD2 library for highly compatible, paged graphics rendering.
 * **Power Optimization**: Leverages the ESP32's native deep sleep mode to run on battery power for months!
 * **Memory usage**: Buffers pixels in RAM, then pushes them to GxEPD2.
 
-### 2. 🎛️ Option B: Arduino UNO R4 WiFi Client (`arduino_r4_client/`)
+### 2. 🎛️ Option B: Arduino UNO R4 WiFi Client (`uno_r4_client/`)
 * **Features**: Uses a custom **Zero-Buffer Direct SPI Streaming** pipeline that bypasses library buffering. 
 * **RAM Optimization**: Streams incoming raw image bytes directly from the network socket (`client.read()`) to the screen controller (`epd.SendData()`) over SPI. Avoids RAM buffer allocations entirely, allowing the 32 KB SRAM UNO R4 to drive large 800x480 displays!
 * **Hardware Controls**: Integrates custom Dip switches and voltage configurations on the Waveshare E-Paper Shield (B).
@@ -55,11 +55,11 @@ On the official **Waveshare Arduino E-Paper Shield or HAT**, there is an onboard
 The ESP32 E-Ink client features a premium **E-Ink Setup Wizard & Captive Portal WiFi Manager** out of the box! You do **not** need to hardcode your WiFi SSID, passwords, or server addresses inside the code before flashing.
 
 1. **Configure Screen Size**:
-   * Open `config.h` in the `arduino_client/` folder.
+   * Open `config.h` in the `esp32_client/` folder.
    * By default, the 4.2" screen is uncommented. If you use a different size (e.g. 7.5", 2.9", or 2.7"), simply comment out the 4.2" line and uncomment your exact screen selection.
 2. **Flash the Code**:
    * Connect your ESP32 board to your computer via USB.
-   * Open `arduino_client.ino` in the Arduino IDE, select your ESP32 board and port under **Tools**, and click **Upload**!
+   * Open `esp32_client.ino` in the Arduino IDE, select your ESP32 board and port under **Tools**, and click **Upload**!
 3. **Connect to Setup Portal**:
    * On first boot (or if it fails to connect to any stored networks), the E-Ink screen will automatically refresh to show the **InkFlow Setup Wizard** instructions and spawn a password-free WiFi network: **`InkFlow-Setup`**.
    * Connect your mobile phone or computer to the **`InkFlow-Setup`** WiFi network.
@@ -81,7 +81,7 @@ The ESP32 E-Ink client features a premium **E-Ink Setup Wizard & Captive Portal 
 
 The two Arduino clients handle power management and refresh cycles differently based on their physical hardware architectures:
 
-### ⚡ ESP32 Native Hardware Deep Sleep (`arduino_client/`)
+### ⚡ ESP32 Native Hardware Deep Sleep (`esp32_client/`)
 The ESP32 sketch is built using the controller's native hardware **Deep Sleep** protocol:
 * **Execution flow**: It wakes up from deep sleep, boots, and establishes a WiFi connection in less than 3 seconds.
 * **Data Fetching**: Queries `/api/display/raw` on the server to download the tiny dithered 1-bit pixel array (e.g. only 15 KB for a 400x300 screen).
@@ -89,7 +89,7 @@ The ESP32 sketch is built using the controller's native hardware **Deep Sleep** 
 * **Power Down**: After pushing pixels to the screen, it powers down the display's SPI controller and puts the ESP32 chip into a native deep sleep state, drawing practically **zero current (~10µA)**.
 * **Reboot Cycle**: When the deep sleep timer expires, the chip performs a cold boot and restarts the program. This native power-saving mode allows the ESP32 client to run on a single Lithium battery for **months**!
 
-### 🎛️ Arduino UNO R4 WiFi Deep Sleep Simulation (`arduino_r4_client/`)
+### 🎛️ Arduino UNO R4 WiFi Deep Sleep Simulation (`uno_r4_client/`)
 Because the Arduino UNO R4 WiFi lacks a native, low-power deep sleep mode that preserves socket/SPI states without complex external circuitry, it **simulates deep sleep in software**:
 * **Execution flow**: After performing a zero-buffer direct SPI stream to paint the screen, it shuts down the onboard WiFi radio (`WiFi.end()`) to drastically reduce board power draw.
 * **Deep Wait Loop**: It enters a lightweight delay loop `delay(1000)` running once per second for the duration of the required refresh interval (supplied by the server's `X-Refresh-Rate` header or defaulting to 1800 seconds).
@@ -100,7 +100,7 @@ Because the Arduino UNO R4 WiFi lacks a native, low-power deep sleep mode that p
 
 ## 🎛️ Option B: Arduino UNO R4 WiFi & Waveshare Shield Setup
 
-The **Arduino UNO R4 WiFi Client** (`arduino_r4_client/`) is specifically designed for a low-RAM, direct-streaming setup. It streams E-Ink images directly from the TCP socket buffer to the display over SPI, avoiding memory allocations entirely.
+The **Arduino UNO R4 WiFi Client** (`uno_r4_client/`) is specifically designed for a low-RAM, direct-streaming setup. It streams E-Ink images directly from the TCP socket buffer to the display over SPI, avoiding memory allocations entirely.
 
 ### 🔌 Physical Board & Switch Configurations
 To use this sketch successfully on the **Waveshare E-Paper Shield (B)** mounted on an **Arduino UNO R4 WiFi**, you must configure the physical board switches exactly as follows:

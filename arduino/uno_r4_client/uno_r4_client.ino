@@ -1,5 +1,5 @@
 /*
-  arduino_r4_client.ino
+  uno_r4_client.ino
   E-Paper Dashboard Client — Arduino UNO R4 WiFi + Waveshare e-Paper Shield (B)
 
   Architecture: Low-RAM Direct SPI Streaming & EEPROM Wifi Wizard

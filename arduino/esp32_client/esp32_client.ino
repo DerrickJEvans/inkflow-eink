@@ -1,5 +1,5 @@
 /*
-  arduino_client.ino - E-Paper Dashboard Client for ESP32 & Waveshare HAT
+  esp32_client.ino - E-Paper Dashboard Client for ESP32 & Waveshare HAT
   
   Architecture: Low-RAM Direct SPI Caching & LittleFS Wifi Wizard
   ──────────────────────────────────────────────────────────────────
