@@ -311,16 +311,6 @@ def display_waveshare(img, partial=False, sleep_after=True):
         else:
             print("[Hardware Display] Initializing Waveshare EPD (Full Refresh)...")
             epd.init()
-            
-            # Apply border data interval override to prevent edge fading (match C++ driver)
-            try:
-                send_cmd(epd, 0x50)
-                send_val(epd, 0x10)
-                send_val(epd, 0x00) # 0x00 disables border current draw, preventing edge voltage drop
-                print("[Hardware Display] Border interval optimized to 0x00 (floating border).")
-            except Exception as e:
-                print(f"[Warning] Failed to optimize border: {e}")
-                
             print("[Hardware Display] Writing full frame buffer to display...")
             epd.display(buffer)
             
