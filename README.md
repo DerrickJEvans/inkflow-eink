@@ -216,8 +216,15 @@ Login to Raspberry PI and follow the instructions below
    ./inkflow-client.sh
    ```
    * **Select Option `[1]` (Run Automated Client Setup/Installer)**.
-    * **Interactive Setup**: The script will guide you through entering your **Server IP/Host**, **Friendly Device Name**, and selecting your display model (`4in26`, `7in5`, `4in2`, `2in9`) from an easy option list.
-    * *The installer updates system packages, performs a memory-safe partial installation of native display libraries, writes clean variables to a secure `.env` file, and establishes the auto-starting `inkflow-client.service` daemon.*
+     * **Interactive Setup**: The script will guide you through entering your **Server IP/Host**, **Friendly Device Name**, and selecting your display model (`4in26`, `7in5`, `4in2`, `2in9`) from an easy option list.
+     * *The installer updates system packages, performs a memory-safe partial installation of native display libraries, downloads all refactored modular python client scripts (`client.py`, `drivers.py`, `portal.py`, `graphics.py`, `cache_manager.py`), writes clean variables to a secure `.env` file, and establishes the auto-starting `inkflow-client.service` daemon.*
+     
+     * **Modular Python Architecture**:
+       * **`client.py`**: The lightweight entry point running the core polling loop and touch inputs.
+       * **`drivers.py`**: Contains E-Paper driver hooks, resolution bindings, and system stats logic.
+       * **`graphics.py`**: Standardizes all Pillow visual drawing layers (splashes, diagnostics).
+       * **`portal.py`**: Spawns the Captive Web configuration server hotspot.
+       * **`cache_manager.py`**: Performs local disk caching of raw dithered E-Paper slides.
 
 4. **🎛️ MPR121 Capacitive Touch & AP Config (Optional)**:
    The Python client supports **MPR121 capacitive touch modules** on the Raspberry Pi's I2C interface to control carousel rotation and configuration states.
@@ -242,7 +249,14 @@ Login to Raspberry PI and follow the instructions below
 ### Option C: Arduino & ESP32 Microcontrollers (Ultra-Low Power)
 *Ideal for battery-operated e-paper devices running on microcontrollers like the ESP32 or Arduino Uno R4 WiFi + Waveshare SPI shield.*
 
-1. Open the Arduino IDE and load the source files from the [**`arduino/`**](arduino) directory (choose `arduino_client.ino` for ESP32 or `arduino_r4_client.ino` for UNO R4).
+1. Open the Arduino IDE and load the source files from the [**`arduino/`**](arduino) directory.
+   - For **UNO R4**, compile the sketch using the refactored modular files:
+     - **`arduino_r4_client.ino`**: Streamlined main polling and data stream processing.
+     - **`config_manager.h`**: EEPROM configuration reading and writing.
+     - **`system_utils.h`**: String formatting, hex conversion, and standby register controls.
+     - **`graphics_drawing.h`**: Zero-RAM double border and text drawing splasher.
+     - **`portal_server.h`**: UDP DNS redirection and Captive Access Point web server.
+   - For **ESP32**, load and upload `arduino_client.ino`.
 2. Open `config.h` to choose your target display dimensions, compile, and upload the sketch to your board.
 3. **Captive WiFi Setup Portal**:
    * Once booted, the device hosts its own setup network.
@@ -415,8 +429,8 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
   * **Core**: [`system.js`](plugins/system.js), [`weather.js`](plugins/weather.js), [`rss.js`](plugins/rss.js), [`notes.js`](plugins/notes.js), [`tfl.js`](plugins/tfl.js), [`uk_trains.js`](plugins/uk_trains.js), [`xkcd.js`](plugins/xkcd.js), [`world_clock.js`](plugins/world_clock.js), [`feynman_quote.js`](plugins/feynman_quote.js), [`uk_fuel.js`](plugins/uk_fuel.js).
   * **AI Powered**: [`ai_briefing.js`](plugins/ai_briefing.js), [`ai_advisor.js`](plugins/ai_advisor.js).
 * [**`public/`**](public): Glassmorphic web control panel to manage settings, widgets, and view real-time screen previews.
-* [**`client/`**](client): Python client code for Raspberry Pi devices with attached E-Paper screens.
-* [**`arduino/`**](arduino): Lightweight C++ sketches for Arduino and ESP32 microcontrollers.
+* [**`client/`**](client): Python client code for Raspberry Pi devices, modularized into dedicated components: `client.py` (polling loop), `drivers.py` (EPD screen interfaces & stats), `graphics.py` (Pillow canvas layouts), `portal.py` (AP setup server), and `cache_manager.py` (disk carousel cache).
+* [**`arduino/`**](arduino): Lightweight C++ sketches and modular headers for Arduino and ESP32 (refactored on UNO R4 into `arduino_r4_client.ino`, `config_manager.h`, `system_utils.h`, `graphics_drawing.h`, and `portal_server.h`).
 * [**`install.sh`**](install.sh): One-click server installer for Ubuntu or Raspberry Pi OS host systems.
 * [**`inkflow.sh`**](inkflow.sh): Master server control utility and diagnostic system.
 * [**`client/inkflow-client.sh`**](client/inkflow-client.sh): Master client control panel and automatic SPI installer.
