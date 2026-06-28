@@ -321,6 +321,18 @@ def display_waveshare(img, partial=False, sleep_after=True):
                 time.sleep(sleep_delay)
             print("[Hardware Display] Putting screen to sleep...")
             epd.sleep()
+            
+            # Pull RST and DC pins Low to prevent parasitic leakage current
+            # which causes E-Ink displays (like 7.5 V2) to fade.
+            # Do NOT call Dev_Exit/GPIO.cleanup() to avoid breaking MPR121 I2C touch pins.
+            try:
+                import waveshare_epd.epdconfig as epdconfig
+                print("[Hardware Display] Pulling EPD RST and DC pins Low to prevent leakage current...")
+                epdconfig.GPIO.output(epdconfig.RST_PIN, 0)
+                epdconfig.GPIO.output(epdconfig.DC_PIN, 0)
+            except Exception as gpio_err:
+                print(f"[Warning] Failed to set EPD control pins Low: {gpio_err}")
+                
             print("[Hardware Display] Draw cycle complete (screen put to sleep).")
         else:
             print("[Hardware Display] Draw cycle complete (screen kept awake for subsequent updates).")
