@@ -389,6 +389,46 @@ DYNAMIC_WIDGETS_AI_PROVIDER=ollama
 
 ---
 
+## ⚙️ Environment Configurations Reference (`.env`)
+
+### 1. Server Configurations
+Configure these settings in the root `.env` file of the server:
+
+| Variable | Description | Default |
+|---|---|---|
+| `PORT` | Listening port for the Express web server and API endpoint. | `5000` |
+| `HOST` | IP address or hostname binding for the Express web server. | `0.0.0.0` |
+| `GEMINI_API_KEY` | Your Google Gemini API Key for AI widget building. | *None* |
+| `WIDGET_BUILDER_AI_PROVIDER` | AI provider for the Widget Studio generation (`gemini` or `ollama`). | `gemini` |
+| `DYNAMIC_WIDGETS_AI_PROVIDER` | AI provider for dynamic widget briefings (`gemini` or `ollama`). | `ollama` |
+| `OLLAMA_ENABLED` | Toggle local offline AI generation (`true` / `false`). | `false` |
+| `OLLAMA_HOST` | Local or remote host address for the running Ollama daemon. | `http://127.0.0.1:11434` |
+| `OLLAMA_MODEL` | Default local model pulled and executed for offline briefing generation. | `llama3.2:1b` |
+
+### 2. Client Configurations
+Configure these settings in the `client/.env` file on your Raspberry Pi:
+
+| Variable | Description | Default |
+|---|---|---|
+| `TRMNL_SERVER_IP` | IP address of your central server hosting the control panel. | `192.168.1.100` |
+| `TRMNL_SERVER_PORT` | Port of your central server. | `5000` |
+| `TRMNL_DEVICE_NAME` | Display panel friendly name label used on server. | `Living Room Pi` |
+| `TRMNL_DEVICE_ID` | Set to `dynamic_mac` to auto-resolve Pi MAC address as identifier. | `dynamic_mac` |
+| `TRMNL_SCREEN_TYPE` | Display model resolution (`4in26`, `7in5`, `4in2`, `2in9`). | `4in26` |
+| `TRMNL_DISPLAY_TYPE` | Screen runner backend (`waveshare`, `inky`, `mock`). | `waveshare` |
+| `TRMNL_INVERT_COLORS` | Swap black and white colors dynamically (useful for dark mode). | `false` |
+| `TRMNL_DEFAULT_POLL_INTERVAL` | Fallback poll interval (seconds) if server fails to send header. | `1800` |
+| `TRMNL_SLEEP_AFTER` | Trigger deep sleep power-down call on driver after drawing. | `true` |
+| `TRMNL_SLEEP_DELAY` | Settling delay (seconds) to wait before executing sleep. | `6.0` |
+| `TRMNL_FULL_REFRESH_INTERVAL` | Fast cycles before a full clean flash (set to `1` to avoid ghosting). | `10` |
+| `TRMNL_MPR121_ENABLED` | Enable physical MPR121 capacitive touch buttons. | `false` |
+| `TRMNL_MPR121_PREV_PIN` | MPR121 pin electrode index for Previous Widget action. | `6` |
+| `TRMNL_MPR121_NEXT_PIN` | MPR121 pin electrode index for Next Widget action. | `7` |
+| `TRMNL_MPR121_SETUP_PIN` | MPR121 pin electrode index for captive configuration hotspot. | `9` |
+| `TRMNL_MPR121_DIAG_PIN` | MPR121 pin electrode index for system diagnostics overlay. | `8` |
+
+---
+
 ## 📡 API Reference & Protocol Specification
 
 InkFlow exposes standardized endpoints for easy integration with custom scripts or physical e-paper displays:
