@@ -250,13 +250,20 @@ Login to Raspberry PI and follow the instructions below
 *Ideal for battery-operated e-paper devices running on microcontrollers like the ESP32 or Arduino Uno R4 WiFi + Waveshare SPI shield.*
 
 1. Open the Arduino IDE and load the source files from the [**`arduino/`**](arduino) directory.
-   - For **UNO R4**, compile the sketch using the refactored modular files:
-     - **`arduino_r4_client.ino`**: Streamlined main polling and data stream processing.
+   - For **ESP32 development boards** (e.g., NodeMCU ESP32, ESP32-S3), load the sketch from the [**`arduino_client/`**](arduino/arduino_client) directory:
+     - **`arduino_client.ino`**: Streamlined main polling loop and cache synchronization.
+     - **`config_manager.h`**: Non-Volatile Storage (NVS) **Preferences** configuration manager.
+     - **`system_utils.h`**: ESP32 system configurations and RTC deep sleep entry (`esp_deep_sleep_start()`).
+     - **`graphics_drawing.h`**: GxEPD2 page loop layout drawer (setup, connecting, diagnostics).
+     - **`portal_server.h`**: Web AP configuration captive portal router.
+     - **`cache_manager.h`**: Caches slide layouts using the ESP32's native **LittleFS** flash partition (no external hardware flash chip required).
+   - For **Arduino UNO R4 WiFi**, compile the sketch from the [**`arduino_r4_client/`**](arduino/arduino_r4_client) directory:
+     - **`arduino_r4_client.ino`**: Streamlined main polling and direct SPI data streaming.
      - **`config_manager.h`**: EEPROM configuration reading and writing.
      - **`system_utils.h`**: String formatting, hex conversion, and standby register controls.
      - **`graphics_drawing.h`**: Zero-RAM double border and text drawing splasher.
      - **`portal_server.h`**: UDP DNS redirection and Captive Access Point web server.
-   - For **ESP32**, load and upload `arduino_client.ino`.
+     - **`cache_manager.h`**: Caches slides on the Waveshare E-Paper shield's external MX25R6435F SPI flash chip.
 2. Open `config.h` to choose your target display dimensions, compile, and upload the sketch to your board.
 3. **Captive WiFi Setup Portal**:
    * Once booted, the device hosts its own setup network.
@@ -430,7 +437,9 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
   * **AI Powered**: [`ai_briefing.js`](plugins/ai_briefing.js), [`ai_advisor.js`](plugins/ai_advisor.js).
 * [**`public/`**](public): Glassmorphic web control panel to manage settings, widgets, and view real-time screen previews.
 * [**`client/`**](client): Python client code for Raspberry Pi devices, modularized into dedicated components: `client.py` (polling loop), `drivers.py` (EPD screen interfaces & stats), `graphics.py` (Pillow canvas layouts), `portal.py` (AP setup server), and `cache_manager.py` (disk carousel cache).
-* [**`arduino/`**](arduino): Lightweight C++ sketches and modular headers for Arduino and ESP32 (refactored on UNO R4 into `arduino_r4_client.ino`, `config_manager.h`, `system_utils.h`, `graphics_drawing.h`, and `portal_server.h`).
+* [**`arduino/`**](arduino): Lightweight C++ sketches and modular headers:
+  * **`arduino_client/`**: Target hardware: standalone **ESP32** development boards (uses GxEPD2 and native **LittleFS** file caching).
+  * **`arduino_r4_client/`**: Target hardware: **Arduino Uno R4 WiFi** with Waveshare E-Paper shield (uses custom direct SPI RAM streaming and shield **SPI Flash** caching).
 * [**`install.sh`**](install.sh): One-click server installer for Ubuntu or Raspberry Pi OS host systems.
 * [**`inkflow.sh`**](inkflow.sh): Master server control utility and diagnostic system.
 * [**`client/inkflow-client.sh`**](client/inkflow-client.sh): Master client control panel and automatic SPI installer.
