@@ -227,6 +227,10 @@ def display_waveshare(img, partial=False, sleep_after=True):
         
         if actual_partial:
             print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
+            try:
+                epd.init() # Ensure controller is powered up/woken from deep sleep
+            except Exception as init_err:
+                print(f"[Warning] epd.init() failed before partial update: {init_err}")
             init_part_func()
             print("[Hardware Display] Writing partial frame buffer to display...")
             
