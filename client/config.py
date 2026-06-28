@@ -81,3 +81,8 @@ MPR121_NEXT_PIN = parse_int(os.environ.get('TRMNL_MPR121_NEXT_PIN', '7')) or 7
 MPR121_SETUP_PIN = parse_int(os.environ.get('TRMNL_MPR121_SETUP_PIN', '9')) or 9
 MPR121_DIAG_PIN = parse_int(os.environ.get('TRMNL_MPR121_DIAG_PIN', '8')) or 8
 
+# 7. Refresh Mode Settings
+FULL_REFRESH_INTERVAL = parse_int(os.environ.get('TRMNL_FULL_REFRESH_INTERVAL', '10'))
+if FULL_REFRESH_INTERVAL is None:
+    FULL_REFRESH_INTERVAL = 10
+

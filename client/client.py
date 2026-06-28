@@ -68,6 +68,7 @@ def poll_server():
     last_successful_sync_time = 0
     consecutive_failures = 0
     offline_index = -1
+    refresh_counter = 0
     
     diagnostics_active = False
     diagnostics_start_time = 0
@@ -232,8 +233,19 @@ def poll_server():
                 
                 last_successful_sync_time = time.time()
                 
+                # Determine refresh mode
+                full_refresh_interval = getattr(config, 'FULL_REFRESH_INTERVAL', 10)
+                if refresh_counter == 0 or (full_refresh_interval > 0 and refresh_counter % full_refresh_interval == 0):
+                    partial_mode = False
+                    print(f"[{time.strftime('%H:%M:%S')}] Triggering FULL screen refresh (to clear ghosting)...")
+                else:
+                    partial_mode = True
+                    print(f"[{time.strftime('%H:%M:%S')}] Triggering PARTIAL screen refresh (fast / no flashing)...")
+                
+                refresh_counter += 1
+                
                 if config.DISPLAY_TYPE == 'waveshare':
-                    drivers.display_waveshare(raw_bytes)
+                    drivers.display_waveshare(raw_bytes, partial=partial_mode)
                 elif config.DISPLAY_TYPE == 'inky':
                     drivers.display_inky(raw_bytes)
                 else:
@@ -259,8 +271,20 @@ def poll_server():
                     raw_bytes = cache_manager.get_cached_slide(offline_index)
                     if raw_bytes is not None:
                         print(f"[{time.strftime('%H:%M:%S')}] [Offline] Rotating to cached Slide {offline_index}...")
+                        
+                        # Determine refresh mode for offline rotation
+                        full_refresh_interval = getattr(config, 'FULL_REFRESH_INTERVAL', 10)
+                        if refresh_counter == 0 or (full_refresh_interval > 0 and refresh_counter % full_refresh_interval == 0):
+                            partial_mode = False
+                            print(f"[{time.strftime('%H:%M:%S')}] [Offline] Triggering FULL screen refresh (to clear ghosting)...")
+                        else:
+                            partial_mode = True
+                            print(f"[{time.strftime('%H:%M:%S')}] [Offline] Triggering PARTIAL screen refresh (fast / no flashing)...")
+                        
+                        refresh_counter += 1
+                        
                         if config.DISPLAY_TYPE == 'waveshare':
-                            drivers.display_waveshare(raw_bytes)
+                            drivers.display_waveshare(raw_bytes, partial=partial_mode)
                         elif config.DISPLAY_TYPE == 'inky':
                             drivers.display_inky(raw_bytes)
                         else:

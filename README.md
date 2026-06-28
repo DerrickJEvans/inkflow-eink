@@ -225,6 +225,9 @@ Login to Raspberry PI and follow the instructions below
        * **`graphics.py`**: Standardizes all Pillow visual drawing layers (splashes, diagnostics).
        * **`portal.py`**: Spawns the Captive Web configuration server hotspot.
        * **`cache_manager.py`**: Performs local disk caching of raw dithered E-Paper slides.
+     
+     * **Fast Refresh Scheme**:
+       * Set `TRMNL_FULL_REFRESH_INTERVAL=10` in your `client/.env` file to control the number of fast, non-flashing partial updates performed before triggering a full screen flashing refresh to clear ghosting.
 
 4. **🎛️ MPR121 Capacitive Touch & AP Config (Optional)**:
    The Python client supports **MPR121 capacitive touch modules** on the Raspberry Pi's I2C interface to control carousel rotation and configuration states.
