@@ -229,7 +229,43 @@ def display_waveshare(img, partial=False, sleep_after=True):
             print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
             init_part_func()
             print("[Hardware Display] Writing partial frame buffer to display...")
-            display_part_func(buffer)
+            
+            import inspect
+            try:
+                sig = inspect.signature(display_part_func)
+                params = list(sig.parameters.keys())
+                print(f"[Hardware Display] EPD display_part_func signature: {sig} (parameters: {params})")
+                
+                if len(params) >= 5:
+                    args = {}
+                    for p in params:
+                        p_lower = p.lower()
+                        if 'image' in p_lower or 'buffer' in p_lower or 'img' in p_lower:
+                            args[p] = buffer
+                        elif 'xstart' in p_lower:
+                            args[p] = 0
+                        elif 'ystart' in p_lower:
+                            args[p] = 0
+                        elif 'xend' in p_lower:
+                            args[p] = epd.width
+                        elif 'yend' in p_lower:
+                            args[p] = epd.height
+                        else:
+                            args[p] = 0
+                    display_part_func(**args)
+                else:
+                    display_part_func(buffer)
+            except Exception as sig_err:
+                print(f"[Warning] Failed to call display_part_func via keyword inspection: {sig_err}. Trying positional fallbacks...")
+                try:
+                    display_part_func(buffer)
+                except TypeError:
+                    try:
+                        # Image first: (Image, Xstart, Ystart, Xend, Yend)
+                        display_part_func(buffer, 0, 0, epd.width, epd.height)
+                    except TypeError:
+                        # Coordinates first: (Xstart, Ystart, Xend, Yend, Image)
+                        display_part_func(0, 0, epd.width, epd.height, buffer)
         else:
             print("[Hardware Display] Initializing Waveshare EPD (Full Refresh)...")
             epd.init()
