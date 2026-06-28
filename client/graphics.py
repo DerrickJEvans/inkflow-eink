@@ -154,11 +154,11 @@ def draw_diagnostics_overlay(last_sync_time):
     draw.line([(20, 80), (drivers.WIDTH - 20, 80)], fill=0)
     
     # Gather specs
-    ip = portal.get_local_ip()
-    mac = portal.get_mac_address()
-    rssi = portal.get_wifi_rssi() or "N/A"
-    temp = portal.get_cpu_temp()
-    uptime, load = portal.get_sys_stats()
+    ip = drivers.get_local_ip()
+    mac = drivers.get_mac_address()
+    rssi = drivers.get_wifi_rssi() or "N/A"
+    temp = drivers.get_cpu_temp()
+    uptime, load = drivers.get_sys_stats()
     sync_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(last_sync_time)) if last_sync_time > 0 else "Never"
     
     if drivers.WIDTH >= 600:
