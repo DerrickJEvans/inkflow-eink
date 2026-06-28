@@ -197,11 +197,9 @@ Wants=network-online.target
 Type=simple
 User=$USER_NAME
 WorkingDirectory=$CLIENT_DIR
-ExecStart=/usr/bin/python3 $CLIENT_DIR/client.py
+ExecStart=/usr/bin/python3 -u $CLIENT_DIR/client.py
 Restart=always
 RestartSec=15
-StandardOutput=syslog
-StandardError=syslog
 SyslogIdentifier=inkflow-client
 
 [Install]
