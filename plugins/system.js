@@ -128,7 +128,7 @@ module.exports = {
         const segX = x + 2 + i * (segmentWidth + segmentGap);
         if (i < activeSegments) {
           segmentsHtml += `
-            <rect x="${segX}" y="${y + 10}" width="${segmentWidth}" height="${barHeight - 4}" rx="1" fill="#dddddd" />
+            <rect x="${segX}" y="${y + 10}" width="${segmentWidth}" height="${barHeight - 4}" rx="1" fill="black" />
           `;
         }
       }
