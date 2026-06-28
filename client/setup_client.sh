@@ -121,7 +121,8 @@ fi
 
 # 6. Write configurations to .env file
 ENV_FILE=".env"
-cat <<EOF > "$ENV_FILE"
+if [ ! -f "$ENV_FILE" ]; then
+  cat <<EOF > "$ENV_FILE"
 TRMNL_SERVER_IP=${SERVER_HOST}
 TRMNL_SERVER_PORT=5000
 TRMNL_DEVICE_NAME=${DEVICE_NAME}
@@ -136,7 +137,10 @@ TRMNL_MPR121_NEXT_PIN=7
 TRMNL_MPR121_SETUP_PIN=9
 TRMNL_MPR121_DIAG_PIN=8
 EOF
-echo "✅ Created .env configurations file!"
+  echo "✅ Created .env configurations file!"
+else
+  echo "✅ Existing .env configurations file found. Preserving settings."
+fi
 
 # Ensure a config.py is present as fallback driver runner
 CONFIG_PY="config.py"
