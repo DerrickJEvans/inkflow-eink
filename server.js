@@ -300,7 +300,7 @@ const getOrCreateDevice = (rawDeviceId, req = {}) => {
 /**
  * Checks cache validity and rebuilds if needed
  */
-const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
+const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex = true) => {
   if (forceRefresh) {
     clearDeviceJsonCache(device.id);
   }
@@ -361,7 +361,7 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false) => {
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.raw`), rendered.raw);
 
     // In Carousel Mode, advance the plugin index for the NEXT poll request!
-    if (device.activePlugins && device.activePlugins.length > 1) {
+    if (advanceIndex && device.activePlugins && device.activePlugins.length > 1) {
       const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
       if (activePlugins.length > 1) {
         const currentIndex = parseInt(device.currentPluginIndex) || 0;
@@ -962,7 +962,7 @@ app.get('/api/display/image.png', async (req, res) => {
       }
     }
 
-    const data = await fetchDeviceDisplayData(device, force);
+    const data = await fetchDeviceDisplayData(device, force, false);
     
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
@@ -1050,7 +1050,7 @@ app.get('/api/display/raw', async (req, res) => {
       }
     }
 
-    const data = await fetchDeviceDisplayData(device, force);
+    const data = await fetchDeviceDisplayData(device, force, true);
 
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
@@ -1089,7 +1089,7 @@ app.all('/api/display', async (req, res) => {
     recordDeviceConnection(device, req);
     
     // Trigger render to keep files up to date
-    await fetchDeviceDisplayData(device);
+    await fetchDeviceDisplayData(device, false, true);
 
     const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
     const serverIp = req.headers.host;
@@ -1188,7 +1188,7 @@ app.post('/api/display/refresh', async (req, res) => {
     const device = config.devices.find(d => d.id === deviceId);
     if (!device) return res.status(404).json({ error: "Device not found" });
 
-    const data = await fetchDeviceDisplayData(device, true);
+    const data = await fetchDeviceDisplayData(device, true, false);
     res.json({ success: true, message: "Screen compiled and dithered successfully!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
