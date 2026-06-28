@@ -43,6 +43,15 @@ else
     echo -e "✅ No active conflicts detected."
 fi
 
+# Repair any git object permissions left by previous sudo git operations.
+# This silently fixes 'insufficient permission for adding an object to repository database'
+# which occurs when sudo git commands write .git/objects as root.
+REPO_OWNER=$(stat -c '%U' "$SCRIPT_DIR/.git" 2>/dev/null || echo "")
+if [ -n "$REPO_OWNER" ]; then
+    echo -e "${BLUE}🔧 Ensuring .git ownership is correct (owner: $REPO_OWNER)...${NC}"
+    sudo chown -R "$REPO_OWNER:$REPO_OWNER" "$SCRIPT_DIR/.git" 2>/dev/null || true
+fi
+
 # 3. Clean local tracked indexes
 echo -e "\n${BLUE}[3/5] Discarding tracked local modifications...${NC}"
 git reset --hard HEAD
