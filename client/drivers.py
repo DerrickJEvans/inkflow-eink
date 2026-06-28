@@ -185,27 +185,32 @@ def display_waveshare(img, partial=False, sleep_after=True):
         
         # Check for fast full-frame (non-flashing) refresh capabilities in the driver.
         # Priority order:
-        #   1. Fast LUT methods (init_Fast / display_Fast) - drives ALL pixels to new state
-        #      without the standard flash cycle. Correct for full-image replacement.
+        #   1. Fast LUT display methods (display_Fast / display_fast) - drives ALL pixels
+        #      to new state without the standard flash cycle. Correct for full-image replacement.
+        #      Note: some drivers (e.g. epd4in26) have display_fast but no init_fast — the
+        #      standard epd.init() wake-up is sufficient in those cases.
         #   2. Partial region methods (init_Partial / display_Partial) - only drives
         #      *changed* pixels. Fast but causes ghost trails on complex full-image swaps.
-        init_part_func = None
+        init_part_func = None    # Optional separate mode-init (may be None for fast mode)
         display_part_func = None
-        fast_mode = False   # True when using Fast LUT, False when using Partial region
+        fast_mode = False        # True when using Fast LUT, False when using Partial region
 
-        # 1. Try Fast LUT methods first
-        for init_name in ['init_Fast', 'init_fast', 'init_4Gray', 'init_fast_refresh']:
-            if hasattr(epd, init_name):
-                init_part_func = getattr(epd, init_name)
-                break
+        # 1. Try Fast LUT display method first
         for display_name in ['display_Fast', 'display_fast', 'displayFast']:
             if hasattr(epd, display_name):
                 display_part_func = getattr(epd, display_name)
                 fast_mode = True
                 break
 
-        # 2. Fall back to Partial region methods if no Fast LUT found
-        if display_part_func is None:
+        # 1b. Also look for an optional dedicated fast init (not all drivers have one)
+        if fast_mode:
+            for init_name in ['init_Fast', 'init_fast', 'init_4Gray', 'init_fast_refresh']:
+                if hasattr(epd, init_name):
+                    init_part_func = getattr(epd, init_name)
+                    break
+
+        # 2. Fall back to Partial region methods if no Fast LUT display found
+        if not fast_mode:
             for init_name in ['init_Partial', 'init_part', 'init_part_refresh']:
                 if hasattr(epd, init_name):
                     init_part_func = getattr(epd, init_name)
@@ -215,10 +220,18 @@ def display_waveshare(img, partial=False, sleep_after=True):
                     display_part_func = getattr(epd, display_name)
                     break
 
-        has_partial_support = (init_part_func is not None and display_part_func is not None)
+        # Fast mode only needs a display method (init is handled by epd.init() wake-up).
+        # Partial region mode needs both init and display methods.
+        if fast_mode:
+            has_partial_support = display_part_func is not None
+        else:
+            has_partial_support = (init_part_func is not None and display_part_func is not None)
+
         refresh_mode_label = "Fast LUT (no-flash full frame)" if fast_mode else "Partial region"
         if has_partial_support:
             print(f"[Hardware Display] Fast refresh mode available: {refresh_mode_label}")
+        else:
+            print("[Hardware Display] No fast/partial refresh support found. Full refresh will always be used.")
 
         # Force full refresh if no fast/partial updates are supported by the driver
         actual_partial = partial and has_partial_support
@@ -248,13 +261,16 @@ def display_waveshare(img, partial=False, sleep_after=True):
             buffer = epd.getbuffer(mono_img)
         
         if actual_partial:
-            print("[Hardware Display] Initializing Waveshare EPD (Partial Refresh)...")
+            mode_label = "Fast LUT" if fast_mode else "Partial region"
+            print(f"[Hardware Display] Initializing Waveshare EPD ({mode_label} refresh)...")
             try:
-                epd.init() # Ensure controller is powered up/woken from deep sleep
+                epd.init()  # Wake controller from deep sleep (required before any update)
             except Exception as init_err:
-                print(f"[Warning] epd.init() failed before partial update: {init_err}")
-            init_part_func()
-            print("[Hardware Display] Writing partial frame buffer to display...")
+                print(f"[Warning] epd.init() failed before fast/partial update: {init_err}")
+            if init_part_func is not None:
+                # Call mode-specific init only when the driver provides one
+                init_part_func()
+            print(f"[Hardware Display] Writing frame buffer ({mode_label})...")
             
             import inspect
             try:
