@@ -32,31 +32,9 @@ let configPath = path.join(__dirname, 'config.json');
 let configExamplePath = path.join(__dirname, 'config.example.json');
 let config = { devices: [], settings: {} };
 
-// Attempt to use boot partition config on Linux for permanent retention across OverlayFS wipes
-if (process.platform === 'linux') {
-  const bootFirmwarePath = '/boot/firmware/config.json';
-  const bootPath = '/boot/config.json';
-
-  if (fs.existsSync(bootFirmwarePath)) {
-    configPath = bootFirmwarePath;
-  } else if (fs.existsSync(bootPath)) {
-    configPath = bootPath;
-  } else if (fs.existsSync('/boot/firmware')) {
-    try {
-      fs.accessSync('/boot/firmware', fs.constants.W_OK);
-      configPath = bootFirmwarePath;
-    } catch (e) {
-      console.log("/boot/firmware is not writable. Defaulting to local config.");
-    }
-  } else if (fs.existsSync('/boot')) {
-    try {
-      fs.accessSync('/boot', fs.constants.W_OK);
-      configPath = bootPath;
-    } catch (e) {
-      console.log("/boot is not writable. Defaulting to local config.");
-    }
-  }
-}
+// Configuration is stored in the project directory.
+// The /boot/firmware workaround for OverlayFS is no longer needed
+// since overlayroot has been disabled and writes persist normally.
 
 if (!fs.existsSync(configPath) && fs.existsSync(configExamplePath)) {
   try {
@@ -112,19 +90,9 @@ const saveConfig = () => {
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8');
   } catch (err) {
     console.error(`Error saving config.json to ${configPath}:`, err);
-    // If writing to the primary path failed, fallback to local config.json
-    const fallbackPath = path.join(__dirname, 'config.json');
-    if (configPath !== fallbackPath) {
-      console.log(`Attempting fallback to local config: ${fallbackPath}`);
-      try {
-        fs.writeFileSync(fallbackPath, JSON.stringify(config, null, 2), 'utf8');
-        console.log("Successfully saved configuration to local fallback path.");
-      } catch (fallbackErr) {
-        console.error("Error saving fallback config.json:", fallbackErr);
-      }
-    }
   }
 };
+
 
 const clearDeviceJsonCache = (deviceId) => {
   try {
