@@ -183,22 +183,44 @@ def display_waveshare(img, partial=False, sleep_after=True):
         epd_module = __import__(f"waveshare_epd.{model}", fromlist=["EPD"])
         epd = epd_module.EPD()
         
-        # Check for partial update capabilities in the driver
+        # Check for fast full-frame (non-flashing) refresh capabilities in the driver.
+        # Priority order:
+        #   1. Fast LUT methods (init_Fast / display_Fast) - drives ALL pixels to new state
+        #      without the standard flash cycle. Correct for full-image replacement.
+        #   2. Partial region methods (init_Partial / display_Partial) - only drives
+        #      *changed* pixels. Fast but causes ghost trails on complex full-image swaps.
         init_part_func = None
         display_part_func = None
-        
-        for init_name in ['init_Partial', 'init_part', 'init_part_refresh']:
+        fast_mode = False   # True when using Fast LUT, False when using Partial region
+
+        # 1. Try Fast LUT methods first
+        for init_name in ['init_Fast', 'init_fast', 'init_4Gray', 'init_fast_refresh']:
             if hasattr(epd, init_name):
                 init_part_func = getattr(epd, init_name)
                 break
-        for display_name in ['display_Partial', 'display_Part', 'display_part']:
+        for display_name in ['display_Fast', 'display_fast', 'displayFast']:
             if hasattr(epd, display_name):
                 display_part_func = getattr(epd, display_name)
+                fast_mode = True
                 break
-                
+
+        # 2. Fall back to Partial region methods if no Fast LUT found
+        if display_part_func is None:
+            for init_name in ['init_Partial', 'init_part', 'init_part_refresh']:
+                if hasattr(epd, init_name):
+                    init_part_func = getattr(epd, init_name)
+                    break
+            for display_name in ['display_Partial', 'display_Part', 'display_part']:
+                if hasattr(epd, display_name):
+                    display_part_func = getattr(epd, display_name)
+                    break
+
         has_partial_support = (init_part_func is not None and display_part_func is not None)
-        
-        # Force full refresh if partial updates are not supported by the driver
+        refresh_mode_label = "Fast LUT (no-flash full frame)" if fast_mode else "Partial region"
+        if has_partial_support:
+            print(f"[Hardware Display] Fast refresh mode available: {refresh_mode_label}")
+
+        # Force full refresh if no fast/partial updates are supported by the driver
         actual_partial = partial and has_partial_support
         
         # Respect user configured sleep behavior (especially for screens that fade on sleep)
