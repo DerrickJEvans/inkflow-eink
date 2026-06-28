@@ -93,17 +93,20 @@ case "$SCREEN_OPT" in
   *) SCREEN_TYPE="4in26" ;;
 esac
 
-# 5. Download client executable and manager script from the local server
-if [ ! -f "client.py" ]; then
-  echo "📥 Downloading client.py from local server http://${SERVER_HOST}:5000/client.py..."
-  if ! curl -sSL -f -o client.py "http://${SERVER_HOST}:5000/client.py"; then
-    echo "⚠️  Failed to download from local server. Trying public GitHub fallback..."
-    curl -sSL -f -o client.py "https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/client.py" || {
-      echo "❌ Error: Could not download client.py from local server or GitHub. (Repository might be private)."
-      exit 1
-    }
+# 5. Download client executable, modules, and manager script from the local server
+CLIENT_FILES=("client.py" "drivers.py" "portal.py" "graphics.py" "cache_manager.py")
+for f in "${CLIENT_FILES[@]}"; do
+  if [ ! -f "$f" ]; then
+    echo "📥 Downloading $f from local server http://${SERVER_HOST}:5000/$f..."
+    if ! curl -sSL -f -o "$f" "http://${SERVER_HOST}:5000/$f"; then
+      echo "⚠️  Failed to download from local server. Trying public GitHub fallback..."
+      curl -sSL -f -o "$f" "https://raw.githubusercontent.com/DerrickJEvans/inkflow-eink/main/client/$f" || {
+        echo "❌ Error: Could not download $f from local server or GitHub. (Repository might be private)."
+        exit 1
+      }
+    fi
   fi
-fi
+done
 
 if [ ! -f "inkflow-client.sh" ]; then
   echo "📥 Downloading inkflow-client.sh utility from local server http://${SERVER_HOST}:5000/inkflow-client.sh..."

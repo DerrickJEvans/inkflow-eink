@@ -1190,33 +1190,26 @@ app.post('/api/log', (req, res) => {
   res.json({ status: 0 });
 });
 
-// Serve client scripts to standalone displays for zero-friction provisioning
-app.get('/client.py', (req, res) => {
-  const filePath = path.join(__dirname, 'client', 'client.py');
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).send("client.py not found on server. Ensure the client/ folder is checked out.");
-  }
-});
+// Serve client scripts and modules to standalone displays for zero-friction provisioning
+const serveClientFile = (fileName) => {
+  return (req, res) => {
+    const filePath = path.join(__dirname, 'client', fileName);
+    if (fs.existsSync(filePath)) {
+      res.sendFile(filePath);
+    } else {
+      res.status(404).send(`${fileName} not found on server. Ensure the client/ folder is checked out.`);
+    }
+  };
+};
 
-app.get('/setup_client.sh', (req, res) => {
-  const filePath = path.join(__dirname, 'client', 'setup_client.sh');
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).send("setup_client.sh not found on server. Ensure the client/ folder is checked out.");
-  }
-});
-
-app.get('/inkflow-client.sh', (req, res) => {
-  const filePath = path.join(__dirname, 'client', 'inkflow-client.sh');
-  if (fs.existsSync(filePath)) {
-    res.sendFile(filePath);
-  } else {
-    res.status(404).send("inkflow-client.sh not found on server. Ensure the client/ folder is checked out.");
-  }
-});
+app.get('/client.py', serveClientFile('client.py'));
+app.get('/drivers.py', serveClientFile('drivers.py'));
+app.get('/portal.py', serveClientFile('portal.py'));
+app.get('/graphics.py', serveClientFile('graphics.py'));
+app.get('/cache_manager.py', serveClientFile('cache_manager.py'));
+app.get('/config.py', serveClientFile('config.py'));
+app.get('/setup_client.sh', serveClientFile('setup_client.sh'));
+app.get('/inkflow-client.sh', serveClientFile('inkflow-client.sh'));
 
 // Force manual refresh endpoint (called from control panel)
 app.post('/api/display/refresh', async (req, res) => {
