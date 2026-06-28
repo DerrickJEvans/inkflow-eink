@@ -120,7 +120,7 @@ module.exports = {
         <text x="${x}" y="${y}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${label}</text>
         <text x="${x + barWidth}" y="${y}" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">${text}</text>
         <rect x="${x}" y="${y + 8}" width="${barWidth}" height="${barHeight}" rx="${barHeight / 2}" fill="none" stroke="black" stroke-width="1.5" />
-        <rect x="${x}" y="${y + 8}" width="${(barWidth * value) / 100}" height="${barHeight}" rx="${barHeight / 2}" fill="black" />
+        <rect x="${x}" y="${y + 8}" width="${(barWidth * value) / 100}" height="${barHeight}" rx="${barHeight / 2}" fill="#555555" />
       `;
     };
 
