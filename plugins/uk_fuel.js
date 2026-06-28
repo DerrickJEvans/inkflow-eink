@@ -483,10 +483,9 @@ module.exports = {
           <!-- Card ${idx + 1} -->
           <g transform="translate(${x}, 65)">
             <rect x="0" y="0" width="${colWidth}" height="110" rx="8" fill="none" stroke="black" stroke-width="1.8" />
-            <rect x="0" y="0" width="${colWidth}" height="26" rx="8" fill="black" />
-            <rect x="0" y="16" width="${colWidth}" height="10" fill="black" /> <!-- Cover bottom corners of top header -->
+            <line x1="0" y1="26" x2="${colWidth}" y2="26" stroke="black" stroke-width="1.8" />
             
-            <text x="${colWidth / 2}" y="17" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="white" text-anchor="middle">${card.label}</text>
+            <text x="${colWidth / 2}" y="17" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="black" text-anchor="middle">${card.label}</text>
             <text x="${colWidth / 2}" y="74" font-family="sans-serif" font-size="34" font-weight="900" fill="black" text-anchor="middle">${escapeXml(priceText)}</text>
             <text x="${colWidth / 2}" y="95" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" opacity="0.8" text-anchor="middle">${escapeXml(brandText)}</text>
             <text x="${colWidth / 2}" y="107" font-family="sans-serif" font-size="10" fill="black" opacity="0.6" text-anchor="middle">${escapeXml(nameText)}</text>

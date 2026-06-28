@@ -226,12 +226,12 @@ module.exports = {
     return `
       <g>
         <!-- Split-Flap Premium Header -->
-        <rect x="${padding}" y="20" width="${width - padding * 2}" height="64" fill="black" />
-        <g transform="translate(${padding + 25}, 39)" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round">
+        <rect x="${padding}" y="20" width="${width - padding * 2}" height="64" fill="none" stroke="black" stroke-width="2" />
+        <g transform="translate(${padding + 25}, 39)" stroke="black" stroke-width="2.2" fill="none" stroke-linecap="round">
           <path d="M2,13 C5,13 7,10 10,10 C13,10 15,13 18,13 C21,13 22,10 22,10 M2,17 C5,17 7,14 10,14 C13,14 15,17 18,17 C21,17 22,14 22,14" transform="scale(1.0)" />
         </g>
-        <text x="${padding + 56}" y="59" font-family="monospace" font-size="22" font-weight="bold" fill="white" letter-spacing="1.5">TIDE TIMETABLE</text>
-        <text x="${width - padding - 25}" y="56" font-family="monospace" font-size="10.5" font-weight="bold" fill="white" text-anchor="end" letter-spacing="2">
+        <text x="${padding + 56}" y="59" font-family="monospace" font-size="22" font-weight="bold" fill="black" letter-spacing="1.5">TIDE TIMETABLE</text>
+        <text x="${width - padding - 25}" y="56" font-family="monospace" font-size="10.5" font-weight="bold" fill="black" text-anchor="end" letter-spacing="2">
           ${escapeXml(data.location.toUpperCase())}  |  SEA TEMP: ${escapeXml(data.waterTemp)}°C
         </text>
 
