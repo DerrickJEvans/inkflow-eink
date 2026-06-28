@@ -516,7 +516,10 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">⚡ UK FUEL FINDER</text>
+          <g transform="translate(${padding}, 17)" fill="black">
+            <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.85)" />
+          </g>
+          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">UK FUEL FINDER</text>
           <text x="${width - padding}" y="33" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" opacity="0.7" text-anchor="end">Radius: ${data.localRadius} mi${data.postcode ? ` (${data.postcode})` : ''} • Refreshed: ${escapeXml(data.updatedAt)}</text>
           <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
 
@@ -527,7 +530,13 @@ module.exports = {
           <g transform="translate(${padding}, 195)">
             <!-- Unleaded Table -->
             <g transform="translate(0, 0)">
-              <text x="0" y="15" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" letter-spacing="0.5">⛽ LOCAL UNLEADED (E10) OPTIONS</text>
+              <g transform="translate(0, -1)" fill="black">
+                <rect x="3" y="2" width="9" height="15" rx="1" />
+                <rect x="5" y="4" width="5" height="3" fill="white" />
+                <path d="M12,5 H14 V10 H13 V14 H15 V10 H14 V6 H12 Z" />
+                <rect x="2" y="17" width="11" height="1.5" />
+              </g>
+              <text x="20" y="15" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" letter-spacing="0.5">LOCAL UNLEADED (E10) OPTIONS</text>
               <line x1="0" y1="22" x2="${tableWidth - 10}" y2="22" stroke="black" stroke-width="1.8" />
               <g transform="translate(0, 10)">
                 ${makeTableRows(data.localE10Sorted)}
@@ -536,7 +545,13 @@ module.exports = {
 
             <!-- Diesel Table -->
             <g transform="translate(${tableWidth + 20}, 0)">
-              <text x="0" y="15" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" letter-spacing="0.5">⛽ LOCAL DIESEL (B7) OPTIONS</text>
+              <g transform="translate(0, -1)" fill="black">
+                <rect x="3" y="2" width="9" height="15" rx="1" />
+                <rect x="5" y="4" width="5" height="3" fill="white" />
+                <path d="M12,5 H14 V10 H13 V14 H15 V10 H14 V6 H12 Z" />
+                <rect x="2" y="17" width="11" height="1.5" />
+              </g>
+              <text x="20" y="15" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" letter-spacing="0.5">LOCAL DIESEL (B7) OPTIONS</text>
               <line x1="0" y1="22" x2="${tableWidth - 10}" y2="22" stroke="black" stroke-width="1.8" />
               <g transform="translate(0, 10)">
                 ${makeTableRows(data.localB7Sorted)}
@@ -575,7 +590,10 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ LOCAL FUEL PRICES${data.postcode ? ` [${data.postcode}]` : ''}</text>
+          <g transform="translate(${padding}, 11)" fill="black">
+            <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.65)" />
+          </g>
+          <text x="${padding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">LOCAL FUEL PRICES${data.postcode ? ` [${data.postcode}]` : ''}</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
 
           <!-- Unleaded Card -->
@@ -598,7 +616,13 @@ module.exports = {
 
           <!-- Local top-3 simple overview -->
           <g transform="translate(${padding}, 162)">
-            <text x="0" y="0" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="black">⛽ CHEAPEST NEAREST UNLEADED</text>
+            <g transform="translate(0, -13)" fill="black">
+              <rect x="3" y="2" width="7" height="12" rx="0.8" />
+              <rect x="4.5" y="3.5" width="4" height="2.5" fill="white" />
+              <path d="M10,4 H11.5 V8 H10.5 V11 H12 V8 H11 V5 H10 Z" />
+              <rect x="2" y="14" width="9" height="1.2" />
+            </g>
+            <text x="16" y="0" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="black">CHEAPEST NEAREST UNLEADED</text>
             <text x="0" y="22" font-family="sans-serif" font-size="11" fill="black">1. ${escapeXml(data.localE10Sorted[0] ? data.localE10Sorted[0].brand : "")} (${escapeXml(data.localE10Sorted[0] ? data.localE10Sorted[0].dist : "")}) – <tspan font-weight="bold">${escapeXml(data.localE10Sorted[0] ? data.localE10Sorted[0].price : "")}</tspan></text>
             <text x="0" y="40" font-family="sans-serif" font-size="11" fill="black">2. ${escapeXml(data.localE10Sorted[1] ? data.localE10Sorted[1].brand : "")} (${escapeXml(data.localE10Sorted[1] ? data.localE10Sorted[1].dist : "")}) – <tspan font-weight="bold">${escapeXml(data.localE10Sorted[1] ? data.localE10Sorted[1].price : "")}</tspan></text>
             <text x="${width - padding * 2}" y="22" font-family="sans-serif" font-size="10" text-anchor="end" fill="black" opacity="0.5">UK Avg: ${escapeXml(data.e10Stats.avg)}p</text>

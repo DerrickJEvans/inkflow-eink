@@ -156,7 +156,10 @@ module.exports = {
       return `
         <g>
           <!-- Compact Header -->
-          <text x="${padding}" y="24" font-family="monospace" font-size="13" font-weight="bold" fill="black">🌊 ${escapeXml(data.location.toUpperCase())}</text>
+          <g transform="translate(${padding}, 11)" stroke="black" stroke-width="1.8" fill="none" stroke-linecap="round">
+            <path d="M2,13 C5,13 7,10 10,10 C13,10 15,13 18,13 C21,13 22,10 22,10 M2,17 C5,17 7,14 10,14 C13,14 15,17 18,17 C21,17 22,14 22,14" transform="scale(0.7)" />
+          </g>
+          <text x="${padding + 18}" y="24" font-family="monospace" font-size="13" font-weight="bold" fill="black">${escapeXml(data.location.toUpperCase())}</text>
           <text x="${width - padding}" y="22" font-family="sans-serif" font-size="8.5" fill="black" opacity="0.6" text-anchor="end">TEMP: ${escapeXml(data.waterTemp)}°C</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
 
@@ -224,7 +227,10 @@ module.exports = {
       <g>
         <!-- Split-Flap Premium Header -->
         <rect x="${padding}" y="20" width="${width - padding * 2}" height="64" fill="black" />
-        <text x="${padding + 25}" y="59" font-family="monospace" font-size="22" font-weight="bold" fill="white" letter-spacing="1.5">🌊 TIDE TIMETABLE</text>
+        <g transform="translate(${padding + 25}, 39)" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round">
+          <path d="M2,13 C5,13 7,10 10,10 C13,10 15,13 18,13 C21,13 22,10 22,10 M2,17 C5,17 7,14 10,14 C13,14 15,17 18,17 C21,17 22,14 22,14" transform="scale(1.0)" />
+        </g>
+        <text x="${padding + 56}" y="59" font-family="monospace" font-size="22" font-weight="bold" fill="white" letter-spacing="1.5">TIDE TIMETABLE</text>
         <text x="${width - padding - 25}" y="56" font-family="monospace" font-size="10.5" font-weight="bold" fill="white" text-anchor="end" letter-spacing="2">
           ${escapeXml(data.location.toUpperCase())}  |  SEA TEMP: ${escapeXml(data.waterTemp)}°C
         </text>

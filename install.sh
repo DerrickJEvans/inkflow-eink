@@ -44,8 +44,9 @@ if [ ! -e "$USER_LINK" ]; then
   chown -h "$SUDO_USER_NAME":"$SUDO_USER_NAME" "$USER_LINK"
 fi
 
-echo -e "${CYAN}[1/5] Updating package cache...${NC}"
+echo -e "${CYAN}[1/5] Updating package cache and installing fonts...${NC}"
 apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update -y
+apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false install -y fonts-noto-color-emoji
 
 # 2. Install Node.js and npm if not available
 if ! command -v node &> /dev/null || ! command -v npm &> /dev/null; then

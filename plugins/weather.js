@@ -225,8 +225,13 @@ module.exports = {
       
       return `
         <g>
-          <!-- Header -->
-          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">🌤️ LOCAL WEATHER</text>
+          <g transform="translate(${padding}, 17)" stroke="black" fill="none" stroke-linecap="round">
+            <circle cx="16" cy="8" r="4" stroke-width="1.5"/>
+            <line x1="16" y1="1" x2="16" y2="2.5" stroke-width="1.2" />
+            <line x1="21.5" y1="4.5" x2="22.5" y2="5.5" stroke-width="1.2" />
+            <path d="M7 17 A 3 3 0 0 1 8 11 A 4.5 4.5 0 0 1 17 12 A 3.5 3.5 0 0 1 19 17 Z" fill="white" stroke-width="2" />
+          </g>
+          <text x="${padding + 26}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">LOCAL WEATHER</text>
           <text x="${width - padding}" y="34" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" opacity="0.75" text-anchor="end">${escapeXml(locStr)}</text>
           <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
           
@@ -284,7 +289,12 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">🌤️ LOCAL WEATHER</text>
+          <g transform="translate(${padding}, 9)" stroke="black" fill="none" stroke-linecap="round">
+            <circle cx="13" cy="6" r="3" stroke-width="1.2"/>
+            <line x1="13" y1="1" x2="13" y2="2" stroke-width="1" />
+            <path d="M5 14 A 2.5 2.5 0 0 1 6 9 A 3.5 3.5 0 0 1 14 10 A 3 3 0 0 1 15 14 Z" fill="white" stroke-width="1.5" />
+          </g>
+          <text x="${padding + 18}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">LOCAL WEATHER</text>
           <text x="${width - padding}" y="24" font-family="sans-serif" font-size="9.5" font-weight="bold" fill="black" opacity="0.75" text-anchor="end">${escapeXml(locStr)}</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
           

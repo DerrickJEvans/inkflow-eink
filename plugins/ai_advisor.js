@@ -173,7 +173,10 @@ module.exports = {
           <rect x="${padding}" y="20" width="${width - padding * 2}" height="76" fill="none" stroke="black" stroke-width="2.5" />
           <line x1="${padding + 6}" y1="60" x2="${width - padding - 6}" y2="60" stroke="black" stroke-width="0.8" />
           
-          <text x="${width / 2}" y="46" font-family="sans-serif" font-size="${headerSize}" font-weight="bold" fill="black" text-anchor="middle" letter-spacing="1">🛠️ INKFLOW COGNITIVE ADVISOR</text>
+          <g transform="translate(${width / 2 - 10}, 10)" fill="black">
+            <path d="M12,15.5 A3.5,3.5 0 0 1 8.5,12 A3.5,3.5 0 0 1 12,8.5 A3.5,3.5 0 0 1 15.5,12 A3.5,3.5 0 0 1 12,15.5 M19.4,13 C19.5,12.7 19.5,12.3 19.5,12 C19.5,11.7 19.5,11.3 19.4,11 L21.7,9.2 C21.9,9 22,8.7 21.8,8.5 L19.6,4.7 C19.5,4.5 19.2,4.4 18.9,4.5 L16.2,5.6 C15.6,5.2 15,4.8 14.3,4.5 L13.9,1.6 C13.8,1.3 13.6,1.1 13.3,1.1 L8.9,1.1 C8.6,1.1 8.4,1.3 8.3,1.6 L7.9,4.5 C7.2,4.8 6.6,5.2 6,5.6 L3.3,4.5 C3,4.4 2.7,4.5 2.6,4.7 L0.4,8.5 C0.2,8.7 0.3,9 0.5,9.2 L2.8,11 C2.7,11.3 2.7,11.7 2.7,12 C2.7,12.3 2.7,12.7 2.8,13 L0.5,14.8 C0.3,15 0.2,15.3 0.4,15.5 L2.6,19.3 C2.7,19.5 3,19.6 3.3,19.5 L6,18.4 C6.6,18.8 7.2,19.2 7.9,19.5 L8.3,22.4 C8.4,22.7 8.6,22.9 8.9,22.9 L13.3,22.9 C13.6,22.9 13.8,22.7 13.9,22.4 L14.3,19.5 C15,19.2 15.6,18.8 16.2,18.4 L18.9,19.5 C19.2,19.6 19.5,19.5 19.6,19.3 L21.8,15.5 C22,15.3 21.9,15 21.7,14.8 L19.4,13 Z" transform="scale(0.85)" />
+          </g>
+          <text x="${width / 2}" y="46" font-family="sans-serif" font-size="${headerSize}" font-weight="bold" fill="black" text-anchor="middle" letter-spacing="1">INKFLOW COGNITIVE ADVISOR</text>
           <text x="${width / 2}" y="71" font-family="sans-serif" font-size="${subtitleSize}" font-weight="bold" fill="black" opacity="0.6" text-anchor="middle" letter-spacing="2">
             TELEMETRY DIAGNOSTICS  •  ANALYST: GEMINI AGENT
           </text>
@@ -191,7 +194,10 @@ module.exports = {
       // Compact Rotation Carousel widget card
       return `
         <g>
-          <text x="${padding}" y="25" font-family="sans-serif" font-size="${headerSize}" font-weight="bold" fill="black">🛠️ SYSTEM DIAGNOSTICS</text>
+          <g transform="translate(${padding}, 9)" fill="black">
+            <path d="M12,15.5 A3.5,3.5 0 0 1 8.5,12 A3.5,3.5 0 0 1 12,8.5 A3.5,3.5 0 0 1 15.5,12 A3.5,3.5 0 0 1 12,15.5 M19.4,13 C19.5,12.7 19.5,12.3 19.5,12 C19.5,11.7 19.5,11.3 19.4,11 L21.7,9.2 C21.9,9 22,8.7 21.8,8.5 L19.6,4.7 C19.5,4.5 19.2,4.4 18.9,4.5 L16.2,5.6 C15.6,5.2 15,4.8 14.3,4.5 L13.9,1.6 C13.8,1.3 13.6,1.1 13.3,1.1 L8.9,1.1 C8.6,1.1 8.4,1.3 8.3,1.6 L7.9,4.5 C7.2,4.8 6.6,5.2 6,5.6 L3.3,4.5 C3,4.4 2.7,4.5 2.6,4.7 L0.4,8.5 C0.2,8.7 0.3,9 0.5,9.2 L2.8,11 C2.7,11.3 2.7,11.7 2.7,12 C2.7,12.3 2.7,12.7 2.8,13 L0.5,14.8 C0.3,15 0.2,15.3 0.4,15.5 L2.6,19.3 C2.7,19.5 3,19.6 3.3,19.5 L6,18.4 C6.6,18.8 7.2,19.2 7.9,19.5 L8.3,22.4 C8.4,22.7 8.6,22.9 8.9,22.9 L13.3,22.9 C13.6,22.9 13.8,22.7 13.9,22.4 L14.3,19.5 C15,19.2 15.6,18.8 16.2,18.4 L18.9,19.5 C19.2,19.6 19.5,19.5 19.6,19.3 L21.8,15.5 C22,15.3 21.9,15 21.7,14.8 L19.4,13 Z" transform="scale(0.8)" />
+          </g>
+          <text x="${padding + 22}" y="25" font-family="sans-serif" font-size="${headerSize}" font-weight="bold" fill="black">SYSTEM DIAGNOSTICS</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
           
           <!-- Compact List -->

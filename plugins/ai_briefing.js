@@ -175,7 +175,10 @@ module.exports = {
           <line x1="${padding + 6}" y1="62" x2="${width - padding - 6}" y2="62" stroke="black" stroke-width="0.8" />
           
           <!-- Header Labels -->
-          <text x="${width / 2}" y="48" font-family="Georgia, serif" font-size="${headerSize}" font-weight="bold" fill="black" text-anchor="middle" letter-spacing="1.5">🗞️ THE INKFLOW DAILY BULLETIN</text>
+          <g transform="translate(${width / 2 - 10}, 12)" fill="black">
+            <path d="M19,3 H5 C3.9,3 3,3.9 3,5 V19 C3,20.1 3.9,21 5,21 H19 C20.1,21 21,20.1 21,19 V5 C21,3.9 20.1,3 19,3 Z M19,5 V11 H11 V5 H19 Z M9,5 V7 H5 V5 H9 Z M5,9 H9 V11 H5 V9 Z M5,19 V13 H19 V19 H5 Z" transform="scale(0.85)" />
+          </g>
+          <text x="${width / 2}" y="48" font-family="Georgia, serif" font-size="${headerSize}" font-weight="bold" fill="black" text-anchor="middle" letter-spacing="1.5">THE INKFLOW DAILY BULLETIN</text>
           <text x="${width / 2}" y="73" font-family="sans-serif" font-size="${dateSize}" font-weight="bold" fill="black" opacity="0.65" text-anchor="middle" letter-spacing="2">
             ${escapeXml(data.date.toUpperCase())}  •  ${escapeXml(data.sourceLabel || "SYNTHESIZED BY GOOGLE GEMINI AI")}
           </text>
@@ -195,7 +198,10 @@ module.exports = {
       const subtitleText = data.statusLabel ? `${data.date.toUpperCase()} (${data.statusLabel})` : data.date.toUpperCase();
       return `
         <g>
-          <text x="${padding}" y="25" font-family="Georgia, serif" font-size="${headerSize}" font-weight="bold" fill="black">🗞️ AI DAILY BRIEFING</text>
+          <g transform="translate(${padding}, 9)" fill="black">
+            <path d="M19,3 H5 C3.9,3 3,3.9 3,5 V19 C3,20.1 3.9,21 5,21 H19 C20.1,21 21,20.1 21,19 V5 C21,3.9 20.1,3 19,3 Z M19,5 V11 H11 V5 H19 Z M9,5 V7 H5 V5 H9 Z M5,9 H9 V11 H5 V9 Z M5,19 V13 H19 V19 H5 Z" transform="scale(0.8)" />
+          </g>
+          <text x="${padding + 22}" y="25" font-family="Georgia, serif" font-size="${headerSize}" font-weight="bold" fill="black">AI DAILY BRIEFING</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
           <text x="${padding}" y="44" font-family="sans-serif" font-size="${dateSize}" font-weight="bold" fill="black" opacity="0.55">${escapeXml(subtitleText)}</text>
           

@@ -129,7 +129,10 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">⚡ HOST SYSTEM TELEMETRY</text>
+          <g transform="translate(${padding}, 17)" fill="black">
+            <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.85)" />
+          </g>
+          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">HOST SYSTEM TELEMETRY</text>
           <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
           
           <!-- Top Row Status Cards -->
@@ -151,7 +154,10 @@ module.exports = {
           
           <!-- Resource Bars Section -->
           <g transform="translate(${padding}, 205)">
-            <text x="0" y="0" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">📊 RESOURCE ALLOCATION</text>
+            <g transform="translate(0, -14)" fill="black">
+              <path d="M19,3 H5 C3.9,3 3,3.9 3,5 V19 C3,20.1 3.9,21 5,21 H19 C20.1,21 21,20.1 21,19 V5 C21,3.9 20.1,3 19,3 Z M9,17 H6 V10 H9 V17 Z M13,17 H10 V7 H13 V17 Z M17,17 H14 V13 H17 V17 Z" transform="scale(0.75)" />
+            </g>
+            <text x="20" y="0" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">RESOURCE ALLOCATION</text>
             
             <g transform="translate(0, 20)">
               ${drawProgressBar("CPU Load Indicator", data.cpuUsage, `${data.cpuUsage}%`, 0, 10, width - padding * 2, 14)}
@@ -173,7 +179,10 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <text x="${padding}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">⚡ SYSTEM HEALTH</text>
+          <g transform="translate(${padding}, 11)" fill="black">
+            <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.65)" />
+          </g>
+          <text x="${padding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">SYSTEM HEALTH</text>
           <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
           
           <!-- Metrics -->

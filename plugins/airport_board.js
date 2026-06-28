@@ -204,8 +204,10 @@ module.exports = {
       return `
         <g>
           <!-- Split-Flap Board Header Display -->
-          <rect x="${padding}" y="20" width="${width - padding * 2}" height="64" fill="black" />
-          <text x="${padding + 20}" y="58" font-family="monospace" font-size="${titleSize}" font-weight="bold" fill="white" letter-spacing="1">✈️ ${escapeXml(data.airport.toUpperCase())}</text>
+          <g transform="translate(${padding + 20}, 40)" fill="white">
+            <path d="M12,2 L14,7 H20 C21,7 21.5,7.5 21,8 L14,12 L16,19 C16,19.5 15.5,20 15,19.5 L12,16 L9,19.5 C8.5,20 8,19.5 8,19 L10,12 L3,8 C2.5,7.5 3,7 4,7 H10 L12,2 Z" />
+          </g>
+          <text x="${padding + 52}" y="58" font-family="monospace" font-size="${titleSize}" font-weight="bold" fill="white" letter-spacing="1">${escapeXml(data.airport.toUpperCase())}</text>
           <text x="${width - padding - 20}" y="56" font-family="monospace" font-size="${metaSize}" font-weight="bold" fill="white" text-anchor="end" letter-spacing="2">
             ${escapeXml(data.mode)}  |  LCL TIME: ${escapeXml(data.time)}
           </text>
@@ -225,7 +227,10 @@ module.exports = {
     } else {
       return `
         <g>
-          <text x="${padding}" y="22" font-family="monospace" font-size="${titleSize}" font-weight="bold" fill="black">✈️ ${escapeXml(data.airport.substring(0, 15).toUpperCase())} ${escapeXml(data.mode)}</text>
+          <g transform="translate(${padding}, 6)" fill="black">
+            <path d="M12,2 L14,7 H20 C21,7 21.5,7.5 21,8 L14,12 L16,19 C16,19.5 15.5,20 15,19.5 L12,16 L9,19.5 C8.5,20 8,19.5 8,19 L10,12 L3,8 C2.5,7.5 3,7 4,7 H10 L12,2 Z" transform="scale(0.8)" />
+          </g>
+          <text x="${padding + 24}" y="22" font-family="monospace" font-size="${titleSize}" font-weight="bold" fill="black">${escapeXml(data.airport.substring(0, 15).toUpperCase())} ${escapeXml(data.mode)}</text>
           <line x1="${padding}" y1="30" x2="${width - padding}" y2="30" stroke="black" stroke-width="1.5" />
           
           <!-- Table Headers -->
