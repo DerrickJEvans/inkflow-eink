@@ -21,14 +21,13 @@ def draw_setup_splash(error_msg=None, step=1):
         font_medium = ImageFont.load_default()
         font_small = ImageFont.load_default()
         
-    # Draw outer double border
-    draw.rectangle([5, 5, drivers.WIDTH - 6, drivers.HEIGHT - 6], outline=0)
-    draw.rectangle([8, 8, drivers.WIDTH - 9, drivers.HEIGHT - 9], outline=0)
-    
     # Header
     draw.text((25, 30), f"InkFlow E-Ink Setup (Step {step}/2)", fill=0, font=font_large)
     draw.text((25, 60), "Configure your wireless device portal:", fill=0, font=font_medium)
-    draw.line([(20, 80), (drivers.WIDTH - 20, 80)], fill=0)
+    
+    # Dashed divider line to reduce capacitive load
+    for x in range(20, drivers.WIDTH - 20, 8):
+        draw.line([(x, 80), (min(x + 4, drivers.WIDTH - 20), 80)], fill=0, width=1)
     
     if step == 1:
         draw.text((25, 95), "1. Connect your phone or PC to the setup WiFi network:", fill=0, font=font_medium)
@@ -66,7 +65,16 @@ def draw_setup_splash(error_msg=None, step=1):
             print(f"[Warning] Failed to generate setup QR code: {e}")
             
     if error_msg:
-        draw.rectangle([20, drivers.HEIGHT - 70, drivers.WIDTH - 20, drivers.HEIGHT - 20], fill=255, outline=0)
+        # Clear error region (no solid black border rect)
+        draw.rectangle([20, drivers.HEIGHT - 70, drivers.WIDTH - 20, drivers.HEIGHT - 20], fill=255)
+        # Draw dashed outline instead of solid outline
+        for x in range(20, drivers.WIDTH - 20, 8):
+            draw.line([(x, drivers.HEIGHT - 70), (min(x + 4, drivers.WIDTH - 20), drivers.HEIGHT - 70)], fill=0, width=1)
+            draw.line([(x, drivers.HEIGHT - 20), (min(x + 4, drivers.WIDTH - 20), drivers.HEIGHT - 20)], fill=0, width=1)
+        for y_pos in range(drivers.HEIGHT - 70, drivers.HEIGHT - 20, 6):
+            draw.line([(20, y_pos), (20, min(y_pos + 3, drivers.HEIGHT - 20))], fill=0, width=1)
+            draw.line([(drivers.WIDTH - 20, y_pos), (drivers.WIDTH - 20, min(y_pos + 3, drivers.HEIGHT - 20))], fill=0, width=1)
+            
         draw.text((35, drivers.HEIGHT - 60), "⚠️ CONNECTION FAULT ENCOUNTERED:", fill=0, font=font_small)
         draw.text((35, drivers.HEIGHT - 42), error_msg[:90], fill=0, font=font_medium)
 
@@ -94,12 +102,12 @@ def draw_connecting_splash(ssid, server_ip, port, step=0):
         font_medium = ImageFont.load_default()
         font_small = ImageFont.load_default()
         
-    draw.rectangle([5, 5, drivers.WIDTH - 6, drivers.HEIGHT - 6], outline=0)
-    draw.rectangle([8, 8, drivers.WIDTH - 9, drivers.HEIGHT - 9], outline=0)
-    
     draw.text((25, 30), "Connecting InkFlow Device", fill=0, font=font_large)
     draw.text((25, 60), f"Attuning local network configuration to wireless profile:", fill=0, font=font_medium)
-    draw.line([(20, 80), (drivers.WIDTH - 20, 80)], fill=0)
+    
+    # Dashed divider line to reduce capacitive load
+    for x in range(20, drivers.WIDTH - 20, 8):
+        draw.line([(x, 80), (min(x + 4, drivers.WIDTH - 20), 80)], fill=0, width=1)
     
     y = 110
     draw.text((45, y), f"📶 Target SSID:        {ssid}", fill=0, font=font_medium); y += 35
@@ -115,11 +123,12 @@ def draw_connecting_splash(ssid, server_ip, port, step=0):
         
     draw.text((45, y), f"⚙️ Current Status:      {status_msg}", fill=0, font=font_medium); y += 50
     
-    # Visual Loading Bar
+    # Visual Loading Bar (Dashed segments to break up current flow)
     bar_width = drivers.WIDTH - 120
     draw.rectangle([60, y, 60 + bar_width, y + 16], outline=0)
     filled = int(bar_width * ((step + 1) / 4.0))
-    draw.rectangle([62, y + 2, 60 + filled, y + 14], fill=0)
+    for bx in range(64, 60 + filled, 10):
+        draw.rectangle([bx, y + 3, min(bx + 6, 60 + filled), y + 13], fill=0)
     
     if config.DISPLAY_TYPE == 'waveshare':
         drivers.display_waveshare(img)
