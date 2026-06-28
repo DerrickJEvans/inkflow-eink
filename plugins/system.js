@@ -116,11 +116,28 @@ module.exports = {
     const isFullScreen = height > 300;
     
     const drawProgressBar = (label, value, text, x, y, barWidth, barHeight = 12) => {
+      const numSegments = 20; // 5% per segment
+      const activeSegments = Math.round((value / 100) * numSegments);
+      const segmentGap = 3;   // White space between segments
+      const innerWidth = barWidth - 4; // Account for borders
+      const totalGapsWidth = (numSegments - 1) * segmentGap;
+      const segmentWidth = (innerWidth - totalGapsWidth) / numSegments;
+      
+      let segmentsHtml = '';
+      for (let i = 0; i < numSegments; i++) {
+        const segX = x + 2 + i * (segmentWidth + segmentGap);
+        if (i < activeSegments) {
+          segmentsHtml += `
+            <rect x="${segX}" y="${y + 10}" width="${segmentWidth}" height="${barHeight - 4}" rx="1" fill="#dddddd" />
+          `;
+        }
+      }
+
       return `
         <text x="${x}" y="${y}" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${label}</text>
         <text x="${x + barWidth}" y="${y}" font-family="sans-serif" font-size="12" text-anchor="end" fill="black">${text}</text>
-        <rect x="${x}" y="${y + 8}" width="${barWidth}" height="${barHeight}" rx="${barHeight / 2}" fill="none" stroke="black" stroke-width="1.5" />
-        <rect x="${x}" y="${y + 8}" width="${(barWidth * value) / 100}" height="${barHeight}" rx="${barHeight / 2}" fill="#dddddd" />
+        <rect x="${x}" y="${y + 8}" width="${barWidth}" height="${barHeight}" rx="4" fill="none" stroke="black" stroke-width="1.5" />
+        ${segmentsHtml}
       `;
     };
 
