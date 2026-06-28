@@ -149,6 +149,37 @@ def init_trmnl_hardware_7in5(epd):
     send_val(epd, 0x00)
     send_val(epd, 0x00)
 
+def set_pin_value(impl, attr_name, value):
+    """Sets pin value dynamically supporting both gpiozero objects and RPi.GPIO integers"""
+    try:
+        attr = None
+        if impl is not None and hasattr(impl, attr_name):
+            attr = getattr(impl, attr_name)
+        else:
+            cfg_mod = sys.modules.get('waveshare_epd.epdconfig')
+            if cfg_mod and hasattr(cfg_mod, attr_name):
+                attr = getattr(cfg_mod, attr_name)
+            
+        if attr is None:
+            return
+            
+        if hasattr(attr, 'value'):
+            attr.value = value
+        elif hasattr(attr, 'off') and hasattr(attr, 'on'):
+            if value == 0:
+                attr.off()
+            else:
+                attr.on()
+        elif isinstance(attr, int):
+            import RPi.GPIO as GPIO
+            try:
+                GPIO.setup(attr, GPIO.OUT)
+                GPIO.output(attr, value)
+            except Exception:
+                GPIO.output(attr, value)
+    except Exception as e:
+        print(f"[Warning] Failed to set pin {attr_name} to {value}: {e}")
+
 def display_waveshare(img, partial=False, sleep_after=True):
     """Pushes image to Waveshare SPI E-Paper display"""
     model = WAVESHARE_MODEL
@@ -326,21 +357,23 @@ def display_waveshare(img, partial=False, sleep_after=True):
             # (which causes 7.5 V2 screens to fade) while preserving MPR121 touch pins.
             try:
                 import waveshare_epd.epdconfig as epdconfig
+                impl = getattr(epdconfig, 'implementation', None)
                 print("[Hardware Display] Setting EPD control pins to low-leakage state...")
                 
                 # 1. Deselect EPD by setting CS High (CS is active-low)
-                if hasattr(epdconfig, 'CS_PIN'):
-                    epdconfig.GPIO.output(epdconfig.CS_PIN, 1)
+                set_pin_value(impl, 'CS_PIN', 1)
                 
                 # 2. Pull RST and DC Low to power down interface logic
-                if hasattr(epdconfig, 'RST_PIN'):
-                    epdconfig.GPIO.output(epdconfig.RST_PIN, 0)
-                if hasattr(epdconfig, 'DC_PIN'):
-                    epdconfig.GPIO.output(epdconfig.DC_PIN, 0)
+                set_pin_value(impl, 'RST_PIN', 0)
+                set_pin_value(impl, 'DC_PIN', 0)
                 
-                # 3. Cleanly close SPI to stop driving MOSI/CLK lines
-                if hasattr(epdconfig, 'SPI') and epdconfig.SPI is not None:
-                    epdconfig.SPI.close()
+                # 3. Pull PWR Low if board has a power pin
+                set_pin_value(impl, 'PWR_PIN', 0)
+                
+                # 4. Cleanly close SPI
+                spi_obj = getattr(impl, 'SPI', None) or getattr(epdconfig, 'SPI', None)
+                if spi_obj is not None and hasattr(spi_obj, 'close'):
+                    spi_obj.close()
                     print("[Hardware Display] SPI interface closed.")
             except Exception as gpio_err:
                 print(f"[Warning] Failed to set EPD low-leakage states: {gpio_err}")
