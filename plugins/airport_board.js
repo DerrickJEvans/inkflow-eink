@@ -204,11 +204,11 @@ module.exports = {
       return `
         <g>
           <!-- Split-Flap Board Header Display -->
-          <g transform="translate(${padding + 20}, 40)" fill="white">
+          <g transform="translate(${padding + 20}, 40)" fill="black">
             <path d="M12,2 L14,7 H20 C21,7 21.5,7.5 21,8 L14,12 L16,19 C16,19.5 15.5,20 15,19.5 L12,16 L9,19.5 C8.5,20 8,19.5 8,19 L10,12 L3,8 C2.5,7.5 3,7 4,7 H10 L12,2 Z" />
           </g>
-          <text x="${padding + 52}" y="58" font-family="monospace" font-size="${titleSize}" font-weight="bold" fill="white" letter-spacing="1">${escapeXml(data.airport.toUpperCase())}</text>
-          <text x="${width - padding - 20}" y="56" font-family="monospace" font-size="${metaSize}" font-weight="bold" fill="white" text-anchor="end" letter-spacing="2">
+          <text x="${padding + 52}" y="58" font-family="monospace" font-size="${titleSize}" font-weight="bold" fill="black" letter-spacing="1">${escapeXml(data.airport.toUpperCase())}</text>
+          <text x="${width - padding - 20}" y="56" font-family="monospace" font-size="${metaSize}" font-weight="bold" fill="black" text-anchor="end" letter-spacing="2">
             ${escapeXml(data.mode)}  |  LCL TIME: ${escapeXml(data.time)}
           </text>
 
