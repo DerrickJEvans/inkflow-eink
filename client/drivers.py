@@ -331,13 +331,7 @@ def display_waveshare(img, partial=False, sleep_after=True):
                 time.sleep(sleep_delay)
             print("[Hardware Display] Putting screen to sleep...")
             epd.sleep()
-            
-            for method_name in ['Dev_Exit', 'dev_exit', 'module_exit']:
-                if hasattr(epd, method_name):
-                    print("[Hardware Display] Cleaning up GPIO pins (preventing leakage current)...")
-                    getattr(epd, method_name)()
-                    break
-            print("[Hardware Display] Draw cycle complete (screen put to sleep & GPIOs cleaned up).")
+            print("[Hardware Display] Draw cycle complete (screen put to sleep).")
         else:
             print("[Hardware Display] Draw cycle complete (screen kept awake for subsequent updates).")
     except ImportError:
