@@ -144,14 +144,13 @@ def draw_diagnostics_overlay(last_sync_time):
         font_medium = ImageFont.load_default()
         font_small = ImageFont.load_default()
         
-    # Draw double border
-    draw.rectangle([5, 5, drivers.WIDTH - 6, drivers.HEIGHT - 6], outline=0)
-    draw.rectangle([8, 8, drivers.WIDTH - 9, drivers.HEIGHT - 9], outline=0)
-    
     # Header
     draw.text((25, 30), "System Diagnostics Scan", fill=0, font=font_large)
     draw.text((25, 60), "Active status report of the local client environment:", fill=0, font=font_medium)
-    draw.line([(20, 80), (drivers.WIDTH - 20, 80)], fill=0)
+    
+    # Dashed divider line to reduce capacitive load
+    for x in range(20, drivers.WIDTH - 20, 8):
+        draw.line([(x, 80), (min(x + 4, drivers.WIDTH - 20), 80)], fill=0, width=1)
     
     # Gather specs
     ip = drivers.get_local_ip()
@@ -180,7 +179,9 @@ def draw_diagnostics_overlay(last_sync_time):
         draw.text((25, 195), f"⏱️ Sync:   {sync_str}", fill=0, font=font_small)
         
     # Footer Action info
-    draw.line([(20, drivers.HEIGHT - 55), (drivers.WIDTH - 20, drivers.HEIGHT - 55)], fill=0)
+    # Dashed divider line to reduce capacitive load
+    for x in range(20, drivers.WIDTH - 20, 8):
+        draw.line([(x, drivers.HEIGHT - 55), (min(x + 4, drivers.WIDTH - 20), drivers.HEIGHT - 55)], fill=0, width=1)
     draw.text((25, drivers.HEIGHT - 45), "👉 Touch Pin 8 again to exit diagnostics and trigger a manual screen refresh.", fill=0, font=font_medium)
     draw.text((25, drivers.HEIGHT - 28), "   Diagnostics overlay will automatically exit in 15 seconds.", fill=0, font=font_medium)
     
