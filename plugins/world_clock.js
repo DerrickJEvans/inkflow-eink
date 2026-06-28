@@ -489,9 +489,8 @@ module.exports = {
             </g>
             
             <rect x="10" y="195" width="${width - 20}" height="38" rx="4" fill="black" />
-            <text x="20" y="219" font-family="monospace" font-size="15" font-weight="bold" fill="white">${escapeXml(data.localTime)}</text>
-            <text x="75" y="218" font-family="sans-serif" font-size="10" fill="white" opacity="0.8">${escapeXml(data.localDate.toUpperCase())} | TZ: ${escapeXml(data.timezone)}</text>
-            <text x="${width - 20}" y="218" font-family="sans-serif" font-size="10" fill="white" text-anchor="end" opacity="0.95">Sunrise: ${escapeXml(data.sunrise)}  Sunset: ${escapeXml(data.sunset)}</text>
+            <text x="20" y="219" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="white">${escapeXml(data.localDate.toUpperCase())} | DL: ${escapeXml(data.daylight)}</text>
+            <text x="${width - 20}" y="219" font-family="sans-serif" font-size="10.5" fill="white" text-anchor="end" opacity="0.95">SR: ${escapeXml(data.sunrise)}  SS: ${escapeXml(data.sunset)}</text>
             
             <rect x="0" y="0" width="${width}" height="32" fill="black" />
             <g transform="translate(12, 8)" stroke="white" stroke-width="1.2" fill="none">
@@ -524,29 +523,20 @@ module.exports = {
             
             <line x1="15" y1="230" x2="${width - 15}" y2="230" stroke="black" stroke-width="1.5" />
             
-            <g transform="translate(20, 255)">
-              <text x="0" y="0" font-family="sans-serif" font-size="10" font-weight="bold" fill="black" opacity="0.6">LOCAL TIME</text>
-              <text x="0" y="42" font-family="monospace" font-size="36" font-weight="bold" fill="black">${escapeXml(data.localTime)}</text>
-              <text x="0" y="62" font-family="sans-serif" font-size="12" font-weight="bold" fill="black">${escapeXml(data.localDate.toUpperCase())} (${escapeXml(data.timezone)})</text>
-              
-              <g transform="translate(0, 85)">
-                <text x="0" y="0" font-family="sans-serif" font-size="10" font-weight="bold" fill="black" opacity="0.6">SUNRISE &amp; SUNSET</text>
-                <text x="0" y="22" font-family="sans-serif" font-size="12" fill="black" opacity="0.85">Sunrise: <tspan font-weight="bold">${escapeXml(data.sunrise)}</tspan></text>
-                <text x="180" y="22" font-family="sans-serif" font-size="12" fill="black" opacity="0.85">Sunset: <tspan font-weight="bold">${escapeXml(data.sunset)}</tspan></text>
-              </g>
-              
-              <g transform="translate(0, 142)">
-                <text x="0" y="0" font-family="sans-serif" font-size="10" font-weight="bold" fill="black" opacity="0.6">LUNAR INTERACTIVE</text>
-                <g transform="translate(0, 10)">
-                  ${moonPhaseDrawing}
-                </g>
-                <text x="55" y="28" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${escapeXml(data.moon.phaseName.toUpperCase())}</text>
-                <text x="55" y="44" font-family="sans-serif" font-size="11" fill="black" opacity="0.7">Age: ${data.moon.age.toFixed(1)} days</text>
-              </g>
-            </g>
+            <!-- Bottom Telemetry Column 1: Date & Daylight -->
+            <text x="20" y="254" font-family="sans-serif" font-size="12" font-weight="bold" fill="black">${escapeXml(data.localDate.toUpperCase())}</text>
+            <text x="20" y="276" font-family="sans-serif" font-size="11" fill="black" opacity="0.7">Daylight: ${escapeXml(data.daylight)}</text>
             
-            <rect x="0" y="${height - 30}" width="${width}" height="30" fill="black" />
-            <text x="15" y="${height - 11}" font-family="sans-serif" font-size="10" font-weight="bold" fill="white">GMT: ${escapeXml(data.gmtTime)} | ${escapeXml(data.gmtDate)}</text>
+            <!-- Bottom Telemetry Column 2: Sunrise & Sunset -->
+            <text x="160" y="254" font-family="sans-serif" font-size="11.5" fill="black">Sunrise: <tspan font-weight="bold">${escapeXml(data.sunrise)}</tspan></text>
+            <text x="160" y="276" font-family="sans-serif" font-size="11.5" fill="black">Sunset: <tspan font-weight="bold">${escapeXml(data.sunset)}</tspan></text>
+            
+            <!-- Bottom Telemetry Column 3: Moon Phase -->
+            <g transform="translate(285, 236) scale(0.7)">
+              ${moonPhaseDrawing}
+            </g>
+            <text x="325" y="254" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${escapeXml(data.moon.phaseName.toUpperCase())}</text>
+            <text x="325" y="270" font-family="sans-serif" font-size="9.5" fill="black" opacity="0.6">Age: ${data.moon.age.toFixed(1)}d</text>
           </g>
         `;
       }
