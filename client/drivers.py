@@ -322,16 +322,28 @@ def display_waveshare(img, partial=False, sleep_after=True):
             print("[Hardware Display] Putting screen to sleep...")
             epd.sleep()
             
-            # Pull RST and DC pins Low to prevent parasitic leakage current
-            # which causes E-Ink displays (like 7.5 V2) to fade.
-            # Do NOT call Dev_Exit/GPIO.cleanup() to avoid breaking MPR121 I2C touch pins.
+            # Replicate Dev_Exit() electrical shutdown to prevent parasitic current leakage
+            # (which causes 7.5 V2 screens to fade) while preserving MPR121 touch pins.
             try:
                 import waveshare_epd.epdconfig as epdconfig
-                print("[Hardware Display] Pulling EPD RST and DC pins Low to prevent leakage current...")
-                epdconfig.GPIO.output(epdconfig.RST_PIN, 0)
-                epdconfig.GPIO.output(epdconfig.DC_PIN, 0)
+                print("[Hardware Display] Setting EPD control pins to low-leakage state...")
+                
+                # 1. Deselect EPD by setting CS High (CS is active-low)
+                if hasattr(epdconfig, 'CS_PIN'):
+                    epdconfig.GPIO.output(epdconfig.CS_PIN, 1)
+                
+                # 2. Pull RST and DC Low to power down interface logic
+                if hasattr(epdconfig, 'RST_PIN'):
+                    epdconfig.GPIO.output(epdconfig.RST_PIN, 0)
+                if hasattr(epdconfig, 'DC_PIN'):
+                    epdconfig.GPIO.output(epdconfig.DC_PIN, 0)
+                
+                # 3. Cleanly close SPI to stop driving MOSI/CLK lines
+                if hasattr(epdconfig, 'SPI') and epdconfig.SPI is not None:
+                    epdconfig.SPI.close()
+                    print("[Hardware Display] SPI interface closed.")
             except Exception as gpio_err:
-                print(f"[Warning] Failed to set EPD control pins Low: {gpio_err}")
+                print(f"[Warning] Failed to set EPD low-leakage states: {gpio_err}")
                 
             print("[Hardware Display] Draw cycle complete (screen put to sleep).")
         else:
