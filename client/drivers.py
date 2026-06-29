@@ -173,6 +173,12 @@ def set_pin_value(impl, attr_name, value):
         elif isinstance(attr, int):
             import RPi.GPIO as GPIO
             try:
+                mode = GPIO.getmode()
+                if mode is None or mode == -1 or (hasattr(GPIO, 'UNKNOWN') and mode == GPIO.UNKNOWN):
+                    GPIO.setmode(GPIO.BCM)
+            except Exception:
+                pass
+            try:
                 GPIO.setup(attr, GPIO.OUT)
                 GPIO.output(attr, value)
             except Exception:
