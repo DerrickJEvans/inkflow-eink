@@ -153,12 +153,19 @@ def set_pin_value(impl, attr_name, value):
     """Sets pin value dynamically supporting both gpiozero objects and RPi.GPIO integers"""
     try:
         attr = None
-        if impl is not None and hasattr(impl, attr_name):
-            attr = getattr(impl, attr_name)
-        else:
+        if impl is not None:
+            if hasattr(impl, attr_name):
+                attr = getattr(impl, attr_name)
+            elif hasattr(impl, f"GPIO_{attr_name}"):
+                attr = getattr(impl, f"GPIO_{attr_name}")
+                
+        if attr is None:
             cfg_mod = sys.modules.get('waveshare_epd.epdconfig')
-            if cfg_mod and hasattr(cfg_mod, attr_name):
-                attr = getattr(cfg_mod, attr_name)
+            if cfg_mod:
+                if hasattr(cfg_mod, attr_name):
+                    attr = getattr(cfg_mod, attr_name)
+                elif hasattr(cfg_mod, f"GPIO_{attr_name}"):
+                    attr = getattr(cfg_mod, f"GPIO_{attr_name}")
             
         if attr is None:
             return
@@ -176,8 +183,8 @@ def set_pin_value(impl, attr_name, value):
                 mode = GPIO.getmode()
                 if mode is None or mode == -1 or (hasattr(GPIO, 'UNKNOWN') and mode == GPIO.UNKNOWN):
                     GPIO.setmode(GPIO.BCM)
-            except Exception:
-                pass
+            except Exception as setmode_err:
+                print(f"[Debug] setmode failed: {setmode_err}")
             try:
                 GPIO.setup(attr, GPIO.OUT)
                 GPIO.output(attr, value)
