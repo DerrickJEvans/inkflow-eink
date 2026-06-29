@@ -366,6 +366,39 @@ run_test_sequence() {
     read -n 1 -s -r -p "Press any key to return to menu..."
 }
 
+# Action: Run 4-Grayscale Hardware Test
+run_4gray_test() {
+    local WAS_DAEMON_STOPPED=false
+    
+    if systemctl is-active --quiet inkflow-client.service 2>/dev/null; then
+        echo -e "\n${YELLOW}⚠️  WARNING: The background daemon (inkflow-client.service) is currently running.${NC}"
+        echo -e "${YELLOW}Running the test now will cause drawing conflicts on the display.${NC}"
+        echo -n "Would you like to temporarily stop the daemon for this test? [Y/n]: "
+        read -r stop_daemon_choice
+        if [ "$stop_daemon_choice" != "n" ] && [ "$stop_daemon_choice" != "N" ]; then
+            stop_client
+            WAS_DAEMON_STOPPED=true
+        fi
+    fi
+
+    echo -e "\n${BLUE}🌓 Running E-Ink 4-Grayscale Test Script...${NC}"
+    echo -e "${BLUE}------------------------------------------------------------${NC}"
+    
+    python3 "$SCRIPT_DIR/test_4gray.py"
+    
+    echo -e "${BLUE}------------------------------------------------------------${NC}"
+    
+    if [ "$WAS_DAEMON_STOPPED" = true ]; then
+        echo -n "Would you like to restart the background daemon now? [Y/n]: "
+        read -r restart_daemon_choice
+        if [ "$restart_daemon_choice" != "n" ] && [ "$restart_daemon_choice" != "N" ]; then
+            start_client
+        fi
+    fi
+    
+    read -n 1 -s -r -p "Press any key to return to menu..."
+}
+
 # Action: Pull Codebase Updates (Client Only)
 update_client() {
     echo -e "\n${BLUE}🔄 [1/2] Checking out latest codebase changes...${NC}"
@@ -421,9 +454,10 @@ show_menu() {
         echo -e " ${BLUE}[6]${NC}  🔍 Run Client Diagnostics Scan"
         echo -e " ${BLUE}[7]${NC}  📥 Pull Client Codebase Updates"
         echo -e " ${BLUE}[8]${NC}  🖼️  Run E-Ink Display Test Sequence"
-        echo -e " ${RED}[9]${NC}  ❌ Exit"
+        echo -e " ${BLUE}[9]${NC}  🌓 Run E-Ink 4-Grayscale Test Script"
+        echo -e " ${RED}[10]${NC} ❌ Exit"
         echo -e "──────────────────────────────────────────────────────────"
-        echo -n " Select an option [1-9]: "
+        echo -n " Select an option [1-10]: "
         
         read -r choice
         case $choice in
@@ -435,7 +469,8 @@ show_menu() {
             6) run_diagnostics ;;
             7) update_client ;;
             8) run_test_sequence ;;
-            9) exit 0 ;;
+            9) run_4gray_test ;;
+            10) exit 0 ;;
             *) echo -e "${RED}Invalid option, try again.${NC}"; sleep 1 ;;
         esac
     done
@@ -452,9 +487,10 @@ if [ $# -gt 0 ]; then
         status)      run_diagnostics ;;
         update)      update_client ;;
         test)        run_test_sequence ;;
+        test4gray)   run_4gray_test ;;
         *)
             echo -e "${RED}Unknown command: $1${NC}"
-            echo -e "Usage: $0 {install|start|stop|restart|logs|status|update|test}"
+            echo -e "Usage: $0 {install|start|stop|restart|logs|status|update|test|test4gray}"
             exit 1
             ;;
     esac
