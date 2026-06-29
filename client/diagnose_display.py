@@ -206,26 +206,8 @@ def get_test_sequence():
             "wait": 15,
             "desc": "Cleans the previous black screen. Verifies standard white state."
         },
-        {
-            "id": "A3",
-            "name": "Black Circle (Partial Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_shape_test_card(w, h, 1, "TEST A3: Black Circle (Partial Refresh + Sleep)", fl, fm),
-            "partial": True,
-            "sleep": True,
-            "wait": 15,
-            "desc": "Draws a black circle in the center using partial refresh, then sleeps."
-        },
-        {
-            "id": "A4",
-            "name": "Black Circle Shifted (Partial Refresh + NO Sleep)",
-            "generator": lambda w, h, fl, fm: make_shape_test_card(w, h, 2, "TEST A4: Black Circle Shifted (Partial + NO Sleep)", fl, fm),
-            "partial": True,
-            "sleep": False,
-            "wait": 20,
-            "desc": "Moves the circle using partial refresh, but leaves EPD pins driven (no sleep). Check for fading/parasitic leakage."
-        },
         
-        # Series B: High-Frequency Patterns
+        # Series B: Checkerboard Resolution Scale
         {
             "id": "B1",
             "name": "1x1 Checkerboard (Full Refresh + Sleep)",
@@ -237,30 +219,57 @@ def get_test_sequence():
         },
         {
             "id": "B2",
-            "name": "1x1 Checkerboard Inverted (Partial Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard_inverted", 1, "TEST B2: 1x1 Checkerboard Inverted (Partial + Sleep)", fl, fm),
-            "partial": True,
-            "sleep": True,
-            "wait": 20,
-            "desc": "Inverts the checkerboard via partial refresh. Watch for immediate ghosting or fading."
-        },
-        {
-            "id": "B3",
             "name": "2x2 Checkerboard (Full Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 2, "TEST B3: 2x2 Checkerboard (Full Refresh + Sleep)", fl, fm),
+            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 2, "TEST B2: 2x2 Checkerboard (Full Refresh + Sleep)", fl, fm),
             "partial": False,
             "sleep": True,
             "wait": 15,
             "desc": "Generates a 2x2 block checkerboard pattern under full refresh and sleep."
         },
         {
-            "id": "B4",
-            "name": "2x2 Checkerboard Inverted (Partial Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard_inverted", 2, "TEST B4: 2x2 Checkerboard Inverted (Partial + Sleep)", fl, fm),
-            "partial": True,
+            "id": "B3",
+            "name": "4x4 Checkerboard (Full Refresh + Sleep)",
+            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 4, "TEST B3: 4x4 Checkerboard (Full Refresh + Sleep)", fl, fm),
+            "partial": False,
             "sleep": True,
             "wait": 15,
-            "desc": "Inverts the 2x2 checkerboard via partial refresh, then sleeps."
+            "desc": "Generates a 4x4 block checkerboard pattern under full refresh and sleep."
+        },
+        {
+            "id": "B4",
+            "name": "8x8 Checkerboard (Full Refresh + Sleep)",
+            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 8, "TEST B4: 8x8 Checkerboard (Full Refresh + Sleep)", fl, fm),
+            "partial": False,
+            "sleep": True,
+            "wait": 15,
+            "desc": "Generates an 8x8 block checkerboard pattern under full refresh and sleep."
+        },
+        {
+            "id": "B5",
+            "name": "16x16 Checkerboard (Full Refresh + Sleep)",
+            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 16, "TEST B5: 16x16 Checkerboard (Full Refresh + Sleep)", fl, fm),
+            "partial": False,
+            "sleep": True,
+            "wait": 15,
+            "desc": "Generates a 16x16 block checkerboard pattern under full refresh and sleep."
+        },
+        {
+            "id": "B6",
+            "name": "32x32 Checkerboard (Full Refresh + Sleep)",
+            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 32, "TEST B6: 32x32 Checkerboard (Full Refresh + Sleep)", fl, fm),
+            "partial": False,
+            "sleep": True,
+            "wait": 15,
+            "desc": "Generates a 32x32 block checkerboard pattern under full refresh and sleep."
+        },
+        {
+            "id": "B7",
+            "name": "64x64 Checkerboard (Full Refresh + Sleep)",
+            "generator": lambda w, h, fl, fm: make_pattern_test_card(w, h, "checkerboard", 64, "TEST B7: 64x64 Checkerboard (Full Refresh + Sleep)", fl, fm),
+            "partial": False,
+            "sleep": True,
+            "wait": 15,
+            "desc": "Generates a 64x64 block checkerboard pattern under full refresh and sleep."
         },
         
         # Series C: World Clock Simulations
@@ -275,48 +284,12 @@ def get_test_sequence():
         },
         {
             "id": "C2",
-            "name": "World Clock Hatch Update (Partial Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "hatch", "12:01", "TEST C2: World Clock Hatch Update (Partial + Sleep)", fl, fm),
-            "partial": True,
-            "sleep": True,
-            "wait": 25,
-            "desc": "Updates the time digit via partial refresh, then sleeps. Check if digits or map lines fade."
-        },
-        {
-            "id": "C3",
-            "name": "World Clock Hatch Update (Partial Refresh + NO Sleep)",
-            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "hatch", "12:02", "TEST C3: World Clock Hatch Update (Partial + NO Sleep)", fl, fm),
-            "partial": True,
-            "sleep": False,
-            "wait": 25,
-            "desc": "Updates the time digit via partial refresh, but keeps EPD active (no sleep). Tests for parasitic leakage."
-        },
-        {
-            "id": "C4",
             "name": "World Clock Solid-Checkerboard (Full Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "solid_checkerboard", "12:00", "TEST C4: World Clock Solid-Checkerboard (Full + Sleep)", fl, fm),
+            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "solid_checkerboard", "12:00", "TEST C2: World Clock Solid-Checkerboard (Full + Sleep)", fl, fm),
             "partial": False,
             "sleep": True,
             "wait": 25,
             "desc": "Simulates the solid World Clock map (2x2 checkerboard night land). Watch for fading over 25s."
-        },
-        {
-            "id": "C5",
-            "name": "World Clock Solid-Checkerboard Update (Partial Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "solid_checkerboard", "12:01", "TEST C5: World Clock Solid-Checkerboard (Partial + Sleep)", fl, fm),
-            "partial": True,
-            "sleep": True,
-            "wait": 25,
-            "desc": "Updates the time digit via partial refresh, then sleeps."
-        },
-        {
-            "id": "C6",
-            "name": "World Clock Solid-Checkerboard Update (Partial Refresh + NO Sleep)",
-            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "solid_checkerboard", "12:02", "TEST C6: World Clock Solid-Checkerboard (Partial + NO Sleep)", fl, fm),
-            "partial": True,
-            "sleep": False,
-            "wait": 25,
-            "desc": "Updates the time digit via partial refresh, but keeps EPD active (no sleep). Tests for parasitic leakage."
         },
         
         # Final Clear
@@ -422,9 +395,8 @@ def main():
     print("============================================================")
     print("The screen has been cleared to white.")
     print("Please share the recorded video/observations to determine:")
-    print("  1. Which patterns triggered fading (e.g. 1x1 vs 2x2, hatch vs solid).")
-    print("  2. If partial refresh without sleep (A4, C3, C6) stayed sharp or faded.")
-    print("  3. If partial refresh with sleep (A3, B2, B4, C2, C5) triggered fading.")
+    print("  1. At what checkerboard scale (1x1, 2x2, 4x4, 8x8, etc.) the fading stopped.")
+    print("  2. If the hatch pattern (C1) held contrast better than the dithered map (C2).")
     print("============================================================")
 
 
