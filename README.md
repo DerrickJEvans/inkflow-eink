@@ -226,8 +226,20 @@ Login to Raspberry PI and follow the instructions below
        * **`portal.py`**: Spawns the Captive Web configuration server hotspot.
        * **`cache_manager.py`**: Performs local disk caching of raw dithered E-Paper slides.
      
-     * **Fast Refresh Scheme**:
-       * Set `TRMNL_FULL_REFRESH_INTERVAL=10` in your `client/.env` file to control the number of fast, non-flashing partial updates performed before triggering a full screen flashing refresh to clear ghosting.
+      * **Fast Refresh Scheme**:
+        * Set `TRMNL_FULL_REFRESH_INTERVAL=10` in your `client/.env` file to control the number of fast, non-flashing partial updates performed before triggering a full screen flashing refresh to clear ghosting.
+
+      * **🌓 4-Level Grayscale Support (for compatible screens like 7.5" V2)**:
+        * InkFlow supports high-fidelity 4-level grayscale rendering (2-bit color depth), enabling rich gradients, maps, and detailed UI elements on compatible panels.
+        * **Client Setup**: Add this to your local `client/.env` file on the Pi:
+          ```ini
+          TRMNL_COLOR_DEPTH=4
+          ```
+        * **Server Setup**: Set your device's `ditherMode` to `"4gray"` in the Web Control Center or `config.json`:
+          ```json
+          "ditherMode": "4gray"
+          ```
+        * **Hardware Note**: For Waveshare 7.5" V2 displays, ensure the physical **A/B resistor switch** on the EPD driver HAT/shield is toggled to **B** for correct voltage driving.
 
 4. **🎛️ MPR121 Capacitive Touch & AP Config (Optional)**:
    The Python client supports **MPR121 capacitive touch modules** on the Raspberry Pi's I2C interface to control carousel rotation and configuration states.
