@@ -284,6 +284,15 @@ module.exports = {
   renderSVG(data, width, height) {
     const isFullScreen = width > 500;
     
+    // Pattern definition for hatched E-Ink night shadow (no opacity/dithering!)
+    const nightHatchDefs = `
+      <defs>
+        <pattern id="nightHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="black" stroke-width="1.2" />
+        </pattern>
+      </defs>
+    `;
+
     const mapWidthCells = 60;
     const mapHeightCells = 20;
 
@@ -308,7 +317,7 @@ module.exports = {
     
     if (mapStyle === 'hires') {
       if (mapBase64) {
-        dotsHtml += `<image href="data:image/png;base64,${mapBase64}" x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" />`;
+        dotsHtml += `<image xlink:href="data:image/png;base64,${mapBase64}" href="data:image/png;base64,${mapBase64}" x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" />`;
       } else {
         dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
         dotsHtml += `<text x="${mapX + mapWidth / 2}" y="${mapY + mapHeight / 2}" font-family="sans-serif" font-size="12" fill="black" text-anchor="middle">Map Background Missing</text>`;
@@ -346,8 +355,8 @@ module.exports = {
       }
 
       const terminatorPoints = points.join(' ');
-      // 32% black opacity renders as a gorgeous stippled E-Ink dither shadow
-      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" opacity="0.32" />`;
+      // Pure black-and-white diagonal hatching to prevent fading/dithering issues on physical EPDs
+      dotsHtml += `${nightHatchDefs}<polygon points="${terminatorPoints}" fill="url(#nightHatch)" />`;
       dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
     } else {
       for (let y = 0; y < mapHeightCells; y++) {
@@ -379,7 +388,7 @@ module.exports = {
             if (isDay) {
               dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.38}" fill="black" />`;
             } else {
-              dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.35}" fill="none" stroke="black" stroke-width="1" opacity="0.45" />`;
+              dotsHtml += `<circle cx="${cx}" cy="${cy}" r="${dx * 0.35}" fill="none" stroke="black" stroke-width="1" />`;
             }
           } else {
             // mapStyle === 'solid'
@@ -392,11 +401,14 @@ module.exports = {
               if (isDay) {
                 dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" />`;
               } else {
-                dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.32" />`;
+                // Night Land: checkerboard pattern for high-contrast dither-free rendering
+                if ((x + y) % 2 === 0) {
+                  dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" />`;
+                }
               }
             } else {
               if (!isDay) {
-                dotsHtml += `<rect x="${rx}" y="${ry}" width="${pxW}" height="${pxH}" fill="black" opacity="0.14" />`;
+                // Night Water left white for E-Ink contrast
               }
             }
           }
@@ -453,17 +465,17 @@ module.exports = {
           <line x1="20" y1="395" x2="${width - 20}" y2="395" stroke="black" stroke-width="1.5" />
 
           <!-- Bottom Telemetry Column 1: Date & Daylight -->
-          <text x="180" y="420" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" opacity="0.55" text-anchor="middle">DATE</text>
+          <text x="180" y="420" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" text-anchor="middle">DATE</text>
           <text x="180" y="445" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(data.localDate)}</text>
-          <text x="180" y="468" font-family="sans-serif" font-size="13" fill="black" opacity="0.65" text-anchor="middle">${escapeXml(data.daylight)} daylight</text>
+          <text x="180" y="468" font-family="sans-serif" font-size="13" fill="black" text-anchor="middle">${escapeXml(data.daylight)} daylight</text>
 
           <!-- Bottom Telemetry Column 2: Sunrise & Sunset -->
-          <text x="420" y="420" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" opacity="0.55" text-anchor="middle">SUN TIMES</text>
+          <text x="420" y="420" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" text-anchor="middle">SUN TIMES</text>
           <text x="420" y="445" font-family="sans-serif" font-size="14.5" fill="black" text-anchor="middle">↑ ${escapeXml(data.sunrise)}</text>
           <text x="420" y="468" font-family="sans-serif" font-size="14.5" fill="black" text-anchor="middle">↓ ${escapeXml(data.sunset)}</text>
 
           <!-- Bottom Telemetry Column 3: Moon Phase -->
-          <text x="620" y="420" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" opacity="0.55" text-anchor="middle">MOON PHASE</text>
+          <text x="620" y="420" font-family="sans-serif" font-size="11" font-weight="bold" fill="black" text-anchor="middle">MOON PHASE</text>
           <g transform="translate(607.5, 428) scale(0.5)">
             ${moonPhaseDrawing}
           </g>
@@ -505,7 +517,7 @@ module.exports = {
               <path d="M 8 1 A 12 7 0 0 0 8 15 A 12 7 0 0 0 8 1" />
             </g>
             <text x="37" y="25" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${escapeXml(data.label.toUpperCase())}</text>
-            <text x="${width - 15}" y="24" font-family="sans-serif" font-size="9" fill="black" opacity="0.6" text-anchor="end">0° GREENWICH</text>
+            <text x="${width - 15}" y="24" font-family="sans-serif" font-size="9" fill="black" text-anchor="end">0° GREENWICH</text>
             
             <g transform="translate(10, 15)">
               ${dotsHtml}
@@ -517,7 +529,7 @@ module.exports = {
             
             <!-- Bottom Telemetry Column 1: Date & Daylight -->
             <text x="20" y="248" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${escapeXml(data.localDate.toUpperCase())}</text>
-            <text x="20" y="268" font-family="sans-serif" font-size="10.5" fill="black" opacity="0.7">Daylight: ${escapeXml(data.daylight)}</text>
+            <text x="20" y="268" font-family="sans-serif" font-size="10.5" fill="black">Daylight: ${escapeXml(data.daylight)}</text>
             
             <!-- Bottom Telemetry Column 2: Sunrise & Sunset -->
             <text x="160" y="248" font-family="sans-serif" font-size="10.5" fill="black">Sunrise: <tspan font-weight="bold">${escapeXml(data.sunrise)}</tspan></text>
@@ -528,7 +540,7 @@ module.exports = {
               ${moonPhaseDrawing}
             </g>
             <text x="325" y="246" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="black">${escapeXml(data.moon.phaseName.toUpperCase())}</text>
-            <text x="325" y="262" font-family="sans-serif" font-size="9" fill="black" opacity="0.6">Age: ${data.moon.age.toFixed(1)}d</text>
+            <text x="325" y="262" font-family="sans-serif" font-size="9" fill="black">Age: ${data.moon.age.toFixed(1)}d</text>
           </g>
         `;
       }

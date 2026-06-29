@@ -267,7 +267,7 @@ const generateSVG = async (device, settings) => {
 
   // Assemble full SVG document
   return `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
       <style>
         /* Antialiasing for white text on dark background by outlining with a grey border */
         text[fill="white"], text[fill="WHITE"],
