@@ -287,6 +287,16 @@ def display_waveshare(img, partial=False, sleep_after=True):
         else:
             actual_sleep_after = sleep_after if has_partial_support else True
         
+        # Check if incoming data is a PNG file in bytes
+        if isinstance(img, (bytes, bytearray)) and img.startswith(b'\x89PNG\r\n\x1a\n'):
+            from io import BytesIO
+            print("[Hardware Display] PNG image format detected. Loading PIL Image...")
+            img = Image.open(BytesIO(img))
+
+        # Respect user configured color depth and driver capability
+        color_depth = getattr(config, 'COLOR_DEPTH', 2)
+        actual_color_depth = 4 if (color_depth == 4 and hasattr(epd, 'init_4Gray') and hasattr(epd, 'display_4Gray')) else 2
+        
         # Check if incoming data is a raw byte stream
         is_raw_bytes = isinstance(img, (bytes, bytearray))
         
@@ -301,10 +311,24 @@ def display_waveshare(img, partial=False, sleep_after=True):
             if getattr(config, 'INVERT_COLORS', False):
                 print("[Hardware Display] Inverting color bits...")
                 processed_img = ImageOps.invert(processed_img)
-            mono_img = processed_img.convert("1")
-            buffer = epd.getbuffer(mono_img)
+            
+            if actual_color_depth == 4:
+                print("[Hardware Display] Processing 4-level grayscale buffer...")
+                buffer = epd.getbuffer_4Gray(processed_img)
+            else:
+                mono_img = processed_img.convert("1")
+                buffer = epd.getbuffer(mono_img)
         
-        if actual_partial:
+        if actual_color_depth == 4:
+            print("[Hardware Display] Initializing Waveshare EPD in standard mode to perform a clean refresh...")
+            epd.init()
+            print("[Hardware Display] Clearing screen to pristine white to avoid ghosting...")
+            epd.Clear()
+            print("[Hardware Display] Initializing Waveshare EPD (4-Level Grayscale)...")
+            epd.init_4Gray()
+            print("[Hardware Display] Writing grayscale buffer to display...")
+            epd.display_4Gray(buffer)
+        elif actual_partial:
             mode_label = "Fast LUT" if fast_mode else "Partial region"
             print(f"[Hardware Display] Initializing Waveshare EPD ({mode_label} refresh)...")
             try:

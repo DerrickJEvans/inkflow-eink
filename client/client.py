@@ -46,7 +46,9 @@ def poll_server():
         print("[WiFi] Resolving dynamic hardware MAC address for device registration...")
         device_id = drivers.get_mac_address()
 
-    server_url = f"http://{config.SERVER_IP}:{config.SERVER_PORT}/api/display/raw"
+    color_depth = getattr(config, 'COLOR_DEPTH', 2)
+    endpoint = "image.png" if color_depth == 4 else "raw"
+    server_url = f"http://{config.SERVER_IP}:{config.SERVER_PORT}/api/display/{endpoint}"
     params = {
         'device': device_id,
         'width': drivers.WIDTH,

@@ -86,3 +86,5 @@ FULL_REFRESH_INTERVAL = parse_int(os.environ.get('TRMNL_FULL_REFRESH_INTERVAL', 
 if FULL_REFRESH_INTERVAL is None:
     FULL_REFRESH_INTERVAL = 10
 
+COLOR_DEPTH = parse_int(os.environ.get('TRMNL_COLOR_DEPTH', '2')) or 2
+

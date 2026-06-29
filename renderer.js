@@ -105,6 +105,47 @@ const applyFloydSteinbergDither = (grayscaleBuffer, width, height, ditherMode = 
     return dithered;
   }
 
+  if (ditherMode === '4gray' || ditherMode === '4-gray') {
+    const levels = [0, 128, 192, 255];
+    const findNearest = (val) => {
+      let nearest = 255;
+      let minDiff = 999;
+      for (const lvl of levels) {
+        const diff = Math.abs(val - lvl);
+        if (diff < minDiff) {
+          minDiff = diff;
+          nearest = lvl;
+        }
+      }
+      return nearest;
+    };
+
+    const temp = new Int16Array(grayscaleBuffer);
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        const oldVal = temp[idx];
+        const newVal = findNearest(oldVal);
+        dithered[idx] = newVal;
+        const err = oldVal - newVal;
+
+        if (x + 1 < width) {
+          temp[idx + 1] += (err * 7) >> 4;
+        }
+        if (y + 1 < height) {
+          if (x > 0) {
+            temp[(y + 1) * width + (x - 1)] += (err * 3) >> 4;
+          }
+          temp[(y + 1) * width + x] += (err * 5) >> 4;
+          if (x + 1 < width) {
+            temp[(y + 1) * width + (x + 1)] += (err * 1) >> 4;
+          }
+        }
+      }
+    }
+    return dithered;
+  }
+
   const temp = new Int16Array(grayscaleBuffer);
   
   if (ditherMode === 'atkinson') {
@@ -316,18 +357,30 @@ const renderDeviceImage = async (device, settings) => {
 
   // 3. Error Diffusion Dithering
   const ditherMode = device.ditherMode || 'floyd-steinberg';
+  const is4Gray = ditherMode === '4gray' || ditherMode === '4-gray';
   const dithered = applyFloydSteinbergDither(rawGrayscale, w, h, ditherMode);
 
   // Apply optional color inversion
   if (device.invertColors) {
-    for (let i = 0; i < dithered.length; i++) {
-      dithered[i] = dithered[i] === 0 ? 255 : 0;
+    if (is4Gray) {
+      for (let i = 0; i < dithered.length; i++) {
+        const val = dithered[i];
+        if (val === 255) dithered[i] = 0;
+        else if (val === 192) dithered[i] = 128;
+        else if (val === 128) dithered[i] = 192;
+        else if (val === 0) dithered[i] = 255;
+      }
+    } else {
+      for (let i = 0; i < dithered.length; i++) {
+        dithered[i] = dithered[i] === 0 ? 255 : 0;
+      }
     }
   }
 
   // 4. Export PNG
+  const pngColors = is4Gray ? 4 : 2;
   const pngBuffer = await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
-    .png({ palette: true, colors: 2 })
+    .png({ palette: true, colors: pngColors })
     .toBuffer();
 
   // 5. Export Raw 1-Bit Horizontal Bit-Packed Buffer
