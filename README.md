@@ -77,6 +77,11 @@ InkFlow operates a decoupled background caching scheduler (`scheduler.js`) to mi
 * **Granular Refresh Periods**: Every single plugin can be configured with a custom cache expiration window (specified in both hours and minutes) directly from its settings accordion on the Web Control Center.
 * **Smart Bypassing**: Setting a plugin's refresh period to **`0 hours 0 minutes`** disables cache checks for it, meaning the scheduler will fetch fresh data on every 4-minute cycle (the default behavior for most widgets).
 
+### 5. Premium SVG Widget Layouts & Styling
+InkFlow widgets are styled using high-contrast design principles optimized for grayscale e-paper panels:
+* **High-Contrast Title Banners**: Widgets (including Tide Timetable, UK Fuel Prices, Local Weather, Notice Board, System Telemetry, Airport Flight Board, RSS Bulletin, TfL Rail Status, UK Departures, and XKCD Comic) use a solid black title banner with white text and line-art icons for maximum legibility.
+* **World Clock Night Shading**: The World Clock map replaces high-contrast diagonal hatching with a premium, semi-transparent shaded overlay (`fill-opacity="0.30"`), allowing for clean dithering on both 1-bit and 4-gray screens without map text/detail occlusion.
+
 ---
 
 ## 🏁 Quick Navigation
@@ -240,6 +245,7 @@ Login to Raspberry PI and follow the instructions below
           "ditherMode": "4gray"
           ```
         * **Hardware Note**: For Waveshare 7.5" V2 displays, ensure the physical **A/B resistor switch** on the EPD driver HAT/shield is toggled to **B** for correct voltage driving.
+        * **Carousel Rotation Note**: In 4-gray mode, the Python client leverages the `advance=true` query parameter to request new frames, and utilizes returned carousel index/signature headers to manage offline caching. It automatically bypasses the 1-bit monochrome stream pad/truncate check to prevent image corruption on PNGs over 48KB.
 
 4. **🎛️ MPR121 Capacitive Touch & AP Config (Optional)**:
    The Python client supports **MPR121 capacitive touch modules** on the Raspberry Pi's I2C interface to control carousel rotation and configuration states.
@@ -450,6 +456,12 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
 * **Query Parameters**:
   * `device` (default: `default_screen`): Unique device identification string.
   * `force` (`true`/`false`): Bypasses local RAM caches to refresh layout components immediately.
+  * `advance` (`true`/`false`): Triggers rotation to the next widget in the active carousel for this device.
+* **Headers Returned**:
+  * `X-Carousel-Signature`: Unique hash representing the active widgets configuration.
+  * `X-Image-Index`: 0-indexed position of the returned widget in the rotation cycle.
+  * `X-Total-Images`: Total number of active widgets configured in the carousel.
+  * `X-Image-ID`: Unique ID representing the returned widget.
 * **Returns**: `image/png` binary image stream.
 
 ### 2. Retrieve 1-Bit Packed Binary Stream (Microcontroller Native)
