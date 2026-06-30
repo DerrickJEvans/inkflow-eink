@@ -493,6 +493,26 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
   > [!IMPORTANT]
   > Under the TRMNL BYOS protocol, the `status` field must be set to `0` inside the JSON body to indicate success. A status code of `200` or standard HTTP success codes inside the JSON body will be rejected by the device's firmware as an error, causing it to retry immediately without downloading the E-Ink display image.
 
+### 4. Force Display Refresh
+* **Endpoint**: `POST /api/display/refresh`
+* **Request Body**:
+  ```json
+  {
+    "deviceId": "010101010000"
+  }
+  ```
+* **Description**: Forces the server to immediately fetch fresh data, compile a new layout, update the device's cache-buster timestamp (updating the `X-Carousel-Signature` header value), and save the configuration. On the next sync cycle, the client device will detect the signature mismatch and flush its local cache to download the newly generated frame.
+
+### 5. Invalidate & Flush Client Cache
+* **Endpoint**: `POST /api/display/flush-cache`
+* **Request Body**:
+  ```json
+  {
+    "deviceId": "010101010000"
+  }
+  ```
+* **Description**: Updates the device's cache-buster timestamp to generate a fresh `X-Carousel-Signature` value without running an immediate render operation on the server. When the client next checks in, it registers the signature change, flushes its local flash or disk cache, and fetches the latest frames from the server.
+
 ---
 
 ## 📁 Repository Map
