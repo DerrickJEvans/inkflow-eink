@@ -254,7 +254,20 @@ module.exports = {
           <line x1="${padding}" y1="240" x2="${width - padding}" y2="240" stroke="black" stroke-width="1.5" stroke-dasharray="6,6" />
           
           <!-- Extended 3-Day Forecast Cards -->
-          <text x="${padding}" y="275" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">📅 EXTENDED OUTLOOK</text>
+          <g transform="translate(${padding}, 259)">
+            <!-- Calendar Icon -->
+            <rect x="0" y="2" width="15" height="15" rx="2" fill="none" stroke="black" stroke-width="1.8" />
+            <line x1="0" y1="7" x2="15" y2="7" stroke="black" stroke-width="1.8" />
+            <line x1="4" y1="0" x2="4" y2="4" stroke="black" stroke-width="1.8" stroke-linecap="round" />
+            <line x1="11" y1="0" x2="11" y2="4" stroke="black" stroke-width="1.8" stroke-linecap="round" />
+            
+            <circle cx="4" cy="11" r="0.8" fill="black" />
+            <circle cx="7.5" cy="11" r="0.8" fill="black" />
+            <circle cx="11" cy="11" r="0.8" fill="black" />
+            
+            <!-- Text -->
+            <text x="24" y="15" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" letter-spacing="0.5">EXTENDED OUTLOOK</text>
+          </g>
           
           <g transform="translate(0, 290)">
             <!-- Forecast Column 1: Today -->
