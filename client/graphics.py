@@ -31,36 +31,60 @@ def draw_setup_splash(error_msg=None, step=1):
     
     if step == 1:
         draw.text((25, 95), "1. Connect your phone or PC to the setup WiFi network:", fill=0, font=font_medium)
-        draw.text((45, 125), "SSID: InkFlow-Setup (Password: 12345678)", fill=0, font=font_large)
-        draw.text((45, 160), "(Or scan the WiFi QR code on the right to connect)", fill=0, font=font_medium)
+        draw.text((45, 125), "SSID:  InkFlow-Setup", fill=0, font=font_large)
+        draw.text((45, 160), "Pass:  12345678", fill=0, font=font_large)
         
-        draw.text((25, 205), "2. Once connected, this screen will automatically refresh", fill=0, font=font_medium)
-        draw.text((45, 230), "and display the setup portal link and QR code.", fill=0, font=font_medium)
+        qr_hint = "(Or scan the WiFi QR code to connect)" if drivers.WIDTH >= 800 else "(Or connect manually)"
+        draw.text((45, 195), qr_hint, fill=0, font=font_medium)
+        
+        draw.text((25, 235), "2. Once connected, this screen will automatically refresh", fill=0, font=font_medium)
+        draw.text((45, 260), "and display the setup portal link and QR code.", fill=0, font=font_medium)
     else:
         draw.text((25, 95), "🟢 DEVICE CONNECTED SUCCESSFULLY!", fill=0, font=font_large)
-        draw.text((25, 140), "2. Open the setup portal browser page to configure device:", fill=0, font=font_medium)
-        draw.text((45, 170), "Go to: http://10.42.0.1:8080", fill=0, font=font_large)
-        draw.text((45, 205), "(Or scan the URL QR code on the right to open portal)", fill=0, font=font_medium)
-        draw.text((25, 250), "3. Enter your WiFi network password, server address, and save.", fill=0, font=font_medium)
+        draw.text((25, 135), "2. Open the setup portal browser page to configure device:", fill=0, font=font_medium)
+        draw.text((45, 165), "Go to: http://10.42.0.1:8080", fill=0, font=font_large)
+        
+        qr_hint = "(Or scan the URL QR code to open portal)" if drivers.WIDTH >= 800 else "(Or open link in browser)"
+        draw.text((45, 200), qr_hint, fill=0, font=font_medium)
+        
+        draw.text((25, 240), "3. Enter your WiFi network password, server address, and save.", fill=0, font=font_medium)
     
     # Connection QR Code on the right (Only for screens 800px wide or larger)
     if drivers.WIDTH >= 800:
         try:
             import qrcode
+            qr_size = 165
+            qr_x = drivers.WIDTH - 210
+            qr_y = 95
+            
             if step == 1:
-                qr_wifi = qrcode.QRCode(version=1, box_size=3, border=2)
+                qr_wifi = qrcode.QRCode(version=1, box_size=5, border=2)
                 qr_wifi.add_data("WIFI:S:InkFlow-Setup;T:WPA;P:12345678;;")
                 qr_wifi.make(fit=True)
                 qr_img = qr_wifi.make_image(fill_color="black", back_color="white").convert("L")
-                img.paste(qr_img, (drivers.WIDTH - 220, 95))
-                draw.text((drivers.WIDTH - 200, 260), "[ Scan to Connect ]", fill=0, font=font_small)
+                img.paste(qr_img, (qr_x, qr_y))
+                
+                label = "[ Scan to Connect ]"
+                try:
+                    txt_w = draw.textlength(label, font=font_small)
+                except AttributeError:
+                    txt_w = font_small.getsize(label)[0]
+                label_x = qr_x + (qr_size - txt_w) // 2
+                draw.text((label_x, qr_y + qr_size + 10), label, fill=0, font=font_small)
             else:
-                qr_url = qrcode.QRCode(version=1, box_size=3, border=2)
+                qr_url = qrcode.QRCode(version=1, box_size=5, border=2)
                 qr_url.add_data("http://10.42.0.1:8080")
                 qr_url.make(fit=True)
                 qr_img = qr_url.make_image(fill_color="black", back_color="white").convert("L")
-                img.paste(qr_img, (drivers.WIDTH - 220, 95))
-                draw.text((drivers.WIDTH - 205, 260), "[ Scan Setup URL ]", fill=0, font=font_small)
+                img.paste(qr_img, (qr_x, qr_y))
+                
+                label = "[ Scan Setup URL ]"
+                try:
+                    txt_w = draw.textlength(label, font=font_small)
+                except AttributeError:
+                    txt_w = font_small.getsize(label)[0]
+                label_x = qr_x + (qr_size - txt_w) // 2
+                draw.text((label_x, qr_y + qr_size + 10), label, fill=0, font=font_small)
         except Exception as e:
             print(f"[Warning] Failed to generate setup QR code: {e}")
             
