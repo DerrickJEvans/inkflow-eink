@@ -1198,6 +1198,10 @@ app.post('/api/display/refresh', async (req, res) => {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "Device ID required" });
 
+    if (deviceId === 'default_screen') {
+      return res.status(400).json({ error: "Cannot refresh the default setup screen" });
+    }
+
     const device = config.devices.find(d => d.id === deviceId);
     if (!device) return res.status(404).json({ error: "Device not found" });
 
@@ -1217,6 +1221,10 @@ app.post('/api/display/flush-cache', async (req, res) => {
   try {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "Device ID required" });
+
+    if (deviceId === 'default_screen') {
+      return res.status(400).json({ error: "Cannot flush cache for the default setup screen" });
+    }
 
     const device = config.devices.find(d => d.id === deviceId);
     if (!device) return res.status(404).json({ error: "Device not found" });

@@ -975,6 +975,14 @@ function selectDevice(deviceId, isNew = false) {
 
     updateScreenMockup(device.id);
     updateGuides(device);
+
+    if (device.id === 'default_screen') {
+      btnForceRefresh.style.display = 'none';
+      btnFlushCache.style.display = 'none';
+    } else {
+      btnForceRefresh.style.display = 'inline-flex';
+      btnFlushCache.style.display = 'inline-flex';
+    }
   }
 }
 
