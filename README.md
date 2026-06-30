@@ -57,8 +57,8 @@ graph TD
     D2 -->|3. Downloads PNG| C1
 
     %% Client 2 Connections
-    C2 -->|COLOR_DEPTH=4 (4-Gray)| D2
-    C2 -->|COLOR_DEPTH=2 (1-Bit Mono)| D3
+    C2 -->|COLOR_DEPTH=4 - 4-Gray| D2
+    C2 -->|COLOR_DEPTH=2 - 1-Bit Mono| D3
 
     %% Client 3 Connections
     C3 -->|Downloads 1-Bit Stream to Cache| D3
