@@ -268,13 +268,13 @@ module.exports = {
 
       return `
         <g>
-           <!-- LED Split-Flap High-Contrast Header -->
-           <g transform="translate(${padding}, 16)" fill="black">
-             <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.85)" />
-           </g>
-           <text x="${padding + 22}" y="34" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1.5">${escapeXml(data.stationName.toUpperCase())}</text>
-           <text x="${width - padding}" y="32" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" text-anchor="end" letter-spacing="1">${escapeXml(boardModeText.toUpperCase())}</text>
-           <line x1="0" y1="${headerHeight}" x2="${width}" y2="${headerHeight}" stroke="black" stroke-width="2" />
+            <!-- LED Split-Flap High-Contrast Header -->
+            <rect x="0" y="0" width="${width}" height="${headerHeight}" fill="#444444" />
+            <g transform="translate(${padding}, 16)" fill="white">
+              <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.85)" />
+            </g>
+            <text x="${padding + 22}" y="34" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1.5">${escapeXml(data.stationName.toUpperCase())}</text>
+            <text x="${width - padding}" y="32" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="white" text-anchor="end" letter-spacing="1">${escapeXml(boardModeText.toUpperCase())}</text>
           
           <!-- Column Headers -->
           <text x="${padding}" y="76" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="black" letter-spacing="0.5">DEP TIME</text>
@@ -335,13 +335,13 @@ module.exports = {
 
       return `
         <g>
-           <!-- LED Split-Flap High-Contrast Header -->
-           <g transform="translate(${padding}, 9)" fill="black">
-             <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.65)" />
-           </g>
-           <text x="${padding + 18}" y="23" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black">${escapeXml(data.stationName.toUpperCase())}</text>
-           <text x="${width - padding}" y="22" font-family="sans-serif" font-size="9.5" font-weight="bold" fill="black" text-anchor="end">${escapeXml(boardModeText.toUpperCase())}</text>
-           <line x1="0" y1="${headerHeight}" x2="${width}" y2="${headerHeight}" stroke="black" stroke-width="1.5" />
+            <!-- LED Split-Flap High-Contrast Header -->
+            <rect x="0" y="0" width="${width}" height="${headerHeight}" fill="#444444" />
+            <g transform="translate(${padding}, 9)" fill="white">
+              <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.65)" />
+            </g>
+            <text x="${padding + 18}" y="23" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="white">${escapeXml(data.stationName.toUpperCase())}</text>
+            <text x="${width - padding}" y="22" font-family="sans-serif" font-size="9.5" font-weight="bold" fill="white" text-anchor="end">${escapeXml(boardModeText.toUpperCase())}</text>
           
           <!-- Column Headers -->
           <text x="${padding}" y="52" font-family="sans-serif" font-size="9.5" font-weight="bold" fill="black">DEP</text>
