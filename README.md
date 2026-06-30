@@ -339,10 +339,13 @@ Execute commands from the project root directory on your server:
 ### 2. Client CLI Utility (`./inkflow-client.sh`)
 Execute commands from the `/client` directory on your display client:
 * **`./inkflow-client.sh`** (Run without arguments to open the visual client menu console)
-* **`./inkflow-client.sh start` / `stop` / `restart`**: Manage background Python rendering processes.
-* **`./inkflow-client.sh logs`**: Stream EPD refresh intervals, connection codes, and SPI bus activities.
+* **`./inkflow-client.sh install`**: Run the automated client setup/installer (configures hardware SPI/I2C interfaces, sparse-clones high-performance Waveshare python drivers to preserve system memory, and configures environments).
+* **`./inkflow-client.sh start` / `stop` / `restart`**: Manage background Python E-Ink rendering processes.
+* **`./inkflow-client.sh logs`**: Stream EPD refresh intervals, connection codes, and background daemon activities.
 * **`./inkflow-client.sh status`**: Scan SPI status, verify `.env` settings, ping the host server, and display MAC address and Wi-Fi signal strength (RSSI).
-* **`./inkflow-client.sh update`**: Updates local display drivers, fetches clean client updates, and restarts services.
+* **`./inkflow-client.sh update`**: Safely backups local settings, checks out clean client updates from Git, and reloads client services.
+* **`./inkflow-client.sh test`**: Runs the hardware E-Ink display test sequence (performs full-screen monochrome black and white color sweeps).
+* **`./inkflow-client.sh test4gray`**: Runs the high-fidelity E-Ink 4-grayscale test script (draws 4 distinct shading bands from black to white to calibrate dither modes).
 
 ### 3. Changing E-Ink Panel Size After Installation
 If you swap your physical E-Paper display panel for a different model after installation, you can update your client configuration using one of two methods:
