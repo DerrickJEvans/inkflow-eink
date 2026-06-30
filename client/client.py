@@ -54,6 +54,8 @@ def poll_server():
         'width': drivers.WIDTH,
         'height': drivers.HEIGHT
     }
+    if color_depth == 4:
+        params['advance'] = 'true'
     
     print(f"\n==========================================")
     print(f"[Network] E-Ink Client Polling Started (Refactored)")
@@ -221,13 +223,14 @@ def poll_server():
                     
                     print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(raw_bytes)} bytes)")
                     
-                    # Pad/truncate safety check
-                    expected_size = int((drivers.WIDTH * drivers.HEIGHT) / 8)
-                    if len(raw_bytes) < expected_size:
-                        missing = expected_size - len(raw_bytes)
-                        raw_bytes += b'\xff' * missing
-                    elif len(raw_bytes) > expected_size:
-                        raw_bytes = raw_bytes[:expected_size]
+                    # Pad/truncate safety check (only for 1-bit raw stream, skip for 4-gray PNG)
+                    if color_depth != 4:
+                        expected_size = int((drivers.WIDTH * drivers.HEIGHT) / 8)
+                        if len(raw_bytes) < expected_size:
+                            missing = expected_size - len(raw_bytes)
+                            raw_bytes += b'\xff' * missing
+                        elif len(raw_bytes) > expected_size:
+                            raw_bytes = raw_bytes[:expected_size]
                     
                     if carousel_sig and image_index is not None:
                         cache_manager.save_cached_slide(image_index, raw_bytes)
