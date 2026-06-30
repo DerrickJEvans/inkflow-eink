@@ -27,6 +27,7 @@ const mockupScreen = document.getElementById('mockup-screen');
 const mockupRes = document.getElementById('mockup-resolution');
 const mockupViewport = document.getElementById('mockup-viewport');
 const btnForceRefresh = document.getElementById('btn-force-refresh');
+const btnFlushCache = document.getElementById('btn-flush-cache');
 const btnViewPng = document.getElementById('btn-view-raw-png');
 const btnViewRaw = document.getElementById('btn-view-raw-bit');
 
@@ -211,6 +212,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       btnForceRefresh.disabled = false;
       btnForceRefresh.innerText = "🔄 Force Refresh";
+    }
+  });
+
+  // Flush Cache Trigger
+  btnFlushCache.addEventListener('click', async () => {
+    if (!activeDeviceId) return;
+    btnFlushCache.disabled = true;
+    btnFlushCache.innerText = "🧹 Flushing...";
+    try {
+      const res = await fetch('/api/display/flush-cache', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId: activeDeviceId })
+      });
+      const reply = await res.json();
+      if (reply.success) {
+        showToast("Client cache flushed! Device will update on next sync.");
+      }
+    } catch (err) {
+      console.error("Failed to flush device cache:", err);
+      showToast("Flush cache error!", true);
+    } finally {
+      btnFlushCache.disabled = false;
+      btnFlushCache.innerText = "🧹 Flush Cache";
     }
   });
 

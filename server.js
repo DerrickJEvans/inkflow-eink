@@ -338,7 +338,7 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
     
     const crypto = require('crypto');
     const signature = crypto.createHash('md5')
-      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings))
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
       .digest('hex');
 
     const rendered = await renderDeviceImage(device, config.settings);
@@ -974,7 +974,7 @@ app.get('/api/display/image.png', async (req, res) => {
     const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
     const crypto = require('crypto');
     const signature = crypto.createHash('md5')
-      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings))
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
       .digest('hex');
 
     res.setHeader('Content-Type', 'image/png');
@@ -1074,7 +1074,7 @@ app.get('/api/display/raw', async (req, res) => {
     const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
     const crypto = require('crypto');
     const signature = crypto.createHash('md5')
-      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings))
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
       .digest('hex');
 
     res.setHeader('Content-Type', 'application/octet-stream');
@@ -1201,8 +1201,34 @@ app.post('/api/display/refresh', async (req, res) => {
     const device = config.devices.find(d => d.id === deviceId);
     if (!device) return res.status(404).json({ error: "Device not found" });
 
+    // Update cache buster to invalidate client-side cache
+    device.cacheBuster = Date.now().toString();
+    saveConfig();
+
     const data = await fetchDeviceDisplayData(device, true, false);
     res.json({ success: true, message: "Screen compiled and dithered successfully!" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Flush client cache endpoint (called from control panel)
+app.post('/api/display/flush-cache', async (req, res) => {
+  try {
+    const { deviceId } = req.body;
+    if (!deviceId) return res.status(400).json({ error: "Device ID required" });
+
+    const device = config.devices.find(d => d.id === deviceId);
+    if (!device) return res.status(404).json({ error: "Device not found" });
+
+    // Update cache buster to invalidate client-side cache
+    device.cacheBuster = Date.now().toString();
+    saveConfig();
+
+    // Re-compile server-side cached image immediately with the new signature
+    await fetchDeviceDisplayData(device, true, false);
+
+    res.json({ success: true, message: "Device cache invalidated successfully!" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
