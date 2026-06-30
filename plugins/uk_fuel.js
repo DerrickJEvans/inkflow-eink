@@ -483,8 +483,8 @@ module.exports = {
           <!-- Card ${idx + 1} -->
           <g transform="translate(${x}, 65)">
             <rect x="0" y="0" width="${colWidth}" height="110" rx="8" fill="none" stroke="black" stroke-width="1.8" />
-            <rect x="0" y="0" width="${colWidth}" height="26" rx="8" fill="#444444" />
-            <rect x="0" y="16" width="${colWidth}" height="10" fill="#444444" /> <!-- Cover bottom corners of top header -->
+            <rect x="0" y="0" width="${colWidth}" height="26" rx="8" fill="black" />
+            <rect x="0" y="16" width="${colWidth}" height="10" fill="black" /> <!-- Cover bottom corners of top header -->
             
             <text x="${colWidth / 2}" y="17" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="white" text-anchor="middle">${card.label}</text>
             <text x="${colWidth / 2}" y="74" font-family="sans-serif" font-size="34" font-weight="900" fill="black" text-anchor="middle">${escapeXml(priceText)}</text>

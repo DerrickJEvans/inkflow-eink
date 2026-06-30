@@ -201,7 +201,7 @@ module.exports = {
       return `
         <g>
           <!-- Premium LED Header -->
-          <rect x="0" y="0" width="${width}" height="${headerHeight}" fill="#444444" />
+          <rect x="0" y="0" width="${width}" height="${headerHeight}" fill="black" />
           <rect x="${padding}" y="13" width="16" height="16" rx="3" fill="none" stroke="white" stroke-width="2.5" />
           <rect x="${padding + 4}" y="17" width="8" height="8" rx="1.5" fill="none" stroke="white" stroke-width="1.5" />
           <text x="${padding + 24}" y="27" font-family="sans-serif" font-size="16" font-weight="bold" fill="white">XKCD: ${escapeXml(displayTitle.toUpperCase())}</text>
@@ -234,7 +234,7 @@ module.exports = {
       return `
         <g>
           <!-- Premium LED Header -->
-          <rect x="0" y="0" width="${width}" height="${headerHeight}" fill="#444444" />
+          <rect x="0" y="0" width="${width}" height="${headerHeight}" fill="black" />
           <rect x="${padding}" y="10" width="12" height="12" rx="2" fill="none" stroke="white" stroke-width="2" />
           <rect x="${padding + 3}" y="13" width="6" height="6" rx="1" fill="none" stroke="white" stroke-width="1.2" />
           <text x="${padding + 18}" y="21" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="white">XKCD: ${escapeXml(displayTitle.toUpperCase())}</text>
