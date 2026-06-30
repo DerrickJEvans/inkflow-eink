@@ -6,7 +6,7 @@ Designed for self-hosted home LAN environments, InkFlow supports a wide variety 
 
 <img width="4080" height="2296" alt="reTerminal with TRMNL firmware and Raspberry Pi 4 with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure" src="https://github.com/user-attachments/assets/8e9377f0-8745-4171-9c17-5cc3396777f0" />
 
-Python client code and C++ arduino code has been build and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield.
+Python client code and C++ arduino code has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield.
 
 Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnmostic page and a configuration captive web page.
 
