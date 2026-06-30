@@ -28,10 +28,52 @@ The image below shows the **reTerminal E1001** running TRMNL firmware (left), **
 
 InkFlow decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, draw, and sleep:
 
-<img width="800" height="505" alt="architecture" src="https://github.com/user-attachments/assets/d95f7fcd-4d0d-40dc-9661-0365a5986160" />
+```mermaid
+graph TD
+    %% Define Styles
+    classDef server fill:#1a1a24,stroke:#00e5ff,stroke-width:2px,color:#ffffff;
+    classDef endpoint fill:#242436,stroke:#ff007f,stroke-width:2px,color:#ffffff;
+    classDef client fill:#1b241b,stroke:#00ff66,stroke-width:2px,color:#ffffff;
+    classDef note fill:#333333,stroke:#666666,stroke-width:1px,color:#dddddd;
 
-The trmnl client uses the trmnl API to fetch JSON status information which includes the image to fetch separately. 
-Inkflow clients (Python and C++) fetch images in a single API call. The python client fetchs images as PNG files. The C++ client fetches the images as bitstreams for streaming to the eink driver flash memory.
+    subgraph ServerSide ["🌐 InkFlow Server Layout Processing"]
+        A["🔌 Plugin Apps (Weather, Notes, etc.)"]:::server --> B["🎨 SVG Renderer & Rasterizer (Sharp)"]:::server
+        B --> C["🌓 Dither Engine (Floyd-Steinberg / 4-Gray)"]:::server
+        
+        C --> D1["GET /api/display (JSON Metadata)"]:::endpoint
+        C --> D2["GET /api/display/image.png (Grayscale/Mono PNG)"]:::endpoint
+        C --> D3["GET /api/display/raw (1-Bit Packed Binary Stream)"]:::endpoint
+    end
+
+    subgraph ClientSide ["📟 E-Ink Setup & Hardware Clients"]
+        C1["TRMNL Firmware Client"]:::client
+        C2["InkFlow Python Client (Raspberry Pi)"]:::client
+        C3["InkFlow Arduino C++ Client (Uno R4/ESP32)"]:::client
+    end
+
+    %% Client 1 Connections
+    C1 -->|1. Polls JSON Metadata| D1
+    D1 -.->|2. References Image URL| D2
+    D2 -->|3. Downloads PNG| C1
+
+    %% Client 2 Connections
+    C2 -->|COLOR_DEPTH=4 (4-Gray)| D2
+    C2 -->|COLOR_DEPTH=2 (1-Bit Mono)| D3
+
+    %% Client 3 Connections
+    C3 -->|Downloads 1-Bit Stream to Cache| D3
+
+    %% Notes
+    N1["Client Auto-Purges Local Cache on X-Carousel-Signature Mismatch"]:::note
+    C2 -.-> N1
+    C3 -.-> N1
+```
+
+The TRMNL firmware client uses the TRMNL API to fetch JSON status information (`/api/display`), which directs it to download the compiled PNG image (`/api/display/image.png`). 
+
+The InkFlow clients fetch layout data directly:
+* **InkFlow Python Client (Raspberry Pi)**: Can operate in either **4-level Grayscale** (`COLOR_DEPTH=4`) by fetching the compiled PNG (`/api/display/image.png`) or **Monochrome** (`COLOR_DEPTH=2`, Default) by fetching the lightweight 1-bit binary pixel stream (`/api/display/raw`).
+* **InkFlow Arduino C++ Client (Uno R4 / ESP32)**: Fetches the 1-bit packed binary stream (`/api/display/raw`) to stream directly to its hardware display driver or local SPI flash cache.
 
 ---
 
