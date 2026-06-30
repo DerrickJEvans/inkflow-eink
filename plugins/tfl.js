@@ -192,11 +192,11 @@ module.exports = {
 
       return `
         <g>
-            <g transform="translate(${padding}, 17)" fill="black">
-              <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.85)" />
-            </g>
-            <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">TfL RAILWAY NETWORK STATUS</text>
-          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          <rect x="0" y="0" width="${width}" height="52" fill="black" />
+          <g transform="translate(${padding}, 17)" fill="white">
+            <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.85)" />
+          </g>
+          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1">TfL RAILWAY NETWORK STATUS</text>
           
           <!-- Left Column (Tube Services) -->
           ${tubeHtml}
@@ -266,11 +266,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${compactPadding}, 11)" fill="black">
+          <rect x="0" y="0" width="${width}" height="32" fill="black" />
+          <g transform="translate(${compactPadding}, 11)" fill="white">
             <path d="M12,2 C6.5,2 5,3.5 5,9 V16 C5,18.8 7.2,21 10,21 L9,22 H15 L14,21 C16.8,21 19,18.8 19,16 V9 C19,3.5 17.5,2 12,2 Z M9,18 C7.9,18 7,17.1 7,16 C7,14.9 7.9,14 9,14 C10.1,14 11,14.9 11,16 C11,17.1 10.1,18 9,18 Z M15,18 C13.9,18 13,17.1 13,16 C13,14.9 13.9,14 15,14 C16.1,14 17,14.9 17,16 C17,17.1 16.1,18 15,18 Z M17,12 H7 V7 H17 V12 Z" transform="scale(0.65)" />
           </g>
-          <text x="${compactPadding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">TfL RAIL STATUS</text>
-          <line x1="${compactPadding}" y1="32" x2="${width - compactPadding}" y2="32" stroke="black" stroke-width="1.5" />
+          <text x="${compactPadding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="white">TfL RAIL STATUS</text>
           
           <!-- Body -->
           ${listHtml}

@@ -447,16 +447,6 @@ module.exports = {
     if (isFullScreen) {
       return `
         <g>
-          <!-- Header Bar -->
-          <rect x="0" y="0" width="${width}" height="52" fill="#444444" />
-          <g transform="translate(20, 16)" stroke="white" stroke-width="2" fill="none">
-            <circle cx="10" cy="10" r="9" />
-            <path d="M 1 10 H 19" />
-            <path d="M 10 1 A 9 9 0 0 0 10 19 A 9 9 0 0 0 10 1" />
-            <path d="M 10 1 A 15 9 0 0 0 10 19 A 15 9 0 0 0 10 1" />
-          </g>
-          <text x="48" y="34" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1.5">${escapeXml(data.label.toUpperCase())}</text>
-
           <!-- Rendered Dot World Map -->
           ${dotsHtml}
           
@@ -501,28 +491,26 @@ module.exports = {
             <text x="20" y="215" font-family="sans-serif" font-size="10.5" font-weight="bold" fill="black">${escapeXml(data.localDate.toUpperCase())} | DL: ${escapeXml(data.daylight)}</text>
             <text x="${width - 20}" y="215" font-family="sans-serif" font-size="10.5" fill="black" text-anchor="end">SR: ${escapeXml(data.sunrise)}  SS: ${escapeXml(data.sunset)}</text>
             
-            <rect x="0" y="0" width="${width}" height="32" fill="#444444" />
-            <g transform="translate(12, 8)" stroke="white" stroke-width="1.2" fill="none">
+            <g transform="translate(12, 6)" stroke="black" stroke-width="1.2" fill="none">
               <circle cx="7" cy="7" r="6" />
               <path d="M 1 7 H 13" />
               <path d="M 7 1 A 6 6 0 0 0 7 13 A 6 6 0 0 0 7 1" />
               <path d="M 7 1 A 10 6 0 0 0 7 13 A 10 6 0 0 0 7 1" />
             </g>
-            <text x="32" y="21" font-family="sans-serif" font-size="13" font-weight="bold" fill="white">${escapeXml(data.label.toUpperCase())}</text>
+            <text x="32" y="18" font-family="sans-serif" font-size="11" font-weight="bold" fill="black">${escapeXml(data.label.toUpperCase())}</text>
           </g>
         `;
       } else {
         return `
           <g>
-            <rect x="0" y="0" width="${width}" height="42" fill="#444444" />
-            <g transform="translate(15, 12)" stroke="white" stroke-width="1.5" fill="none">
+            <g transform="translate(15, 10)" stroke="black" stroke-width="1.5" fill="none">
               <circle cx="8" cy="8" r="7" />
               <path d="M 1 8 H 15" />
               <path d="M 8 1 A 7 7 0 0 0 8 15 A 7 7 0 0 0 8 1" />
               <path d="M 8 1 A 12 7 0 0 0 8 15 A 12 7 0 0 0 8 1" />
             </g>
-            <text x="37" y="27" font-family="sans-serif" font-size="15" font-weight="bold" fill="white">${escapeXml(data.label.toUpperCase())}</text>
-            <text x="${width - 15}" y="26" font-family="sans-serif" font-size="10" fill="white" text-anchor="end" opacity="0.8">0° GREENWICH</text>
+            <text x="37" y="25" font-family="sans-serif" font-size="13" font-weight="bold" fill="black">${escapeXml(data.label.toUpperCase())}</text>
+            <text x="${width - 15}" y="24" font-family="sans-serif" font-size="9" fill="black" opacity="0.6" text-anchor="end">0° GREENWICH</text>
             
             <g transform="translate(10, 15)">
               ${dotsHtml}

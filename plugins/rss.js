@@ -152,11 +152,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${padding}, 17)" fill="black">
+          <rect x="0" y="0" width="${width}" height="52" fill="black" />
+          <g transform="translate(${padding}, 17)" fill="white">
             <path d="M19,3 H5 C3.9,3 3,3.9 3,5 V19 C3,20.1 3.9,21 5,21 H19 C20.1,21 21,20.1 21,19 V5 C21,3.9 20.1,3 19,3 Z M19,5 V11 H11 V5 H19 Z M9,5 V7 H5 V5 H9 Z M5,9 H9 V11 H5 V9 Z M5,19 V13 H19 V19 H5 Z" transform="scale(0.85)" />
           </g>
-          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">${escapeXml(data.title.toUpperCase())}</text>
-          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1">${escapeXml(data.title.toUpperCase())}</text>
           
           <!-- Feed List -->
           ${listHtml}
@@ -184,11 +184,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${compactPadding}, 11)" fill="black">
+          <rect x="0" y="0" width="${width}" height="32" fill="black" />
+          <g transform="translate(${compactPadding}, 11)" fill="white">
             <path d="M19,3 H5 C3.9,3 3,3.9 3,5 V19 C3,20.1 3.9,21 5,21 H19 C20.1,21 21,20.1 21,19 V5 C21,3.9 20.1,3 19,3 Z M19,5 V11 H11 V5 H19 Z M9,5 V7 H5 V5 H9 Z M5,9 H9 V11 H5 V9 Z M5,19 V13 H19 V19 H5 Z" transform="scale(0.65)" />
           </g>
-          <text x="${compactPadding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">${escapeXml(data.title.toUpperCase())}</text>
-          <line x1="${compactPadding}" y1="32" x2="${width - compactPadding}" y2="32" stroke="black" stroke-width="1.5" />
+          <text x="${compactPadding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="white">${escapeXml(data.title.toUpperCase())}</text>
           
           <!-- Feed List -->
           ${listHtml}

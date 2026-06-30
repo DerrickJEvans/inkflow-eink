@@ -146,11 +146,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${padding}, 17)" fill="black">
+          <rect x="0" y="0" width="${width}" height="52" fill="black" />
+          <g transform="translate(${padding}, 17)" fill="white">
             <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.85)" />
           </g>
-          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">HOST SYSTEM TELEMETRY</text>
-          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1">HOST SYSTEM TELEMETRY</text>
           
           <!-- Top Row Status Cards -->
           <g transform="translate(${padding}, 70)">
@@ -196,11 +196,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${padding}, 11)" fill="black">
+          <rect x="0" y="0" width="${width}" height="32" fill="black" />
+          <g transform="translate(${padding}, 11)" fill="white">
             <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.65)" />
           </g>
-          <text x="${padding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">SYSTEM HEALTH</text>
-          <line x1="${padding}" y1="32" x2="${width - padding}" y2="32" stroke="black" stroke-width="1.5" />
+          <text x="${padding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="white">SYSTEM HEALTH</text>
           
           <!-- Metrics -->
           <text x="${padding}" y="52" font-family="sans-serif" font-size="12" fill="black">Uptime: <tspan font-weight="bold">${data.uptime}</tspan></text>

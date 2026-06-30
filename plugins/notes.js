@@ -103,11 +103,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${padding}, 17)" fill="black">
+          <rect x="0" y="0" width="${width}" height="52" fill="black" />
+          <g transform="translate(${padding}, 17)" fill="white">
             <path d="M16,12 V4 H17 V2 H7 V4 H8 V12 L6,14 V16 H11 V22 L12,23 L13,22 V16 H18 V14 Z" transform="scale(0.85)" />
           </g>
-          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="black" letter-spacing="1">${data.title.toUpperCase()}</text>
-          <line x1="${padding}" y1="48" x2="${width - padding}" y2="48" stroke="black" stroke-width="2.5" />
+          <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1">${data.title.toUpperCase()}</text>
           
           <!-- List -->
           ${listHtml}
@@ -164,11 +164,11 @@ module.exports = {
       return `
         <g>
           <!-- Header -->
-          <g transform="translate(${compactPadding}, 11)" fill="black">
+          <rect x="0" y="0" width="${width}" height="32" fill="black" />
+          <g transform="translate(${compactPadding}, 11)" fill="white">
             <path d="M16,12 V4 H17 V2 H7 V4 H8 V12 L6,14 V16 H11 V22 L12,23 L13,22 V16 H18 V14 Z" transform="scale(0.65)" />
           </g>
-          <text x="${compactPadding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="black">${data.title.toUpperCase()}</text>
-          <line x1="${compactPadding}" y1="32" x2="${width - compactPadding}" y2="32" stroke="black" stroke-width="1.5" />
+          <text x="${compactPadding + 16}" y="25" font-family="sans-serif" font-size="14" font-weight="bold" fill="white">${data.title.toUpperCase()}</text>
           
           <!-- List -->
           ${listHtml}
