@@ -69,7 +69,7 @@ def make_checkerboard(width, height, box_size):
     return tiled.resize((width, height), Image.NEAREST)
 
 
-def generate_world_clock_sim(width, height, night_mode="hatch", time_str="12:00", font_large=None, font_medium=None):
+def generate_world_clock_sim(width, height, night_mode="shaded", time_str="12:00", font_large=None, font_medium=None):
     """Simulates the visual layout of the World Clock map plugin for testing."""
     img = Image.new("L", (width, height), 255)
     draw = ImageDraw.Draw(img)
@@ -97,18 +97,12 @@ def generate_world_clock_sim(width, height, night_mode="hatch", time_str="12:00"
     night_w = map_w // 2
     night_h = map_h
     
-    if night_mode == "hatch":
-        # Draw 45-degree parallel diagonal hatch lines
-        hatch_img = Image.new("L", (night_w, night_h), 255)
-        hatch_draw = ImageDraw.Draw(hatch_img)
-        spacing = 8
-        for offset in range(-night_h, night_w, spacing):
-            hatch_draw.line([(offset, 0), (offset + night_h, night_h)], fill=0, width=1)
-        
-        # Paste lines over map using inverted hatch image as transparency mask
-        mask = ImageOps.invert(hatch_img)
-        black_tile = Image.new("L", (night_w, night_h), 0)
-        img.paste(black_tile, (night_x, night_y), mask=mask)
+    if night_mode == "shaded":
+        # Draw a semi-transparent dark shade overlay (blend with 30% black / 70% original)
+        night_box = (night_x, night_y, night_x + night_w, night_y + night_h)
+        night_region = img.crop(night_box)
+        shaded_region = Image.blend(night_region, Image.new("L", night_region.size, 0), 0.3)
+        img.paste(shaded_region, night_box)
         
     elif night_mode == "solid_checkerboard":
         # 2x2 checkerboard overlay simulating night land in 'solid' mode
@@ -275,12 +269,12 @@ def get_test_sequence():
         # Series C: World Clock Simulations
         {
             "id": "C1",
-            "name": "World Clock Hatch (Full Refresh + Sleep)",
-            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "hatch", "12:00", "TEST C1: World Clock Hatch (Full + Sleep)", fl, fm),
+            "name": "World Clock Shaded (Full Refresh + Sleep)",
+            "generator": lambda w, h, fl, fm: make_world_clock_test_card(w, h, "shaded", "12:00", "TEST C1: World Clock Shaded (Full + Sleep)", fl, fm),
             "partial": False,
             "sleep": True,
             "wait": 25,
-            "desc": "Simulates the hires World Clock map (diagonal hatch lines). Watch for line fading/breakup over 25s."
+            "desc": "Simulates the hires World Clock map (shaded night zone). Watch for shading gradients/dithering over 25s."
         },
         {
             "id": "C2",
@@ -396,7 +390,7 @@ def main():
     print("The screen has been cleared to white.")
     print("Please share the recorded video/observations to determine:")
     print("  1. At what checkerboard scale (1x1, 2x2, 4x4, 8x8, etc.) the fading stopped.")
-    print("  2. If the hatch pattern (C1) held contrast better than the dithered map (C2).")
+    print("  2. If the shaded pattern (C1) held contrast better than the dithered map (C2).")
     print("============================================================")
 
 

@@ -284,14 +284,7 @@ module.exports = {
   renderSVG(data, width, height) {
     const isFullScreen = width > 500;
     
-    // Pattern definition for hatched E-Ink night shadow (no opacity/dithering!)
-    const nightHatchDefs = `
-      <defs>
-        <pattern id="nightHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-          <line x1="0" y1="0" x2="0" y2="8" stroke="black" stroke-width="1.2" />
-        </pattern>
-      </defs>
-    `;
+    // Shaded overlay for the night shadow (using opacity for premium look)
 
     const mapWidthCells = 60;
     const mapHeightCells = 20;
@@ -355,8 +348,8 @@ module.exports = {
       }
 
       const terminatorPoints = points.join(' ');
-      // Pure black-and-white diagonal hatching to prevent fading/dithering issues on physical EPDs
-      dotsHtml += `${nightHatchDefs}<polygon points="${terminatorPoints}" fill="url(#nightHatch)" />`;
+      // Shaded overlay for the night shadow
+      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" fill-opacity="0.30" />`;
       dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
     } else {
       for (let y = 0; y < mapHeightCells; y++) {
