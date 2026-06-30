@@ -805,7 +805,7 @@ function renderDevicesList() {
         <span class="meta">${metaText}</span>
         <div style="margin-top: 4px; display: flex; align-items: center; gap: 6px;">
           <span class="client-badge ${clientBadgeClass}">${clientBadgeLabel}</span>
-          ${dev.id !== 'default_screen' ? `<button type="button" class="btn-delete-action btn-device-delete" data-device-id="${dev.id}" title="Delete Device" style="margin: 0; padding: 2px 6px; font-size: 10px; line-height: 1; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; height: 18px; width: 18px; text-decoration: none; border: none; cursor: pointer;">🗑️</button>` : ''}
+          ${dev.id.toLowerCase() !== 'default_screen' ? `<button type="button" class="btn-delete-action btn-device-delete" data-device-id="${dev.id}" title="Delete Device" style="margin: 0; padding: 2px 6px; font-size: 10px; line-height: 1; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; height: 18px; width: 18px; text-decoration: none; border: none; cursor: pointer;">🗑️</button>` : ''}
         </div>
       </div>
       <span class="device-badge">${dev.id}</span>
@@ -976,7 +976,7 @@ function selectDevice(deviceId, isNew = false) {
     updateScreenMockup(device.id);
     updateGuides(device);
 
-    if (device.id === 'default_screen') {
+    if (device.id.toLowerCase() === 'default_screen') {
       btnForceRefresh.style.display = 'none';
       btnFlushCache.style.display = 'none';
     } else {

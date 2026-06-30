@@ -1198,7 +1198,7 @@ app.post('/api/display/refresh', async (req, res) => {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "Device ID required" });
 
-    if (deviceId === 'default_screen') {
+    if (deviceId.toLowerCase() === 'default_screen') {
       return res.status(400).json({ error: "Cannot refresh the default setup screen" });
     }
 
@@ -1222,7 +1222,7 @@ app.post('/api/display/flush-cache', async (req, res) => {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "Device ID required" });
 
-    if (deviceId === 'default_screen') {
+    if (deviceId.toLowerCase() === 'default_screen') {
       return res.status(400).json({ error: "Cannot flush cache for the default setup screen" });
     }
 
@@ -1248,7 +1248,7 @@ app.post('/api/display/delete', (req, res) => {
     const { deviceId } = req.body;
     if (!deviceId) return res.status(400).json({ error: "Device ID required" });
 
-    if (deviceId === 'default_screen') {
+    if (deviceId.toLowerCase() === 'default_screen') {
       return res.status(400).json({ error: "The default screen is protected and cannot be deleted" });
     }
 
@@ -1282,7 +1282,7 @@ const cleanupStaleDevices = () => {
     // Filter out devices where lastSeen is older than threshold
     // Keep 'default_screen' as a safety safeguard!
     config.devices = config.devices.filter(device => {
-      if (device.id === 'default_screen') return true;
+      if (device.id.toLowerCase() === 'default_screen') return true;
       if (!device.lastSeen) return true; // keep if never seen yet
       
       const lastSeenMs = new Date(device.lastSeen).getTime();
