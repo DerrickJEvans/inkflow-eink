@@ -40,6 +40,11 @@ const getAccessToken = (clientId, clientSecret) => {
       timeout: 10000,
       rejectUnauthorized: false
     }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        const err = new Error(`OAuth request failed with status code ${res.statusCode}`);
+        err.statusCode = res.statusCode;
+        return reject(err);
+      }
       let data = '';
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
@@ -71,9 +76,9 @@ const getJsonWithAuth = (url, accessToken) => {
       timeout: 15000,
       rejectUnauthorized: false
     }, (res) => {
-      if (res.statusCode === 404) {
-        const err = new Error('Not found');
-        err.statusCode = 404;
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        const err = new Error(`Request failed with status code ${res.statusCode}`);
+        err.statusCode = res.statusCode;
         return reject(err);
       }
       let data = '';

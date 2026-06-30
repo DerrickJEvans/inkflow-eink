@@ -320,7 +320,7 @@ const generateSVG = async (device, settings) => {
         tspan[fill="white"], tspan[fill="WHITE"],
         tspan[fill="#fff"], tspan[fill="#FFF"],
         tspan[fill="#ffffff"], tspan[fill="#FFFFFF"] {
-          stroke: #808080;
+          stroke: #ffffff;
           stroke-width: 1px;
           paint-order: stroke fill;
         }

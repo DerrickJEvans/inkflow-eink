@@ -308,8 +308,10 @@ def display_waveshare(img, partial=False, sleep_after=True):
                 buffer = list(img)
         else:
             processed_img = img.convert("L").resize((epd.width, epd.height))
-            if getattr(config, 'INVERT_COLORS', False):
-                print("[Hardware Display] Inverting color bits...")
+            should_invert = getattr(config, 'INVERT_COLORS', False)
+
+            if should_invert:
+                print("[Hardware Display] Inverting color bits for display alignment...")
                 processed_img = ImageOps.invert(processed_img)
             
             if actual_color_depth == 4:
