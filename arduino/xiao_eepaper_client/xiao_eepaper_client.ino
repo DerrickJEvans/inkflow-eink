@@ -77,7 +77,7 @@ void setup() {
   // Initialize display driver and set up 4-grayscale mode
   Serial.println("[Display] Initializing Seeed_GFX EPaper driver...");
   epaper.begin();
-  epaper.fillScreen(TFT_GRAY_3); // Fill with White
+  epaper.fillScreen(TFT_WHITE); // Fill with White in 1-bit mode
   epaper.update();
   epaper.initGrayMode(GRAY_LEVEL4);
 
