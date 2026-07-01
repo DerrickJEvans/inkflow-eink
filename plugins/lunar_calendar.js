@@ -321,11 +321,11 @@ module.exports = {
 
     // 3. Resolve current timezone date
     const tz = settings.timezone || (device && device.sleepPeriodTimezone) || "Europe/London";
-    let date = new Date();
+    let date = settings.mockDate ? new Date(settings.mockDate) : new Date();
     try {
       const options = { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false };
       const formatter = new Intl.DateTimeFormat('en-US', options);
-      const parts = formatter.formatToParts(new Date());
+      const parts = formatter.formatToParts(settings.mockDate ? new Date(settings.mockDate) : new Date());
       const y = parseInt(parts.find(p => p.type === 'year').value, 10);
       const m = parseInt(parts.find(p => p.type === 'month').value, 10) - 1;
       const d = parseInt(parts.find(p => p.type === 'day').value, 10);
