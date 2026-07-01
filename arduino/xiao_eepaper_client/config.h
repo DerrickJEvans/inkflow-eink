@@ -9,8 +9,8 @@
 
 // 1. WiFi Settings
 // These act as hardcoded defaults if no settings are saved via the E-Ink Setup Wizard.
-String default_ssid     = "YOUR_WIFI_SSID";
-String default_password = "YOUR_WIFI_PASSWORD";
+String default_ssid     = "PLUSNET-TQC29S";
+String default_password = "KtYAvLrd4bvuE9";
 
 // 2. Server Settings (Change to your Raspberry Pi's local IP address or DNS name)
 String default_serverIp   = "inkflow.local";

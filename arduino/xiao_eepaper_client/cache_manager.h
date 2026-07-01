@@ -23,11 +23,13 @@ class FlashCache {
 public:
   FlashCache(uint8_t pin) {} // Dummy constructor to match R4 API 1-to-1
 
-  inline void begin() {
+  inline bool begin() {
     if (!LittleFS.begin(true)) {
       Serial.println(F("[Cache Error] LittleFS mount failed!"));
+      return false;
     } else {
       Serial.println(F("[Cache] LittleFS mounted successfully."));
+      return true;
     }
   }
 

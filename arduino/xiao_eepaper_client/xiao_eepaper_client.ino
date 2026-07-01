@@ -66,7 +66,10 @@ void setup() {
   pinMode(BTN_KEY2, INPUT_PULLUP);
 
   // Initialize LittleFS Partition Cache
-  cache.begin();
+  if (!cache.begin()) {
+    cacheEnabled = false;
+    Serial.println(F("[Cache] Offline caching disabled due to mount failure."));
+  }
 
   // Load Preferences configurations
   loadConfiguration();
@@ -154,13 +157,12 @@ void setup() {
     startSetupWizard();
   }
 
-  // Allocate image buffer in RAM
-  imageBuffer = (uint8_t*)malloc(bufferSize);
+  // Use Seeed GFX internal sprite frame buffer directly
+  imageBuffer = (uint8_t*)epaper.getPointer();
   if (imageBuffer == nullptr) {
-    Serial.println("[Error] Failed to allocate RAM for screen buffer!");
+    Serial.println(F("[Error] Seeed GFX Sprite buffer is null!"));
     goToSleep(fallbackSleepSeconds);
   }
-  memset(imageBuffer, 0x33, bufferSize); // Pre-fill with White (0x33 represents two pixels of 3/TFT_GRAY_3)
 
   // Connect to WiFi and Sync
   if (connectWiFi()) {
@@ -174,9 +176,6 @@ void setup() {
     Serial.println(F("[Warning] WiFi connection failed. Checking cache..."));
     loadOfflineCache();
   }
-
-  // Release RAM
-  free(imageBuffer);
 
   // Enter deep sleep
   goToSleep(nextRefreshSeconds);
@@ -202,23 +201,22 @@ void displayCachedImage(int slotIndex) {
   Serial.print(F("[Display] Displaying cached image from Slot "));
   Serial.println(slotIndex);
 
-  if (imageBuffer != nullptr) {
+  if (imageBuffer != nullptr && cacheEnabled) {
     if (cache.readSlot(slotIndex, imageBuffer, bufferSize)) {
       updateDisplay();
     } else {
       Serial.println(F("[Cache Error] Failed to read cached slot file."));
     }
   } else {
-    Serial.println(F("[Error] Failed to allocate RAM for cached image draw."));
+    Serial.println(F("[Error] Caching disabled or buffer invalid."));
   }
 }
 
 void updateDisplay() {
   Serial.println("[Display] Pushing raw dithered horizontal bitmap to epaper...");
   
-  // pushImage takes a uint16_t pointer but Seeed GFX epaper driver in 4bpp mode
-  // interprets it as 4bpp (192,000 bytes for 800x480).
-  epaper.pushImage(0, 0, displayWidth, displayHeight, (uint16_t *)imageBuffer);
+  // Since imageBuffer points directly to the sprite buffer (epaper.getPointer()),
+  // the data is already in place. We just need to trigger the panel refresh!
   epaper.update();
   
   Serial.println("[Display] Screen updated successfully!");
@@ -323,13 +321,13 @@ bool fetchAndStreamDisplay(String action) {
     }
   }
   
-  // Fallback: download directly into RAM buffer if no signature
+  // Fallback: download directly into sprite buffer if no signature
   if (imageBuffer == nullptr) {
-    imageBuffer = (uint8_t*)malloc(bufferSize);
+    imageBuffer = (uint8_t*)epaper.getPointer();
   }
   
   if (imageBuffer == nullptr) {
-    Serial.println(F("[Error] Failed to allocate RAM for screen buffer download fallback!"));
+    Serial.println(F("[Error] Seeed GFX Sprite buffer is null for download fallback!"));
     http.end();
     return false;
   }
