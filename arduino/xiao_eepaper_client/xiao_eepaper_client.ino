@@ -135,29 +135,6 @@ void setup() {
     }
   }
 
-  // 10-Second Serial prompt to force AP Setup reset
-  Serial.println("\n💡 Press 'r' in Serial Monitor within 10 seconds to force clear settings & launch Setup AP Portal...");
-  unsigned long promptStart = millis();
-  bool resetPressed = false;
-  while (millis() - promptStart < 10000) {
-    if (Serial.available() > 0) {
-      char c = Serial.read();
-      if (c == 'r' || c == 'R') {
-        resetPressed = true;
-        break;
-      }
-    }
-    delay(10);
-  }
-
-  if (resetPressed) {
-    Serial.println("[Config] Reset key detected! Clearing Preferences storage...");
-    Preferences prefs;
-    prefs.begin("inkflow", false);
-    prefs.clear();
-    prefs.end();
-    startSetupWizard();
-  }
 
   // Use Seeed GFX internal sprite frame buffer directly
   imageBuffer = (uint8_t*)epaper.getPointer();
