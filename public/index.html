@@ -217,32 +217,34 @@
               </div>
 
               <!-- Quiet Hours / Sleep Schedule -->
-              <div style="margin: 20px 0 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px;">
-                <h4 style="margin: 0 0 12px 0; color: rgba(255, 255, 255, 0.85); display: flex; align-items: center; gap: 8px;">🌙 Quiet Hours (Sleep Schedule)</h4>
-              </div>
-              <div class="settings-form-row" style="margin-bottom: 20px;">
-                <div class="form-group">
-                  <label for="edit-device-sleep-enabled">Quiet Hours Status</label>
-                  <select id="edit-device-sleep-enabled">
-                    <option value="false">Disabled (Stay Awake)</option>
-                    <option value="true">Enabled (Quiet Mode)</option>
-                  </select>
-                  <span class="input-hint">Puts device to sleep during quiet hours to save battery.</span>
+              <div id="device-sleep-schedule-container">
+                <div style="margin: 20px 0 10px 0; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 20px;">
+                  <h4 style="margin: 0 0 12px 0; color: rgba(255, 255, 255, 0.85); display: flex; align-items: center; gap: 8px;">🌙 Quiet Hours (Sleep Schedule)</h4>
                 </div>
-                <div class="form-group">
-                  <label for="edit-device-sleep-start">Sleep Start Time</label>
-                  <input type="time" id="edit-device-sleep-start" value="22:00">
-                  <span class="input-hint">Local time when device goes to sleep.</span>
-                </div>
-                <div class="form-group">
-                  <label for="edit-device-sleep-end">Sleep End Time</label>
-                  <input type="time" id="edit-device-sleep-end" value="07:00">
-                  <span class="input-hint">Local time when device wakes up.</span>
-                </div>
-                <div class="form-group">
-                  <label for="edit-device-sleep-timezone">Timezone</label>
-                  <input type="text" id="edit-device-sleep-timezone" placeholder="e.g. Europe/London">
-                  <span class="input-hint">Defaults to world clock timezone if blank.</span>
+                <div class="settings-form-row" style="margin-bottom: 20px;">
+                  <div class="form-group">
+                    <label for="edit-device-sleep-enabled">Quiet Hours Status</label>
+                    <select id="edit-device-sleep-enabled">
+                      <option value="false">Disabled (Stay Awake)</option>
+                      <option value="true">Enabled (Quiet Mode)</option>
+                    </select>
+                    <span class="input-hint">Puts device to sleep during quiet hours to save battery.</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="edit-device-sleep-start">Sleep Start Time</label>
+                    <input type="time" id="edit-device-sleep-start" value="22:00">
+                    <span class="input-hint">Local time when device goes to sleep.</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="edit-device-sleep-end">Sleep End Time</label>
+                    <input type="time" id="edit-device-sleep-end" value="07:00">
+                    <span class="input-hint">Local time when device wakes up.</span>
+                  </div>
+                  <div class="form-group">
+                    <label for="edit-device-sleep-timezone">Timezone</label>
+                    <input type="text" id="edit-device-sleep-timezone" placeholder="e.g. Europe/London">
+                    <span class="input-hint">Defaults to world clock timezone if blank.</span>
+                  </div>
                 </div>
               </div>
 

@@ -993,12 +993,15 @@ function selectDevice(deviceId, isNew = false) {
     updateScreenMockup(device.id);
     updateGuides(device);
 
+    const sleepScheduleContainer = document.getElementById('device-sleep-schedule-container');
     if (device.id.toLowerCase() === 'default_screen') {
       btnForceRefresh.style.display = 'none';
       btnFlushCache.style.display = 'none';
+      if (sleepScheduleContainer) sleepScheduleContainer.style.display = 'none';
     } else {
       btnForceRefresh.style.display = 'inline-flex';
       btnFlushCache.style.display = 'inline-flex';
+      if (sleepScheduleContainer) sleepScheduleContainer.style.display = 'block';
     }
   }
 }
