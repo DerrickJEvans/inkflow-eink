@@ -86,10 +86,12 @@ void setup() {
   esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
   if (wakeup_cause == ESP_SLEEP_WAKEUP_EXT1) {
     Serial.println(F("[Power] Woken up by physical button press!"));
-    // Read button states (active low)
-    bool key0Pressed = (digitalRead(BTN_KEY0) == LOW);
-    bool key1Pressed = (digitalRead(BTN_KEY1) == LOW);
-    bool key2Pressed = (digitalRead(BTN_KEY2) == LOW);
+    uint64_t wakeup_pin_mask = esp_sleep_get_ext1_wakeup_status();
+    
+    // Check both hardware wakeup status register and live pin state (active low)
+    bool key0Pressed = (wakeup_pin_mask & (1ULL << BTN_KEY0)) != 0 || (digitalRead(BTN_KEY0) == LOW);
+    bool key1Pressed = (wakeup_pin_mask & (1ULL << BTN_KEY1)) != 0 || (digitalRead(BTN_KEY1) == LOW);
+    bool key2Pressed = (wakeup_pin_mask & (1ULL << BTN_KEY2)) != 0 || (digitalRead(BTN_KEY2) == LOW);
 
     if (key0Pressed) {
       Serial.println(F("[Buttons] KEY0 pressed: Carousel PREV"));
@@ -288,6 +290,7 @@ bool fetchAndStreamDisplay(String action) {
   
   WiFiClient* stream = http.getStreamPtr();
   
+  bool useCache = false;
   if (carouselSig.length() > 0 && serverImageIndex < MAX_SLOTS) {
     CacheHeader localHeader;
     bool hasHeader = cache.getHeader(localHeader);
@@ -298,36 +301,22 @@ bool fetchAndStreamDisplay(String action) {
       hasHeader = cache.getHeader(localHeader);
     }
     
-    if (hasHeader && serverImageIndex < (int)localHeader.total_slots) {
+    if (hasHeader && serverImageIndex < (int)localHeader.total_slots && cache.hasSlot(serverImageIndex, bufferSize)) {
       Serial.printf("[Cache] Slide %d already cached. Displaying...\n", serverImageIndex);
       http.end();
       displayCachedImage(serverImageIndex);
       return true;
     }
-    
-    bool success = cache.writeSlot(serverImageIndex, *stream, bufferSize);
-    http.end();
-    
-    if (success) {
-      if (serverImageIndex >= (int)localHeader.total_slots) {
-        localHeader.total_slots = serverImageIndex + 1;
-        cache.saveHeader(localHeader);
-      }
-      displayCachedImage(serverImageIndex);
-      return true;
-    } else {
-      Serial.println(F("[Cache Error] Failed to write stream to LittleFS."));
-      return false;
-    }
+    useCache = true;
   }
   
-  // Fallback: download directly into sprite buffer if no signature
+  // Download stream into RAM (sprite) buffer
   if (imageBuffer == nullptr) {
     imageBuffer = (uint8_t*)epaper.getPointer();
   }
   
   if (imageBuffer == nullptr) {
-    Serial.println(F("[Error] Seeed GFX Sprite buffer is null for download fallback!"));
+    Serial.println(F("[Error] Seeed GFX Sprite buffer is null!"));
     http.end();
     return false;
   }
@@ -353,10 +342,27 @@ bool fetchAndStreamDisplay(String action) {
   Serial.printf("[HTTP] Downloaded %d bytes of raw screen pixel buffer.\n", bytesRead);
   
   if (bytesRead < bufferSize) {
+    // 0x33 corresponds to light gray / white pattern for filling remaining bytes
     memset(imageBuffer + bytesRead, 0x33, bufferSize - bytesRead);
     bytesRead = bufferSize;
   }
   
+  // Display the downloaded image immediately
   updateDisplay();
+  
+  // Cache the image now that it has been downloaded and displayed
+  if (useCache && cacheEnabled) {
+    bool success = cache.writeSlotFromBuffer(serverImageIndex, imageBuffer, bufferSize);
+    if (success) {
+      CacheHeader localHeader;
+      if (cache.getHeader(localHeader)) {
+        if (serverImageIndex >= (int)localHeader.total_slots) {
+          localHeader.total_slots = serverImageIndex + 1;
+          cache.saveHeader(localHeader);
+        }
+      }
+    }
+  }
+  
   return true;
 }

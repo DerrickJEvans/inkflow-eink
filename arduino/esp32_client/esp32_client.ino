@@ -238,6 +238,7 @@ bool fetchAndStreamDisplay(String action) {
   
   WiFiClient* stream = http.getStreamPtr();
   
+  bool useCache = false;
   if (carouselSig.length() > 0 && serverImageIndex < MAX_SLOTS) {
     CacheHeader localHeader;
     bool hasHeader = cache.getHeader(localHeader);
@@ -248,36 +249,22 @@ bool fetchAndStreamDisplay(String action) {
       hasHeader = cache.getHeader(localHeader);
     }
     
-    if (hasHeader && serverImageIndex < (int)localHeader.total_slots) {
+    if (hasHeader && serverImageIndex < (int)localHeader.total_slots && cache.hasSlot(serverImageIndex, bufferSize)) {
       Serial.printf("[Cache] Slide %d already cached. Displaying...\n", serverImageIndex);
       http.end();
       displayCachedImage(serverImageIndex);
       return true;
     }
-    
-    bool success = cache.writeSlot(serverImageIndex, *stream, bufferSize);
-    http.end();
-    
-    if (success) {
-      if (serverImageIndex >= (int)localHeader.total_slots) {
-        localHeader.total_slots = serverImageIndex + 1;
-        cache.saveHeader(localHeader);
-      }
-      displayCachedImage(serverImageIndex);
-      return true;
-    } else {
-      Serial.println(F("[Cache Error] Failed to write stream to LittleFS."));
-      return false;
-    }
+    useCache = true;
   }
   
-  // Fallback: download directly into RAM buffer if no signature
+  // Download stream into RAM buffer
   if (imageBuffer == nullptr) {
     imageBuffer = (uint8_t*)malloc(bufferSize);
   }
   
   if (imageBuffer == nullptr) {
-    Serial.println(F("[Error] Failed to allocate RAM for screen buffer download fallback!"));
+    Serial.println(F("[Error] Failed to allocate RAM for screen buffer download!"));
     http.end();
     return false;
   }
@@ -307,6 +294,22 @@ bool fetchAndStreamDisplay(String action) {
     bytesRead = bufferSize;
   }
   
+  // Display the downloaded image immediately
   updateDisplay();
+  
+  // Cache the image now that it has been downloaded and displayed
+  if (useCache && cacheEnabled) {
+    bool success = cache.writeSlotFromBuffer(serverImageIndex, imageBuffer, bufferSize);
+    if (success) {
+      CacheHeader localHeader;
+      if (cache.getHeader(localHeader)) {
+        if (serverImageIndex >= (int)localHeader.total_slots) {
+          localHeader.total_slots = serverImageIndex + 1;
+          cache.saveHeader(localHeader);
+        }
+      }
+    }
+  }
+  
   return true;
 }

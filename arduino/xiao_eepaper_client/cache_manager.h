@@ -116,11 +116,41 @@ public:
         }
       }
 
-      f.write(pageBuf, bytesRead);
+      size_t written = f.write(pageBuf, bytesRead);
+      if (written < bytesRead) {
+        Serial.printf("[Cache Error] LittleFS write failed (disk full?): wrote %d of %d bytes\n", written, bytesRead);
+        f.close();
+        LittleFS.remove(path);
+        return false;
+      }
       bytesWritten += bytesRead;
     }
 
     f.close();
+    Serial.printf("[Cache] Successfully wrote slot %d file to LittleFS.\n", slotIndex);
+    return true;
+  }
+
+  // Write RAM buffer to a slot in LittleFS
+  inline bool writeSlotFromBuffer(uint32_t slotIndex, const uint8_t* buffer, uint32_t totalBytes) {
+    char path[32];
+    snprintf(path, sizeof(path), "/slot_%d.raw", slotIndex);
+    
+    File f = LittleFS.open(path, "w");
+    if (!f) {
+      Serial.printf("[Cache Error] Failed to open %s for writing\n", path);
+      return false;
+    }
+
+    size_t written = f.write(buffer, totalBytes);
+    f.close();
+
+    if (written < totalBytes) {
+      Serial.printf("[Cache Error] LittleFS write failed (disk full?): wrote %d of %d bytes\n", written, totalBytes);
+      LittleFS.remove(path);
+      return false;
+    }
+
     Serial.printf("[Cache] Successfully wrote slot %d file to LittleFS.\n", slotIndex);
     return true;
   }
@@ -137,6 +167,20 @@ public:
     size_t readBytes = f.read(buffer, totalBytes);
     f.close();
     return (readBytes == totalBytes);
+  }
+
+  // Checks if slot file exists and has the expected size
+  inline bool hasSlot(uint32_t slotIndex, uint32_t expectedSize) {
+    char path[32];
+    snprintf(path, sizeof(path), "/slot_%d.raw", slotIndex);
+    if (!LittleFS.exists(path)) {
+      return false;
+    }
+    File f = LittleFS.open(path, "r");
+    if (!f) return false;
+    size_t sz = f.size();
+    f.close();
+    return (sz == expectedSize);
   }
 };
 
