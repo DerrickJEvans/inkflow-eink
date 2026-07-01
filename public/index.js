@@ -1136,7 +1136,8 @@ function updateGuides(device) {
   const protocol = window.location.protocol;
   const ipHost = `${hostIpAddress}:${hostPort}`;
   
-  codeArduino.innerHTML = `${protocol}//${ipHost}/api/display/raw?device=${device.id}&amp;width=${device.width}&amp;height=${device.height}`;
+  const ditherParam = (device.ditherMode === '4gray' || device.ditherMode === '4-gray') ? '&amp;dither=4gray' : '';
+  codeArduino.innerHTML = `${protocol}//${ipHost}/api/display/raw?device=${device.id}&amp;width=${device.width}&amp;height=${device.height}${ditherParam}`;
   codePi.innerHTML = `${protocol}//${ipHost}/api/display/image.png?device=${device.id}&amp;width=${device.width}&amp;height=${device.height}`;
   codeTrmnl.innerHTML = `${protocol}//${ipHost}`;
 }
