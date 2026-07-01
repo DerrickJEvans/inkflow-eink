@@ -213,25 +213,36 @@ const getNextMoonEvents = (currentDate) => {
   return { nextNewMoon, nextFullMoon, nextQuarter };
 };
 
-const drawSvgMoonPhase = (phase, cx, cy, r) => {
+const fs = require('fs');
+const path = require('path');
+
+const getBase64MoonPhase = (phase) => {
   if (phase < 0.02 || phase > 0.98) {
-    // New Moon: completely dark
+    return null; // New Moon
+  }
+  const idx = Math.min(22, Math.max(0, Math.floor((phase - 0.02) / (0.96 / 23))));
+  const imgPath = path.join(__dirname, '..', 'public', 'moon_phases', `moon_phase_${idx}.png`);
+  if (fs.existsSync(imgPath)) {
+    return fs.readFileSync(imgPath).toString('base64');
+  }
+  return null;
+};
+
+const drawSvgMoonPhase = (phase, cx, cy, r) => {
+  const base64 = getBase64MoonPhase(phase);
+  if (!base64) {
     return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="black" stroke="black" stroke-width="1.5" />`;
   }
-  if (phase > 0.48 && phase < 0.52) {
-    // Full Moon: completely lit (white)
-    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="black" stroke-width="1.5" />`;
-  }
   
-  const xRatio = Math.cos(2 * Math.PI * phase);
-  const sweepLit = phase < 0.5 ? 1 : 0;
-  const pathD = `M ${cx} ${cy - r}
-                 A ${r} ${r} 0 0 1 ${cx} ${cy + r}
-                 A ${r * Math.abs(xRatio)} ${r} 0 0 ${sweepLit} ${cx} ${cy - r}`;
-  
+  const clipId = `moonClip-${Math.floor(cx)}-${Math.floor(cy)}`;
   return `
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="black" stroke="black" stroke-width="1.5" />
-    <path d="${pathD}" fill="white" stroke="none" />
+    <defs>
+      <clipPath id="${clipId}">
+        <circle cx="${cx}" cy="${cy}" r="${r}" />
+      </clipPath>
+    </defs>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="black" />
+    <image x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" href="data:image/png;base64,${base64}" clip-path="url(#${clipId})" />
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="black" stroke-width="1.5" />
   `;
 };
