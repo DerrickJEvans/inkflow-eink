@@ -242,6 +242,31 @@ const packToRaw1Bit = (ditheredBuffer, width, height) => {
   return packed;
 };
 
+/**
+ * Converts a dithered grayscale buffer (0/128/192/255) into a raw 4-bit (4bpp) byte array
+ * 2 pixels per byte, aligned horizontally, MSB-first (high nibble then low nibble).
+ * Mapped to 0=Black, 1=Dark Gray, 2=Light Gray, 3=White.
+ */
+const packToRaw4Bpp = (ditheredBuffer, width, height) => {
+  const byteCount = Math.ceil((width * height) / 2);
+  const packed = Buffer.alloc(byteCount);
+
+  for (let i = 0; i < ditheredBuffer.length; i++) {
+    const byteIdx = Math.floor(i / 2);
+    const isOdd = i % 2 === 1;
+
+    const val = ditheredBuffer[i];
+    const mappedVal = val < 64 ? 0 : (val < 160 ? 1 : (val < 224 ? 2 : 3));
+
+    if (isOdd) {
+      packed[byteIdx] |= (mappedVal & 0x0F);
+    } else {
+      packed[byteIdx] |= ((mappedVal & 0x0F) << 4);
+    }
+  }
+  return packed;
+};
+
 const generateSleepSVG = (device) => {
   const w = device.width || 800;
   const h = device.height || 480;
@@ -461,13 +486,13 @@ const renderDeviceImage = async (device, settings) => {
     .png({ palette: true, colors: pngColors })
     .toBuffer();
 
-  // 5. Export Raw 1-Bit Horizontal Bit-Packed Buffer
-  const raw1BitBuffer = packToRaw1Bit(dithered, w, h);
+  // 5. Export Raw Horizontal Bit-Packed Buffer
+  const rawBuffer = is4Gray ? packToRaw4Bpp(dithered, w, h) : packToRaw1Bit(dithered, w, h);
 
   return {
     svg: svgString,
     png: pngBuffer,
-    raw: raw1BitBuffer
+    raw: rawBuffer
   };
 };
 

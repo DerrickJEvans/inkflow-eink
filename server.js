@@ -1160,6 +1160,10 @@ app.get('/api/display/raw', async (req, res) => {
     const device = getOrCreateDevice(deviceId, req);
     recordDeviceConnection(device, req);
 
+    if (req.query.dither) {
+      device.ditherMode = req.query.dither;
+    }
+
     // Handle manual next/prev button actions
     const action = req.query.action;
     if (action && device.activePlugins && device.activePlugins.length > 1) {
