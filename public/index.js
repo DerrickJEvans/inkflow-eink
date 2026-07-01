@@ -16,7 +16,8 @@ const pluginIcons = {
   ai_briefing: '🗞️',
   ai_advisor: '🛠️',
   airport_board: '✈️',
-  tide_timetable: '🌊'
+  tide_timetable: '🌊',
+  lunar_calendar: '🌙'
 };
 
 // DOM Elements
