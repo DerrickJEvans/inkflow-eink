@@ -242,10 +242,88 @@ const packToRaw1Bit = (ditheredBuffer, width, height) => {
   return packed;
 };
 
+const generateSleepSVG = (device) => {
+  const w = device.width || 800;
+  const h = device.height || 480;
+  const startStr = device.sleepPeriodStart || "22:00";
+  const endStr = device.sleepPeriodEnd || "07:00";
+  const remainingSecs = device.sleepRemainingSecs || 0;
+
+  const remainingHours = Math.floor(remainingSecs / 3600);
+  const remainingMins = Math.floor((remainingSecs % 3600) / 60);
+  let remainingText = '';
+  if (remainingHours > 0) {
+    remainingText += `${remainingHours}h `;
+  }
+  remainingText += `${remainingMins}m`;
+
+  const cx = w / 2;
+  const cy = h / 2;
+
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <style>
+        text {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+      </style>
+      <!-- Crisp white background for e-ink contrast -->
+      <rect width="100%" height="100%" fill="white" />
+
+      <!-- Crescent Moon (Centered above) -->
+      <path d="M ${cx - 20} ${cy - 120} A 45 45 0 1 0 ${cx + 25} ${cy - 75} A 35 35 0 1 1 ${cx - 20} ${cy - 120} Z" fill="black" />
+
+      <!-- Tiny Stars -->
+      <!-- Star 1 (Left) -->
+      <path d="M ${cx - 90} ${cy - 110} L ${cx - 87} ${cy - 103} L ${cx - 80} ${cy - 100} L ${cx - 87} ${cy - 97} L ${cx - 90} ${cy - 90} L ${cx - 93} ${cy - 97} L ${cx - 100} ${cy - 100} L ${cx - 93} ${cy - 103} Z" fill="black" />
+      <!-- Star 2 (Right) -->
+      <path d="M ${cx + 60} ${cy - 130} L ${cx + 62} ${cy - 125} L ${cx + 67} ${cy - 123} L ${cx + 62} ${cy - 121} L ${cx + 60} ${cy - 116} L ${cx + 58} ${cy - 121} L ${cx + 53} ${cy - 123} L ${cx + 58} ${cy - 125} Z" fill="black" />
+      <!-- Star 3 (Far Right) -->
+      <path d="M ${cx + 100} ${cy - 70} L ${cx + 103} ${cy - 62} L ${cx + 112} ${cy - 59} L ${cx + 103} ${cy - 56} L ${cx + 100} ${cy - 48} L ${cx + 97} ${cy - 56} L ${cx + 88} ${cy - 59} L ${cx + 97} ${cy - 62} Z" fill="black" />
+
+      <!-- Sleeping Device Frame -->
+      <!-- Outer Frame -->
+      <rect x="${cx - 60}" y="${cy - 25}" width="120" height="74" rx="8" fill="none" stroke="black" stroke-width="4" />
+      <!-- Inner Screen -->
+      <rect x="${cx - 50}" y="${cy - 15}" width="100" height="54" rx="3" fill="white" />
+      
+      <!-- Sleepy eyes (curved lines) -->
+      <!-- Left Eye -->
+      <path d="M ${cx - 30} ${cy + 12} Q ${cx - 22} ${cy + 18} ${cx - 15} ${cy + 12}" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" />
+      <!-- Right Eye -->
+      <path d="M ${cx + 15} ${cy + 12} Q ${cx + 22} ${cy + 18} ${cx + 30} ${cy + 12}" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" />
+      <!-- Cozy smile -->
+      <path d="M ${cx - 4} ${cy + 22} Q ${cx} ${cy + 26} ${cx + 4} ${cy + 22}" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" />
+
+      <!-- Zzz text -->
+      <text x="${cx + 70}" y="${cy - 15}" font-size="16" font-weight="bold" fill="black">z</text>
+      <text x="${cx + 85}" y="${cy - 32}" font-size="22" font-weight="bold" fill="black">z</text>
+      <text x="${cx + 103}" y="${cy - 55}" font-size="30" font-weight="bold" fill="black">Z</text>
+
+      <!-- Text Messages -->
+      <!-- Title -->
+      <text x="${cx}" y="${cy + 90}" font-size="28" font-weight="bold" text-anchor="middle" fill="black">Quiet Time Active</text>
+      
+      <!-- Schedule details -->
+      <text x="${cx}" y="${cy + 125}" font-size="16" font-weight="500" text-anchor="middle" fill="black">Scheduled Sleep: ${startStr} – ${endStr}</text>
+      
+      <!-- Waking up countdown -->
+      <text x="${cx}" y="${cy + 155}" font-size="15" font-weight="normal" text-anchor="middle" fill="black" opacity="0.75">Waking up in ${remainingText} (at ${endStr})</text>
+
+      <!-- Outer border of screen -->
+      <rect width="100%" height="100%" fill="none" stroke="black" stroke-width="3" />
+    </svg>
+  `;
+};
+
 /**
  * Orchestrates plugin data collection and SVG assembly
  */
 const generateSVG = async (device, settings) => {
+  if (device.isSleeping) {
+    return generateSleepSVG(device);
+  }
+
   const w = device.width || 800;
   const h = device.height || 480;
   const layoutMode = device.layoutMode || 'grid';

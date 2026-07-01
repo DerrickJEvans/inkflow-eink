@@ -146,7 +146,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     cleanupDays.addEventListener('change', handleCleanupChange);
   }
 
-
   // Device Layout Settings Form Submit
   editDeviceForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -158,6 +157,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const layoutMode = "rotation";
     const ditherMode = document.getElementById('edit-device-dither').value;
     const invertColors = document.getElementById('edit-device-invert').value === 'true';
+    const sleepPeriodEnabled = document.getElementById('edit-device-sleep-enabled').value === 'true';
+    const sleepPeriodStart = document.getElementById('edit-device-sleep-start').value || '22:00';
+    const sleepPeriodEnd = document.getElementById('edit-device-sleep-end').value || '07:00';
+    const sleepPeriodTimezone = document.getElementById('edit-device-sleep-timezone').value || '';
     const activePlugins = [];
     const rotationIntervals = {};
 
@@ -189,7 +192,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       layoutMode: "rotation", 
       ditherMode,
       invertColors,
-      rotationIntervals 
+      rotationIntervals,
+      sleepPeriodEnabled,
+      sleepPeriodStart,
+      sleepPeriodEnd,
+      sleepPeriodTimezone
     };
     
     if (devIdx > -1) {
@@ -884,7 +891,11 @@ function selectDevice(deviceId, isNew = false) {
         uk_trains: 30,
         xkcd: 30,
         world_clock: 30
-      }
+      },
+      sleepPeriodEnabled: false,
+      sleepPeriodStart: "22:00",
+      sleepPeriodEnd: "07:00",
+      sleepPeriodTimezone: ""
     };
   }
 
@@ -972,6 +983,12 @@ function selectDevice(deviceId, isNew = false) {
 
     // Load invertColors
     document.getElementById('edit-device-invert').value = device.invertColors ? 'true' : 'false';
+
+    // Load Quiet Hours
+    document.getElementById('edit-device-sleep-enabled').value = device.sleepPeriodEnabled ? 'true' : 'false';
+    document.getElementById('edit-device-sleep-start').value = device.sleepPeriodStart || '22:00';
+    document.getElementById('edit-device-sleep-end').value = device.sleepPeriodEnd || '07:00';
+    document.getElementById('edit-device-sleep-timezone').value = device.sleepPeriodTimezone || '';
 
     updateScreenMockup(device.id);
     updateGuides(device);

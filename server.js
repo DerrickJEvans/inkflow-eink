@@ -298,6 +298,103 @@ const getOrCreateDevice = (rawDeviceId, req = {}) => {
 };
 
 /**
+ * Evaluates whether the device is currently within its configured sleep/quiet period.
+ * Returns an object { isSleeping: boolean, remainingSecs: number }
+ */
+const checkDeviceSleepStatus = (device) => {
+  if (!device || !device.sleepPeriodEnabled) {
+    return { isSleeping: false, remainingSecs: 0 };
+  }
+
+  const startStr = device.sleepPeriodStart || "22:00";
+  const endStr = device.sleepPeriodEnd || "07:00";
+  const tz = device.sleepPeriodTimezone || (config.settings && config.settings.world_clock && config.settings.world_clock.timezone) || "Europe/London";
+
+  try {
+    const options = {
+      timeZone: tz,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    };
+    const formatter = new Intl.DateTimeFormat('en-GB', options);
+    const parts = formatter.formatToParts(new Date());
+    const hour = parseInt(parts.find(p => p.type === 'hour').value, 10);
+    const minute = parseInt(parts.find(p => p.type === 'minute').value, 10);
+    const second = parseInt(parts.find(p => p.type === 'second').value, 10);
+
+    const [startH, startM] = startStr.split(':').map(Number);
+    const [endH, endM] = endStr.split(':').map(Number);
+
+    const currentMinutes = hour * 60 + minute;
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    let isSleeping = false;
+    if (startMinutes === endMinutes) {
+      isSleeping = false;
+    } else if (startMinutes < endMinutes) {
+      isSleeping = currentMinutes >= startMinutes && currentMinutes < endMinutes;
+    } else {
+      isSleeping = currentMinutes >= startMinutes || currentMinutes < endMinutes;
+    }
+
+    if (!isSleeping) {
+      return { isSleeping: false, remainingSecs: 0 };
+    }
+
+    const currentSecs = hour * 3600 + minute * 60 + second;
+    const endSecs = endH * 3600 + endM * 60;
+
+    let remainingSecs = 0;
+    if (endSecs > currentSecs) {
+      remainingSecs = endSecs - currentSecs;
+    } else {
+      remainingSecs = (24 * 3600 - currentSecs) + endSecs;
+    }
+
+    return { isSleeping: true, remainingSecs: Math.max(60, remainingSecs) };
+  } catch (err) {
+    console.error(`[Sleep Period] Error evaluating sleep status for ${device.id}:`, err);
+    // Fallback to server local time
+    const now = new Date();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
+    const second = now.getSeconds();
+
+    const [startH, startM] = startStr.split(':').map(Number);
+    const [endH, endM] = endStr.split(':').map(Number);
+
+    const currentMinutes = hour * 60 + minute;
+    const startMinutes = startH * 60 + startM;
+    const endMinutes = endH * 60 + endM;
+
+    let isSleeping = false;
+    if (startMinutes !== endMinutes) {
+      if (startMinutes < endMinutes) {
+        isSleeping = currentMinutes >= startMinutes && currentMinutes < endMinutes;
+      } else {
+        isSleeping = currentMinutes >= startMinutes || currentMinutes < endMinutes;
+      }
+    }
+
+    if (isSleeping) {
+      const currentSecs = hour * 3600 + minute * 60 + second;
+      const endSecs = endH * 3600 + endM * 60;
+      let remainingSecs = 0;
+      if (endSecs > currentSecs) {
+        remainingSecs = endSecs - currentSecs;
+      } else {
+        remainingSecs = (24 * 3600 - currentSecs) + endSecs;
+      }
+      return { isSleeping: true, remainingSecs: Math.max(60, remainingSecs) };
+    }
+    return { isSleeping: false, remainingSecs: 0 };
+  }
+};
+
+/**
  * Checks cache validity and rebuilds if needed
  */
 const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex = true) => {
@@ -308,18 +405,27 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
   const now = Date.now();
   const cached = imageCache[cacheKey];
   
-  // Resolve dynamic refresh rate for Carousel Mode
-  let refreshRate = device.refreshRate || 1800;
-  if (device.activePlugins && device.activePlugins.length > 0) {
-    const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
-    if (activePlugins.length > 0) {
-      const currentIndex = device.currentPluginIndex || 0;
-      const currentPlugin = activePlugins[currentIndex % activePlugins.length];
-      if (device.rotationIntervals && device.rotationIntervals[currentPlugin]) {
-        refreshRate = parseInt(device.rotationIntervals[currentPlugin]) || refreshRate;
-      } else if (activePlugins.length > 1 || device.layoutMode === 'rotation') {
-        // Fall back to a standard 30-second carousel rotation if not configured
-        refreshRate = 30;
+  // Check if device is in sleep period
+  const sleepStatus = checkDeviceSleepStatus(device);
+  let refreshRate;
+
+  if (sleepStatus.isSleeping) {
+    refreshRate = sleepStatus.remainingSecs;
+    console.log(`[Sleep Period] Device ${device.id} is asleep. Sleep duration set to ${refreshRate}s.`);
+  } else {
+    // Resolve dynamic refresh rate for Carousel Mode
+    refreshRate = device.refreshRate || 1800;
+    if (device.activePlugins && device.activePlugins.length > 0) {
+      const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
+      if (activePlugins.length > 0) {
+        const currentIndex = device.currentPluginIndex || 0;
+        const currentPlugin = activePlugins[currentIndex % activePlugins.length];
+        if (device.rotationIntervals && device.rotationIntervals[currentPlugin]) {
+          refreshRate = parseInt(device.rotationIntervals[currentPlugin]) || refreshRate;
+        } else if (activePlugins.length > 1 || device.layoutMode === 'rotation') {
+          // Fall back to a standard 30-second carousel rotation if not configured
+          refreshRate = 30;
+        }
       }
     }
   }
@@ -341,11 +447,18 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
       .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
       .digest('hex');
 
-    const rendered = await renderDeviceImage(device, config.settings);
+    // Create a temporary device representation with sleep status injected
+    const deviceToRender = {
+      ...device,
+      isSleeping: sleepStatus.isSleeping,
+      sleepRemainingSecs: sleepStatus.remainingSecs
+    };
+
+    const rendered = await renderDeviceImage(deviceToRender, config.settings);
     rendered.carouselSignature = signature;
     rendered.imageIndex = renderedIndex;
     rendered.totalImages = totalImages;
-    rendered.imageId = activePluginsList[renderedIndex] || 'default';
+    rendered.imageId = sleepStatus.isSleeping ? 'sleep_screen' : (activePluginsList[renderedIndex] || 'default');
 
     saveConfig();
     
@@ -360,8 +473,8 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.png`), rendered.png);
     fs.writeFileSync(path.join(CACHE_DIR, `${device.id}.raw`), rendered.raw);
 
-    // In Carousel Mode, advance the plugin index for the NEXT poll request!
-    if (advanceIndex && device.activePlugins && device.activePlugins.length > 1) {
+    // In Carousel Mode, advance the plugin index for the NEXT poll request, but ONLY if we are NOT sleeping!
+    if (!sleepStatus.isSleeping && advanceIndex && device.activePlugins && device.activePlugins.length > 1) {
       const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
       if (activePlugins.length > 1) {
         const currentIndex = parseInt(device.currentPluginIndex) || 0;
@@ -967,7 +1080,8 @@ app.get('/api/display/image.png', async (req, res) => {
     
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
-    const sleepInterval = resolveDeepSleepInterval(device, rate);
+    const sleepStatus = checkDeviceSleepStatus(device);
+    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
 
     const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
     const totalImages = activePluginsList.length;
@@ -979,7 +1093,7 @@ app.get('/api/display/image.png', async (req, res) => {
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('X-Refresh-Rate', rate.toString());
+    res.setHeader('X-Refresh-Rate', sleepInterval.toString());
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
     res.setHeader('X-Carousel-Signature', data.carouselSignature || signature);
     res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
@@ -1067,7 +1181,8 @@ app.get('/api/display/raw', async (req, res) => {
 
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
-    const sleepInterval = resolveDeepSleepInterval(device, rate);
+    const sleepStatus = checkDeviceSleepStatus(device);
+    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
 
     const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
     const totalImages = activePluginsList.length;
@@ -1079,7 +1194,7 @@ app.get('/api/display/raw', async (req, res) => {
 
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    res.setHeader('X-Refresh-Rate', rate.toString());
+    res.setHeader('X-Refresh-Rate', sleepInterval.toString());
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
     res.setHeader('X-Carousel-Signature', data.carouselSignature || signature);
     res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
@@ -1110,7 +1225,8 @@ app.all('/api/display', async (req, res) => {
 
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
-    const sleepInterval = resolveDeepSleepInterval(device, rate);
+    const sleepStatus = checkDeviceSleepStatus(device);
+    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
 
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
 
@@ -1122,7 +1238,7 @@ app.all('/api/display', async (req, res) => {
       image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Backwards compatibility field
       update_firmware: false,
       firmware_url: null,
-      refresh_rate: parseInt(rate) || 1800, // Return standard integer refresh rate
+      refresh_rate: parseInt(sleepInterval) || 1800, // Return standard integer refresh rate
       reset_firmware: false
     });
   } catch (err) {
