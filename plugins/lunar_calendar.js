@@ -217,11 +217,10 @@ const fs = require('fs');
 const path = require('path');
 
 const getBase64MoonPhase = (phase) => {
-  if (phase < 0.02 || phase > 0.98) {
-    return null; // New Moon
-  }
-  const idx = Math.min(22, Math.max(0, Math.floor((phase - 0.02) / (0.96 / 23))));
-  const imgPath = path.join(__dirname, '..', 'public', 'moon_phases', `moon_phase_${idx}.png`);
+  // Map phase (0 to 1) to one of the 22 user moon images.
+  // Shift 19 aligns phase = 0 (New Moon) to Cell 20 (New Moon 0%).
+  const cellIndex = (Math.floor(phase * 22) + 19) % 22;
+  const imgPath = path.join(__dirname, '..', 'public', 'moon_phases', `user_moon_${cellIndex}.png`);
   if (fs.existsSync(imgPath)) {
     return fs.readFileSync(imgPath).toString('base64');
   }
@@ -241,7 +240,6 @@ const drawSvgMoonPhase = (phase, cx, cy, r) => {
         <circle cx="${cx}" cy="${cy}" r="${r}" />
       </clipPath>
     </defs>
-    <circle cx="${cx}" cy="${cy}" r="${r}" fill="black" />
     <image x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" href="data:image/png;base64,${base64}" clip-path="url(#${clipId})" />
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="black" stroke-width="1.5" />
   `;
