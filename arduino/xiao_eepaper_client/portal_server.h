@@ -386,4 +386,25 @@ inline bool connectWiFi() {
   }
 }
 
+inline bool connectWiFiSilent() {
+  Serial.print(F("[WiFi] Attempting silent connection to SSID: "));
+  Serial.println(activeConfig.wifi_ssid);
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(F("[WiFi] Already connected."));
+    return true;
+  }
+  
+  WiFi.begin(activeConfig.wifi_ssid, activeConfig.wifi_pass);
+  
+  int attempts = 0;
+  // Wait up to 10 seconds silently
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+    delay(500);
+    attempts++;
+  }
+  
+  return (WiFi.status() == WL_CONNECTED);
+}
+
 #endif // PORTAL_SERVER_H

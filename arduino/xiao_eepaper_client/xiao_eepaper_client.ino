@@ -107,8 +107,7 @@ void setup() {
 
   // Handle KEY2 pressed / developer force reset
   if (action == "setup") {
-    Serial.println(F("[Diagnostics] KEY2 pressed. Displaying diagnostics overlay..."));
-    showDiagnostics();
+    Serial.println(F("[Diagnostics] KEY2 pressed. Checking hold duration..."));
     
     // Hold KEY2 for 3 seconds to trigger config reset
     unsigned long key2CheckStart = millis();
@@ -129,6 +128,9 @@ void setup() {
       prefs.end();
       startSetupWizard();
     } else {
+      Serial.println(F("[Buttons] Short press detected. Showing diagnostics report..."));
+      connectWiFiSilent(); // Attempt a silent connection to populate IP and RSSI if available
+      showDiagnostics();   // Show diagnostics overlay regardless of connection success
       Serial.println(F("[Diagnostics] Diagnostics displayed. Entering deep sleep shortly..."));
       delay(8000);
       goToSleep(fallbackSleepSeconds);

@@ -129,6 +129,16 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     drawString(40, 260, "Check network settings or launch Serial Monitor.", 1);
     drawString(40, 390, "--------------------------------------------------------", 1);
     drawString(40, 420, macLine, 1);
+  } else if (mode == 6) {
+    drawString(40, 40, "InkFlow System Diagnostics", 2);
+    drawString(40, 70, "--------------------------------------------------------", 1);
+    drawString(40, 110, "SYSTEM CONFIGURATION & STATUS:", 2);
+    drawString(40, 150, line1, 1);
+    drawString(40, 180, line2, 1);
+    drawString(40, 210, line3, 1);
+    drawString(40, 260, "Press Key 2 to refresh. Press Key 0 or 1 to exit. Hold Key 2 for 3s to setup.", 1);
+    drawString(40, 390, "--------------------------------------------------------", 1);
+    drawString(40, 420, macLine, 1);
   }
 
   // 2. Draw Logo/QR bitmaps using drawBitmap
@@ -136,7 +146,7 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     const uint8_t* qrVal = (mode == 0) ? qr_wifi_110x110 : qr_url_110x110;
     epaper.drawBitmap(620, 185, qrVal, 110, 110, TFT_GRAY_0, TFT_GRAY_3);
   } else {
-    epaper.drawBitmap(580, 120, logo_160x160, 160, 160, TFT_GRAY_0, TFT_GRAY_3);
+    epaper.drawBitmap(580, 120, logo_160x160, 160, 160, TFT_GRAY_3, TFT_GRAY_0);
   }
 
   // Update physical screen
@@ -164,20 +174,30 @@ inline void drawErrorSplashDirect(String errorMsg, String detail1, String detail
   drawSplashDirect(3, errorMsg, detail1, detail2);
 }
 
+inline void drawDiagnosticsDirect(String ssidLine, String ipLine, String serverLine) {
+  drawSplashDirect(6, ssidLine, ipLine, serverLine);
+}
+
 inline void showDiagnostics() {
   Serial.println(F("[Diagnostics] Displaying system diagnostics overlay..."));
   
-  char localIPStr[16];
-  IPAddress ip = WiFi.localIP();
-  snprintf(localIPStr, sizeof(localIPStr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+  String line1, line2;
   
-  long rssi = WiFi.RSSI();
+  if (WiFi.status() == WL_CONNECTED) {
+    char localIPStr[16];
+    IPAddress ip = WiFi.localIP();
+    snprintf(localIPStr, sizeof(localIPStr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    long rssi = WiFi.RSSI();
+    line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (" + String(rssi) + " dBm)";
+    line2 = "IP: " + String(localIPStr);
+  } else {
+    line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (Offline)";
+    line2 = "IP: Disconnected";
+  }
   
-  String line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (" + String(rssi) + " dBm)";
-  String line2 = "IP: " + String(localIPStr);
   String line3 = "Server: " + String(activeConfig.server_host) + ":" + String(activeConfig.server_port);
   
-  drawErrorSplashDirect(line1, line2, line3);
+  drawDiagnosticsDirect(line1, line2, line3);
 }
 
 #endif // GRAPHICS_DRAWING_H
