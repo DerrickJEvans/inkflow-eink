@@ -349,7 +349,7 @@ module.exports = {
 
       const terminatorPoints = points.join(' ');
       // Shaded overlay for the night shadow
-      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" fill-opacity="0.30" />`;
+      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" fill-opacity="0.15" />`;
       dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
     } else {
       for (let y = 0; y < mapHeightCells; y++) {
