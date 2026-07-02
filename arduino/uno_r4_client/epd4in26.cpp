@@ -276,6 +276,22 @@ void Epd::Reset(void) {
     DelayMs(20);    
 }
 
+void Epd::SetLut(void) {
+    unsigned int count;
+    SendCommand(0x32);
+    for(count=0; count<105; count++) {
+        SendData(LUT_DATA_4Gray[count]);
+    }
+    SendCommand(0x03);
+    SendData(LUT_DATA_4Gray[105]);
+    SendCommand(0x04);
+    SendData(LUT_DATA_4Gray[106]);
+    SendData(LUT_DATA_4Gray[107]);
+    SendData(LUT_DATA_4Gray[108]);
+    SendCommand(0x2C);
+    SendData(LUT_DATA_4Gray[109]);
+}
+
 /******************************************************************************
 function :	Turn On Display
 parameter:

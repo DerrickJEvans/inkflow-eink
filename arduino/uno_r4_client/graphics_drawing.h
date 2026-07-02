@@ -384,8 +384,16 @@ inline void showDiagnostics() {
   
   long rssi = WiFi.RSSI();
   
+  RTCTime time;
+  String timeStr = "";
+  if (RTC.getTime(time)) {
+    char buf[12];
+    snprintf(buf, sizeof(buf), "%02d:%02d:%02d", time.getHour(), time.getMinutes(), time.getSeconds());
+    timeStr = " | Time: " + String(buf);
+  }
+  
   String line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (" + String(rssi) + " dBm)";
-  String line2 = "IP: " + String(localIPStr);
+  String line2 = "IP: " + String(localIPStr) + timeStr;
   String line3 = "Server: " + String(activeConfig.server_host) + ":" + String(activeConfig.server_port);
   
   drawErrorSplashDirect(line1, line2, line3);

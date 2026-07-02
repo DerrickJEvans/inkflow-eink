@@ -46,7 +46,8 @@ extern const uint8_t VBTBKR_MAGIC_VAL = 0xAB;
 FlashCache cache(FLASH_CS);
 int currentCacheSlot = -1; 
 bool cacheEnabled = false; 
-const uint32_t totalImageBytes = (displayWidth * displayHeight) / 8; 
+const uint32_t totalImageBytes = (displayWidth * displayHeight) / 2; // 192KB for 4-gray (4bpp)
+const uint32_t monoImageBytes  = (displayWidth * displayHeight) / 8; // 48KB for 1-bit 
 
 // WiFi options
 String scannedSSIDs[20];
@@ -56,6 +57,9 @@ int scannedSSIDCount = 0;
 bool fetchAndStreamDisplay(String action = "");
 void displayCachedImage(int slotIndex);
 void loadOfflineCache();
+void syncRTCTime(String dateStr);
+uint8_t unpackRAM1(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3);
+uint8_t unpackRAM2(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3);
 
 void setup() {
   Serial.begin(115200);
@@ -135,8 +139,9 @@ void setup() {
   bool apPressed   = (actionCode == 4) || (digitalRead(PIN_AP) == LOW);
 
   if (apPressed) {
-    Serial.println(F("[Buttons] AP Button pressed. Force launching Setup Wizard..."));
-    startSetupWizard(); // Enters endless loop
+    Serial.println(F("[Buttons] AP Button (Button 4) pressed. Restarting Arduino..."));
+    delay(500);
+    NVIC_SystemReset();
   }
 
   // Initialize WiFi connection
@@ -152,8 +157,28 @@ void setup() {
     } else {
       drawErrorSplashDirect("WiFi Connection Failed", "Check SSID/Password", "Server unreachable");
     }
-    delay(10000); // Show diagnostics for 10 seconds before sleeping
-    goToSleep(nextRefreshSeconds);
+    
+    // Hold PIN_DIAG for 3 seconds to trigger captive portal setup
+    unsigned long diagCheckStart = millis();
+    bool held = true;
+    while (millis() - diagCheckStart < 3000) {
+      if (digitalRead(PIN_DIAG) == HIGH) {
+        held = false;
+        break;
+      }
+      delay(50);
+    }
+    
+    if (held) {
+      Serial.println(F("[Config] Diagnostics Button held for 3s. Wiping settings and launching Setup AP..."));
+      activeConfig.magic = 0;
+      EEPROM.put(0, activeConfig);
+      startSetupWizard(); // Enters endless loop
+    } else {
+      Serial.println(F("[Diagnostics] Diagnostics displayed. Entering sleep in 10 seconds..."));
+      delay(10000); // Show diagnostics for 10 seconds before sleeping
+      goToSleep(nextRefreshSeconds);
+    }
   }
 
   // Determine action (prev, next, or standard sync)
@@ -204,28 +229,39 @@ void displayCachedImage(int slotIndex) {
   // Initialize display CS lines
   pinMode(RAM_CS, OUTPUT); digitalWrite(RAM_CS, HIGH); // Disable Flash SPI CS first
   
-  if (epd.Init() != 0) {
+  if (epd.Init_4GRAY() != 0) {
      Serial.println(F("[Error] E-Paper init failed during cache read."));
      return;
   }
-  epd.SendCommand(0x24);
 
-  // Read data from Flash in 64-byte chunks and send to EPD
-  uint32_t startAddr = CACHE_SLOTS_START_ADDR + ((uint32_t)slotIndex * BLOCK_SIZE);
+  uint32_t startAddr = CACHE_SLOTS_START_ADDR + ((uint32_t)slotIndex * SLOT_SPACING);
   uint8_t tempBuf[64];
 
+  // Pass 1: Send RAM1 (0x24) - Lower Bit
+  Serial.println(F("[Display] Sending RAM1 (0x24) lower bit channel..."));
+  epd.SendCommand(0x24);
   for (uint32_t i = 0; i < totalImageBytes; i += 64) {
     cache.readData(startAddr + i, tempBuf, 64);
-    for (int j = 0; j < 64; j++) {
-      epd.SendData(tempBuf[j]);
+    for (int k = 0; k < 64; k += 4) {
+      uint8_t unpackedVal = unpackRAM1(tempBuf[k], tempBuf[k+1], tempBuf[k+2], tempBuf[k+3]);
+      epd.SendData(unpackedVal);
     }
   }
 
-  // Trigger physical EPD refresh
-  Serial.println(F("[Display] Triggering physical screen refresh..."));
-  epd.SendCommand(0x22); 
-  epd.SendData(0xF7); 
-  epd.SendCommand(0x20); 
+  // Pass 2: Send RAM2 (0x26) - Upper Bit
+  Serial.println(F("[Display] Sending RAM2 (0x26) upper bit channel..."));
+  epd.SendCommand(0x26);
+  for (uint32_t i = 0; i < totalImageBytes; i += 64) {
+    cache.readData(startAddr + i, tempBuf, 64);
+    for (int k = 0; k < 64; k += 4) {
+      uint8_t unpackedVal = unpackRAM2(tempBuf[k], tempBuf[k+1], tempBuf[k+2], tempBuf[k+3]);
+      epd.SendData(unpackedVal);
+    }
+  }
+
+  // Trigger physical EPD 4-gray refresh
+  Serial.println(F("[Display] Triggering physical 4-gray screen refresh..."));
+  epd.TurnOnDisplay_4GRAY();
   EPD_WAIT_BUSY_LOCAL(epd);
   
   delay(2000);
@@ -258,6 +294,9 @@ bool fetchAndStreamDisplay(String action) {
   client.print(displayWidth);
   client.print(F("&height="));
   client.print(displayHeight);
+  if (cacheEnabled) {
+    client.print(F("&dither=4gray"));
+  }
   if (action.length() > 0) {
     client.print(F("&action="));
     client.print(action);
@@ -358,6 +397,15 @@ bool fetchAndStreamDisplay(String action) {
               }
             }
           }
+        } else if (lowerLine.startsWith("date:")) {
+          int colonIdx = lowerLine.indexOf(':');
+          if (colonIdx != -1) {
+            String dateVal = currentLine.substring(colonIdx + 1);
+            dateVal.trim();
+            Serial.print(F("[Header] Date matched: "));
+            Serial.println(dateVal);
+            syncRTCTime(dateVal);
+          }
         } else if (lowerLine.startsWith("x-carousel-signature:")) {
           int colonIdx = lowerLine.indexOf(':');
           if (colonIdx != -1) {
@@ -456,7 +504,7 @@ bool fetchAndStreamDisplay(String action) {
 
   Serial.println(F("Streaming raw image packets directly to screen RAM..."));
   
-  while (bytesWritten < totalImageBytes) {
+  while (bytesWritten < monoImageBytes) {
     if (client.available() > 0) {
       uint8_t incomingByte = client.read();
       epd.SendData(incomingByte);
@@ -476,8 +524,8 @@ bool fetchAndStreamDisplay(String action) {
   Serial.print(F("[Data] Stream closed. Total bytes sent to screen: "));
   Serial.println(bytesWritten);
 
-  if (bytesWritten < totalImageBytes) {
-    uint32_t missingBytes = totalImageBytes - bytesWritten;
+  if (bytesWritten < monoImageBytes) {
+    uint32_t missingBytes = monoImageBytes - bytesWritten;
     Serial.print(F("[Padding] Filling remaining "));
     Serial.print(missingBytes);
     Serial.println(F(" bytes with white rows..."));
@@ -485,7 +533,7 @@ bool fetchAndStreamDisplay(String action) {
     for (uint32_t p = 0; p < missingBytes; p++) {
       epd.SendData(0xFF); 
     }
-    bytesWritten = totalImageBytes;
+    bytesWritten = monoImageBytes;
   }
 
   Serial.println(F("Triggering global hardware refresh transitions..."));
@@ -499,4 +547,97 @@ bool fetchAndStreamDisplay(String action) {
   epd.Sleep();
   
   return true;
+}
+
+void syncRTCTime(String dateStr) {
+  // Expected format: "Thu, 02 Jul 2026 11:30:00 GMT" or "02 Jul 2026 11:30:00 GMT"
+  // Let's strip the weekday if present
+  int commaIdx = dateStr.indexOf(',');
+  if (commaIdx != -1) {
+    dateStr = dateStr.substring(commaIdx + 1);
+    dateStr.trim();
+  }
+  // Now format should be: "02 Jul 2026 11:30:00 GMT"
+  int firstSpace = dateStr.indexOf(' ');
+  if (firstSpace == -1) return;
+  String dayStr = dateStr.substring(0, firstSpace);
+  
+  int secondSpace = dateStr.indexOf(' ', firstSpace + 1);
+  if (secondSpace == -1) return;
+  String monthStr = dateStr.substring(firstSpace + 1, secondSpace);
+  
+  int thirdSpace = dateStr.indexOf(' ', secondSpace + 1);
+  if (thirdSpace == -1) return;
+  String yearStr = dateStr.substring(secondSpace + 1, thirdSpace);
+  
+  int fourthSpace = dateStr.indexOf(' ', thirdSpace + 1);
+  String timeStr;
+  if (fourthSpace == -1) {
+    timeStr = dateStr.substring(thirdSpace + 1);
+  } else {
+    timeStr = dateStr.substring(thirdSpace + 1, fourthSpace);
+  }
+  
+  int day = dayStr.toInt();
+  int year = yearStr.toInt();
+  
+  Month month = Month::JANUARY;
+  monthStr.toLowerCase();
+  if (monthStr == "jan") month = Month::JANUARY;
+  else if (monthStr == "feb") month = Month::FEBRUARY;
+  else if (monthStr == "mar") month = Month::MARCH;
+  else if (monthStr == "apr") month = Month::APRIL;
+  else if (monthStr == "may") month = Month::MAY;
+  else if (monthStr == "jun") month = Month::JUNE;
+  else if (monthStr == "jul") month = Month::JULY;
+  else if (monthStr == "aug") month = Month::AUGUST;
+  else if (monthStr == "sep") month = Month::SEPTEMBER;
+  else if (monthStr == "oct") month = Month::OCTOBER;
+  else if (monthStr == "nov") month = Month::NOVEMBER;
+  else if (monthStr == "dec") month = Month::DECEMBER;
+  
+  int firstColon = timeStr.indexOf(':');
+  if (firstColon == -1) return;
+  String hourStr = timeStr.substring(0, firstColon);
+  
+  int secondColon = timeStr.indexOf(':', firstColon + 1);
+  if (secondColon == -1) return;
+  String minStr = timeStr.substring(firstColon + 1, secondColon);
+  String secStr = timeStr.substring(secondColon + 1);
+  
+  int hour = hourStr.toInt();
+  int minute = minStr.toInt();
+  int second = secStr.toInt();
+  
+  if (year >= 2026 && day >= 1 && day <= 31 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+    RTCTime newTime(day, month, year, hour, minute, second, DayOfWeek::THURSDAY, SaveLight::SAVING_TIME_INACTIVE);
+    RTC.setTime(newTime);
+    Serial.print(F("[RTC] Synchronized time successfully to: "));
+    Serial.print(day); Serial.print("-"); Serial.print(monthStr); Serial.print("-"); Serial.print(year);
+    Serial.print(" "); Serial.print(hour); Serial.print(":"); Serial.print(minute); Serial.print(":"); Serial.println(second);
+  }
+}
+
+uint8_t unpackRAM1(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
+  uint8_t p0 = ((b0 >> 4) & 0x02) >> 1;
+  uint8_t p1 = (b0 & 0x02) >> 1;
+  uint8_t p2 = ((b1 >> 4) & 0x02) >> 1;
+  uint8_t p3 = (b1 & 0x02) >> 1;
+  uint8_t p4 = ((b2 >> 4) & 0x02) >> 1;
+  uint8_t p5 = (b2 & 0x02) >> 1;
+  uint8_t p6 = ((b3 >> 4) & 0x02) >> 1;
+  uint8_t p7 = (b3 & 0x02) >> 1;
+  return (p0 << 7) | (p1 << 6) | (p2 << 5) | (p3 << 4) | (p4 << 3) | (p5 << 2) | (p6 << 1) | p7;
+}
+
+uint8_t unpackRAM2(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
+  uint8_t p0 = (b0 >> 4) & 0x01;
+  uint8_t p1 = b0 & 0x01;
+  uint8_t p2 = (b1 >> 4) & 0x01;
+  uint8_t p3 = b1 & 0x01;
+  uint8_t p4 = (b2 >> 4) & 0x01;
+  uint8_t p5 = b2 & 0x01;
+  uint8_t p6 = (b3 >> 4) & 0x01;
+  uint8_t p7 = b3 & 0x01;
+  return (p0 << 7) | (p1 << 6) | (p2 << 5) | (p3 << 4) | (p4 << 3) | (p5 << 2) | (p6 << 1) | p7;
 }

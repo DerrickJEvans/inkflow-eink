@@ -19,11 +19,12 @@
 
 #define FLASH_SIZE                  8388608  // 8MB (64Mbit)
 
-// Slot config (Each slot is aligned to a 64KB block to make erasing straightforward)
+// Slot config (Each slot is aligned to a 256KB boundary to support 192KB 4-gray images)
 #define CACHE_HEADER_ADDR           0x000000
-#define BLOCK_SIZE                  65536    // 64KB block size
-#define CACHE_SLOTS_START_ADDR      65536    // Slot 0 starts at 64KB
-#define MAX_SLOTS                   16       // Support up to 16 cached screens (plenty for carousel)
+#define BLOCK_SIZE                  65536    // 64KB physical block size
+#define SLOT_SPACING                262144   // 256KB slot spacing (4 blocks of 64KB)
+#define CACHE_SLOTS_START_ADDR      262144   // Slot 0 starts at 256KB
+#define MAX_SLOTS                   16       // Support up to 16 cached screens (16 * 256KB = 4MB)
 
 struct CacheHeader {
   char magic[4];              // "INKF"
@@ -173,7 +174,7 @@ public:
 
   // Write stream to a slot in Flash memory using page program
   bool writeSlot(uint32_t slotIndex, WiFiClient& stream, uint32_t totalBytes) {
-    uint32_t startAddr = CACHE_SLOTS_START_ADDR + (slotIndex * BLOCK_SIZE);
+    uint32_t startAddr = CACHE_SLOTS_START_ADDR + (slotIndex * SLOT_SPACING);
     if (startAddr + totalBytes > FLASH_SIZE) {
       Serial.print(F("[Cache Error] Slot "));
       Serial.print(slotIndex);
@@ -181,9 +182,12 @@ public:
       return false;
     }
 
-    Serial.print(F("[Cache] Erasing 64KB block at address 0x"));
+    Serial.print(F("[Cache] Erasing blocks for slot at address 0x"));
     Serial.println(startAddr, HEX);
-    eraseBlock64K(startAddr);
+    uint32_t numBlocks = (totalBytes + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    for (uint32_t b = 0; b < numBlocks; b++) {
+      eraseBlock64K(startAddr + (b * BLOCK_SIZE));
+    }
 
     Serial.print(F("[Cache] Writing stream to SPI Flash slot address 0x"));
     Serial.println(startAddr, HEX);
