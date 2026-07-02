@@ -225,7 +225,7 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
       elements[numElements++] = {line1, 40, 150, 1};
       elements[numElements++] = {line2, 40, 180, 1};
       elements[numElements++] = {line3, 40, 210, 1};
-      elements[numElements++] = {"Press Button 3 again to wake, or hold for 3s to reset.", 40, 260, 1};
+      elements[numElements++] = {"Press Button 3 to refresh. Press Button 4 to exit. Hold 3 for 3s to setup.", 40, 260, 1};
       elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
       elements[numElements++] = {macLine, 40, 420, 1};
     } else if (displayWidth >= 400) {
