@@ -28,12 +28,15 @@ module.exports = {
     const offset = parseInt(settings.offset) || 0;
     const rangeScale = settings.rangeScale !== undefined ? parseFloat(settings.rangeScale) : 1.0;
 
-    // Stable pseudo-random generator based on date
+    // Stable pseudo-random generator based on date.
+    // Use a collision-free composite seed: each calendar day produces a unique value.
+    // Previous formula (day + month*31 + year*366) could collide at month/day boundaries
+    // since getMonth() is 0-indexed and day values overlap with the month*31 step.
     const today = new Date();
-    const day = today.getDate();
-    const month = today.getMonth();
-    const year = today.getFullYear();
-    const seed = day + month * 31 + year * 366;
+    const day   = today.getDate();
+    const month = today.getMonth() + 1; // 1-12
+    const year  = today.getFullYear();
+    const seed  = year * 10000 + month * 100 + day;
 
     const pseudoRandom = (offsetVal = 0) => {
       const x = Math.sin(seed + offsetVal) * 10000;
