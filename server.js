@@ -169,8 +169,8 @@ const recordDeviceConnection = (device, req) => {
     const userAgent = req.headers['user-agent'] || "";
 
     if (reqPath === '/api/display/raw') {
-      if (fw && fw.includes('InkFlow-ESP32')) {
-        clientType = "InkFlow ESP32 Client";
+      if (fw && fw.includes('InkFlow-XIAO')) {
+        clientType = "InkFlow XIAO Client";
       } else if (fw && fw.includes('InkFlow-R4')) {
         clientType = "InkFlow UNO R4 Client";
       } else {

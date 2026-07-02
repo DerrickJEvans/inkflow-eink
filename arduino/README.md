@@ -2,10 +2,10 @@
 
 This subfolder houses highly optimized **Arduino C++ clients** designed to turn cheap wireless microcontrollers connected to Waveshare E-Paper displays into low-power wireless status consoles:
 
-### 1. ⚡ Option A: ESP32 Client (`esp32_client/`)
-* **Features**: Uses the GxEPD2 library for highly compatible, paged graphics rendering.
-* **Power Optimization**: Leverages the ESP32's native deep sleep mode to run on battery power for months!
-* **Memory usage**: Buffers pixels in RAM, then pushes them to GxEPD2.
+### 1. ⚡ Option A: Seeed Studio XIAO ePaper Client (`xiao_eepaper_client/`)
+* **Features**: Uses the official `Seeed_GFX` library to drive the large 4.26-inch 4-gray grayscale E-paper screen.
+* **Power Optimization**: Leverages the XIAO ESP32-S3's native deep sleep mode to run on batteries for months!
+* **Grayscale Buffering**: Buffers 4-level grayscale layouts (192KB sprite buffer) inside the board's external OPI PSRAM to keep the internal SRAM clean for the network and WiFi stack.
 
 ### 2. 🎛️ Option B: Arduino UNO R4 WiFi Client (`uno_r4_client/`)
 * **Features**: Uses a custom **Zero-Buffer Direct SPI Streaming** pipeline that bypasses library buffering. 
@@ -15,79 +15,55 @@ This subfolder houses highly optimized **Arduino C++ clients** designed to turn 
 
 ---
 
-## 🛠️ Required Arduino Libraries
+## 🛠️ Required Arduino Libraries & Board Packages
 
-For the **ESP32 Client**, open the Arduino IDE, go to **Tools** -> **Manage Libraries...**, and install:
-1. **`GxEPD2`** by Jean-Marc Zingg
-2. **`Adafruit GFX Library`** by Adafruit
+For the **Seeed Studio XIAO ePaper Client**, you must:
+1. Install the official `Seeed_GFX` library by cloning or downloading [Seeed_GFX (GitHub)](https://github.com/Seeed-Studio/Seeed_GFX) into your Arduino `libraries` folder.
+2. In the Arduino Board Manager, install the `esp32` board package by Espressif Systems.
 
 For the **Arduino UNO R4 WiFi Client**, no extra libraries are required. Simply make sure you have the official `WiFiS3` board package installed in the Arduino IDE Board Manager!
 
 ---
 
-## 🔌 Option A: ESP32 Hardware SPI Wiring Diagram
-
-Connect your ESP32 board to the Waveshare E-Paper Display (or ESP32 driver board HAT) according to the following wiring map:
-
-| E-Paper Hat Cable | Label | Function | ESP32 GPIO Pin | Description |
-|:---|:---|:---|:---|:---|
-| **VCC** (Red) | 3.3V | Power Supply | **3.3V** | Power input (do not connect to 5V!) |
-| **GND** (Black) | GND | Ground | **GND** | System ground |
-| **DIN** (Blue) | MOSI | SPI Data Input | **GPIO 23** | Hardware SPI MOSI (Master Out Slave In) |
-| **CLK** (Yellow) | SCK | SPI Clock Input | **GPIO 18** | Hardware SPI SCK (Serial Clock) |
-| **CS** (Orange) | CS | Chip Select | **GPIO 15** | Device SPI enable line (active low) — Remapped to avoid GPIO 5 flash conflicts |
-| **DC** (Green) | D/C | Data / Command | **GPIO 17** | Toggles register inputs (Data vs. Command) |
-| **RST** (Grey) | RST | Board Reset | **GPIO 16** | Resets physical screen |
-| **BUSY** (White) | BUSY | Busy Indicator | **GPIO 4** | Signals screen draw state (high when painting) |
-
-⚠️ **CRITICAL WAVESHARE SHIELD CONFLICT WARNING**:
-On the official **Waveshare Arduino E-Paper Shield or HAT**, there is an onboard serial SPI Flash chip hardwired to **GPIO 5**, and an SD Card slot CS hardwired to **GPIO 4**. 
-* If you leave these pins floating, they will respond to SPI transfers during e-paper rendering, causing severe packet corruption and pixel skews!
-* The client code explicitly configures **GPIO 5** and **GPIO 4** as outputs and pulls them `HIGH` at boot to shut down their SPI interfaces.
-* Because the Flash CS is hardwired to **GPIO 5**, you **MUST** wire the E-Paper's physical Chip Select (CS) pin to **GPIO 15** (or another unused GPIO pin) and configure `#define EPD_CS 15` inside the `.ino` file!
-* *Note: If you are using the dedicated Waveshare **ESP32 E-Paper Driver Board** (which does not have the onboard Flash conflict), you can connect the E-Paper CS to GPIO 5 and configure `#define EPD_CS 5`.*
+---
 
 ---
 
 ## 🚀 Setup & Flashing Instructions
 
-### ⚡ ESP32 Setup Wizard (Zero-Configuration Flashing!)
-The ESP32 E-Ink client features a premium **E-Ink Setup Wizard & Captive Portal WiFi Manager** out of the box! You do **not** need to hardcode your WiFi SSID, passwords, or server addresses inside the code before flashing.
+### ⚡ Seeed Studio XIAO ePaper Setup Wizard (Zero-Configuration Flashing!)
+The XIAO ePaper client features a premium **E-Ink Setup Wizard & Captive Portal WiFi Manager** out of the box! You do **not** need to hardcode your WiFi SSID, passwords, or server addresses inside the code before flashing.
 
-1. **Configure Screen Size**:
-   * Open `config.h` in the `esp32_client/` folder.
-   * By default, the 4.2" screen is uncommented. If you use a different size (e.g. 7.5", 2.9", or 2.7"), simply comment out the 4.2" line and uncomment your exact screen selection.
+1. **Board Settings**:
+   * Configure the Arduino IDE for the XIAO ESP32-S3 as detailed in the [`xiao_eepaper_client/README.md`](xiao_eepaper_client/README.md) file (enable **OPI PSRAM** and select partition scheme with SPIFFS/LittleFS).
 2. **Flash the Code**:
-   * Connect your ESP32 board to your computer via USB.
-   * Open `esp32_client.ino` in the Arduino IDE, select your ESP32 board and port under **Tools**, and click **Upload**!
+   * Connect your Seeed Studio XIAO board to your computer via USB.
+   * Open `xiao_eepaper_client.ino` in the Arduino IDE, select the `XIAO_ESP32S3` board and port, and click **Upload**!
 3. **Connect to Setup Portal**:
-   * On first boot (or if it fails to connect to any stored networks), the E-Ink screen will automatically refresh to show the **InkFlow Setup Wizard** instructions and spawn a password-free WiFi network: **`InkFlow-Setup`**.
-   * Connect your mobile phone or computer to the **`InkFlow-Setup`** WiFi network.
-   * A captive portal settings page will slide open automatically. If it doesn't, open a browser and go to: **`http://192.168.4.1`**.
+   * On first boot (or if it fails to connect to any stored networks), the E-Ink screen will automatically refresh to show the **InkFlow Setup Wizard** instructions and a QR code, spawning a secured WiFi network: **`InkFlow-Setup`** (password: `12345678`).
+   * Connect your mobile phone or computer to the **`InkFlow-Setup`** WiFi network, and a captive portal settings page will slide open automatically (or navigate to `http://192.168.4.1`).
 4. **Submit Configurations**:
-   * The setup page will automatically display a **Scanned WiFi Networks** dropdown containing all locally scanned SSIDs.
    * Select your Wi-Fi, enter your password, input the **InkFlow Server Host/IP** (your Raspberry Pi's local address, e.g. `192.168.1.122`), and customize your screen name.
-   * Click **Save Settings & Connect**! The ESP32 will store these configurations securely in non-volatile flash memory, connect to your router, fetch your E-Ink display raw data, and enter its low-power refresh cycles automatically.
+   * Click **Save Settings**! The board will store these configurations securely in non-volatile flash memory, connect to your router, fetch your E-Ink display raw data, and enter its low-power refresh cycles automatically.
 
 5. **Serial Monitoring**:
    * Open the **Serial Monitor** set to **`115200 baud`** to observe connection logs, web portal requests, raw packet counts, and screen update cycles!
 
 > [!TIP]
-> **Developer Reset Mode**: If your board connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **EN/RST button** on your ESP32 board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe all saved preferences and launch the captive portal AP!
+> **Developer Reset Mode**: If your board connects automatically on boot using default credentials, but you want to test or force-reset configurations to open the web setup portal manually, simply open your **Serial Monitor** set to **`115200 baud`**, press the physical **RESET button** on your XIAO board to reboot, and **type the `r` key** into the Serial input box and press Enter within the first 10 seconds of boot. The client will instantly wipe all saved preferences and launch the captive portal AP!
 
 ---
 
-## 🔋 Sleep & Battery Mechanics: ESP32 vs. UNO R4 WiFi
+## 🔋 Sleep & Battery Mechanics: XIAO vs. UNO R4 WiFi
 
-The two Arduino clients handle power management and refresh cycles differently based on their physical hardware architectures:
+The C++ clients handle power management and refresh cycles differently based on their physical hardware architectures:
 
-### ⚡ ESP32 Native Hardware Deep Sleep (`esp32_client/`)
-The ESP32 sketch is built using the controller's native hardware **Deep Sleep** protocol:
+### ⚡ XIAO ESP32-S3 Native Hardware Deep Sleep (`xiao_eepaper_client/`)
+The Seeed Studio XIAO sketch is built using the microcontroller's native hardware **Deep Sleep** protocol:
 * **Execution flow**: It wakes up from deep sleep, boots, and establishes a WiFi connection in less than 3 seconds.
-* **Data Fetching**: Queries `/api/display/raw` on the server to download the tiny dithered 1-bit pixel array (e.g. only 15 KB for a 400x300 screen).
-* **Symmetrical PROGMEM Stream Loop (Offline Fallback)**: If the WiFi connection fails or the server is offline, the client does not remain blank. Instead, it utilizes an optimized, memory-efficient PROGMEM streaming loop (`loadLocalFallbackImage()`) to read calibration checkerboard patterns and crosshairs out of Flash memory and draw them onto the screen. This serves as an immediate physical proof that your display wiring, controller, and SPI lines are 100% operational!
-* **Power Down**: After pushing pixels to the screen, it powers down the display's SPI controller and puts the ESP32 chip into a native deep sleep state, drawing practically **zero current (~10µA)**.
-* **Reboot Cycle**: When the deep sleep timer expires, the chip performs a cold boot and restarts the program. This native power-saving mode allows the ESP32 client to run on a single Lithium battery for **months**!
+* **Data Fetching**: Queries `/api/display/raw` on the server to download the dithered 4-level grayscale pixel array.
+* **Power Down**: After pushing pixels to the screen, it powers down the display and puts the board into a native deep sleep state, drawing practically **zero current (~10µA)**.
+* **Reboot Cycle**: When the deep sleep timer expires, the chip performs a cold boot and restarts the program. This native power-saving mode allows the XIAO client to run on a battery for **months**!
 
 ### 🎛️ Arduino UNO R4 WiFi Deep Sleep Simulation (`uno_r4_client/`)
 Because the Arduino UNO R4 WiFi lacks a native, low-power deep sleep mode that preserves socket/SPI states without complex external circuitry, it **simulates deep sleep in software**:

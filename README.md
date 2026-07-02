@@ -2,7 +2,7 @@
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins as beautiful SVG layouts, rasterizes them with advanced high-contrast dithering, and serves them dynamically to multiple physical **E-Ink Displays** of varying sizes.
 
-Designed for self-hosted home LAN environments, InkFlow supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/ESP32 microcontrollers—allowing you to build the ultimate wireless status console.
+Designed for self-hosted home LAN environments, InkFlow supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/XIAO microcontrollers—allowing you to build the ultimate wireless status console.
 
 <img width="4080" height="2296" alt="reTerminal with TRMNL firmware and Raspberry Pi 4 with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure" src="https://github.com/user-attachments/assets/8e9377f0-8745-4171-9c17-5cc3396777f0" />
 
@@ -48,7 +48,7 @@ graph TD
     subgraph ClientSide ["📟 E-Ink Setup & Hardware Clients"]
         C1["TRMNL Firmware Client"]:::client
         C2["InkFlow Python Client (Raspberry Pi)"]:::client
-        C3["InkFlow Arduino C++ Client (Uno R4/ESP32)"]:::client
+        C3["InkFlow Arduino C++ Client (Uno R4/XIAO)"]:::client
     end
 
     %% Client 1 Connections
@@ -73,7 +73,7 @@ The TRMNL firmware client uses the TRMNL API to fetch JSON status information (`
 
 The InkFlow clients fetch layout data directly:
 * **InkFlow Python Client (Raspberry Pi)**: Can operate in either **4-level Grayscale** (`COLOR_DEPTH=4`) by fetching the compiled PNG (`/api/display/image.png`) or **Monochrome** (`COLOR_DEPTH=2`, Default) by fetching the lightweight 1-bit binary pixel stream (`/api/display/raw`).
-* **InkFlow Arduino C++ Client (Uno R4 / ESP32)**: Fetches the 1-bit packed binary stream (`/api/display/raw`) to stream directly to its hardware display driver or local SPI flash cache.
+* **InkFlow Arduino C++ Client (Uno R4 / XIAO)**: Fetches raw pixel streams (1-bit packed for UNO R4, 4-level grayscale for XIAO) to stream directly to hardware display drivers or local flash/disk caches.
 
 ---
 
@@ -107,7 +107,7 @@ The various panels and client devices available have differing requirements to r
   * **Thresholded Dot-Matrix / Solid Outline (`dots` / `solid` / `none`)**: Bypasses dithering to perform pure mathematical thresholding, resulting in perfectly crisp black-and-white vectors.
 * **1-Bit Raw Bit-Packing**: Packs dithered pixels (8 pixels per byte, MSB-first) into a tight binary buffer suitable for lightweight transmission on memory-constrained microcontrollers.
 * **Color Inversion**: Easily toggle between `Standard (Black on White)` or `Inverted (White on Black)` rendering in your device settings to flip the contrast dynamically on the fly.
-* **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like ESP32) to sleep at **~10µA current draw** and run on batteries for months.
+* **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like the ESP32-S3 on Seeed Studio XIAO) to sleep at **~10µA current draw** and run on batteries for months.
 * **Post-Refresh Stabilization**: Automatically incorporates a 2-second stabilization delay post-refresh before putting the display to sleep or powering it off. This allows panel voltages to settle naturally, preventing the common "fading text" issue on physical e-paper panels.
 
 ### 3. Premium Glassmorphic Web Control Center
@@ -137,7 +137,7 @@ To make deploying and using InkFlow as simple as possible, use the links below t
 2. [**📟 Step 2: Set Up Your Client Screens**](#-step-2-client-screen-setup)
    - [Option A: Headless OS Image (Automatic Firstboot Setup)](#option-a-headless-os-image-automatic-firstboot-setup)
    - [Option B: Pi Python Client (Pimoroni/Waveshare Hat Setup)](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)
-   - [Option C: Arduino & ESP32 Microcontrollers (Battery Powered)](#option-c-arduino--esp32-microcontrollers-ultra-low-power)
+   - [Option C: Arduino & XIAO Microcontrollers (Battery Powered)](#option-c-arduino--xiao-microcontrollers-ultra-low-power)
    - [Option D: Combined Server & Client Setup (Single Raspberry Pi)](#option-d-combined-server--client-setup-single-raspberry-pi)
 3. [**🛠️ Step 3: Manage Your Environment (Dashboard & CLI)**](#%EF%B8%8F-master-control-utilities)
 4. [**🧠 Step 4: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
@@ -312,17 +312,16 @@ Login to Raspberry PI and follow the instructions below
 
 ---
 
-### Option C: Arduino & ESP32 Microcontrollers (Ultra-Low Power)
-*Ideal for battery-operated e-paper devices running on microcontrollers like the ESP32 or Arduino Uno R4 WiFi + Waveshare SPI shield.*
+### Option C: Arduino & XIAO Microcontrollers (Ultra-Low Power)
+*Ideal for battery-operated e-paper devices running on microcontrollers like the Seeed Studio XIAO ESP32-S3 or Arduino Uno R4 WiFi.*
 
 1. Open the Arduino IDE and load the source files from the [**`arduino/`**](arduino) directory.
-   - For **ESP32 development boards** (e.g., NodeMCU ESP32, ESP32-S3), load the sketch from the [**`esp32_client/`**](arduino/esp32_client) directory:
-     - **`esp32_client.ino`**: Streamlined main polling loop and cache synchronization.
-     - **`config_manager.h`**: Non-Volatile Storage (NVS) **Preferences** configuration manager.
-     - **`system_utils.h`**: ESP32 system configurations and RTC deep sleep entry (`esp_deep_sleep_start()`).
-     - **`graphics_drawing.h`**: GxEPD2 page loop layout drawer (setup, connecting, diagnostics).
-     - **`portal_server.h`**: Web AP configuration captive portal router.
-     - **`cache_manager.h`**: Caches slide layouts using the ESP32's native **LittleFS** flash partition (no external hardware flash chip required).
+   - For **Seeed Studio XIAO ePaper Display Board (B) EE04**, compile the sketch from the [**`xiao_eepaper_client/`**](arduino/xiao_eepaper_client) directory:
+     - **`xiao_eepaper_client.ino`**: Grayscale E-Ink client managing connections, telemetry, and 4-level grayscale rendering.
+     - **`config_manager.h`**: Saves WiFi and server IP configs to the XIAO's non-volatile preferences.
+     - **`cache_manager.h`**: Cache manager utilizing `LittleFS` for offline slide rotation.
+     - **`graphics_drawing.h`**: Canvas rendering wrapper utilizing the Seeed GFX library.
+     - **`portal_server.h`**: Captive portal WiFi manager AP configuration server.
    - For **Arduino UNO R4 WiFi**, compile the sketch from the [**`uno_r4_client/`**](arduino/uno_r4_client) directory:
      - **`uno_r4_client.ino`**: Streamlined main polling and direct SPI data streaming.
      - **`config_manager.h`**: EEPROM configuration reading and writing.
@@ -330,14 +329,12 @@ Login to Raspberry PI and follow the instructions below
      - **`graphics_drawing.h`**: Zero-RAM double border and text drawing splasher.
      - **`portal_server.h`**: UDP DNS redirection and Captive Access Point web server.
      - **`cache_manager.h`**: Caches slides on the Waveshare E-Paper shield's external MX25R6435F SPI flash chip.
-2. Open `config.h` to choose your target display dimensions, compile, and upload the sketch to your board.
+2. Open `config.h` in the respective client directory to choose your settings, compile, and upload the sketch to your board.
 3. **Captive WiFi Setup Portal**:
-   * Once booted, the device hosts its own setup network.
-     * **ESP32 AP**: `InkFlow-Setup` (Open network)
+   * Once booted, if not configured, the device hosts its own setup network:
+     * **XIAO AP**: `InkFlow-Setup` (WPA2 password: `12345678` or scan the QR code drawn on the screen)
      * **Arduino UNO R4 AP**: `InkFlow-R4-Setup` (WPA2 password: `12345678`)
-   * **Sequential Setup (UNO R4)**: The R4 screen runs in two stages to prevent QR scanning conflicts:
-     * **Step 1 (WiFi Connection)**: Displays only the WiFi QR code to automatically connect your phone to the hotspot.
-     * **Step 2 (Portal URL)**: The screen automatically updates upon connection to show a confirmation and only the URL QR code (`http://192.168.4.1`). Scan it or browse to the portal to configure your home Wi-Fi and server IP!
+   * **Setup Page**: Scan the QR code or browse to `http://192.168.4.1` on your connected phone/computer to select your home Wi-Fi and specify the InkFlow server's IP address.
 4. **Offline Diagnostics**:
    * If the Wi-Fi connection fails or the server is unreachable, the display draws a visual diagnostic card showing current network info, target IP port, and connection errors, making debugging easy without serial monitor cables.
 
@@ -573,7 +570,7 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
 * [**`public/`**](public): Glassmorphic web control panel to manage settings, widgets, and view real-time screen previews.
 * [**`client/`**](client): Python client code for Raspberry Pi devices, modularized into dedicated components: `client.py` (polling loop), `drivers.py` (EPD screen interfaces & stats), `graphics.py` (Pillow canvas layouts), `portal.py` (AP setup server), and `cache_manager.py` (disk carousel cache).
 * [**`arduino/`**](arduino): Lightweight C++ sketches and modular headers:
-  * [**`esp32_client/`**](arduino/esp32_client): Target hardware: standalone **ESP32** development boards (uses GxEPD2 and native **LittleFS** file caching).
+  * [**`xiao_eepaper_client/`**](arduino/xiao_eepaper_client): Target hardware: **Seeed Studio XIAO ePaper Display Board (B) EE04** (uses Seeed GFX and native **LittleFS** flash caching for 4-level grayscale layouts).
   * [**`uno_r4_client/`**](arduino/uno_r4_client): Target hardware: **Arduino Uno R4 WiFi** with Waveshare E-Paper shield (uses custom direct SPI RAM streaming and shield **SPI Flash** caching).
 * [**`install.sh`**](install.sh): One-click server installer for Ubuntu or Raspberry Pi OS host systems.
 * [**`inkflow.sh`**](inkflow.sh): Master server control utility and diagnostic system.

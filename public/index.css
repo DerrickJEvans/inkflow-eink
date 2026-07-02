@@ -1691,6 +1691,12 @@ textarea:focus {
   border: 1px solid rgba(0, 242, 254, 0.25);
 }
 
+.client-badge.inkflow-xiao {
+  background: rgba(0, 230, 118, 0.12);
+  color: #00e676;
+  border: 1px solid rgba(0, 230, 118, 0.25);
+}
+
 .client-badge.inkflow-r4 {
   background: rgba(127, 172, 255, 0.12);
   color: #7facff;

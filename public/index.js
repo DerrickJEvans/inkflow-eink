@@ -795,7 +795,9 @@ function renderDevicesList() {
     let clientBadgeClass = 'unknown';
     let clientBadgeLabel = dev.clientType || 'InkFlow C++ Client';
     
-    if (clientBadgeLabel.toLowerCase().includes('esp32')) {
+    if (clientBadgeLabel.toLowerCase().includes('xiao')) {
+      clientBadgeClass = 'inkflow-xiao';
+    } else if (clientBadgeLabel.toLowerCase().includes('esp32')) {
       clientBadgeClass = 'inkflow-esp32';
     } else if (clientBadgeLabel.toLowerCase().includes('r4') || clientBadgeLabel.toLowerCase().includes('renesas')) {
       clientBadgeClass = 'inkflow-r4';
