@@ -49,10 +49,14 @@ module.exports = {
       { text: "CANCELLED", weight: 0.5 }
     ];
 
-    // Seed pseudo-random generator with current hour to keep lists stable across 4-minute polls
-    const currentHour = new Date().getHours();
-    const currentDay = new Date().getDate();
-    const seed = currentHour + currentDay * 24;
+    // Seed pseudo-random generator with full date+hour so no two day/hour combos share the same seed.
+    // Previous formula (hour + day*24) could collide across day boundaries causing stale images to reappear.
+    const _now = new Date();
+    const currentHour  = _now.getHours();
+    const currentDay   = _now.getDate();
+    const currentMonth = _now.getMonth() + 1; // 1-12
+    const currentYear  = _now.getFullYear();
+    const seed = currentYear * 100000 + currentMonth * 10000 + currentDay * 1000 + currentHour;
 
     const pseudoRandom = (index, offset = 0) => {
       const x = Math.sin(seed + index * 100 + offset) * 10000;
