@@ -151,12 +151,7 @@ void setup() {
   }
 
   if (diagPressed) {
-    Serial.println(F("[Buttons] Diagnostics Button pressed. Showing diagnostics report..."));
-    if (connectWiFi()) {
-      showDiagnostics();
-    } else {
-      drawErrorSplashDirect("WiFi Connection Failed", "Check SSID/Password", "Server unreachable");
-    }
+    Serial.println(F("[Buttons] Diagnostics Button pressed. Checking hold duration..."));
     
     // Hold PIN_DIAG for 3 seconds to trigger captive portal setup
     unsigned long diagCheckStart = millis();
@@ -175,6 +170,12 @@ void setup() {
       EEPROM.put(0, activeConfig);
       startSetupWizard(); // Enters endless loop
     } else {
+      Serial.println(F("[Buttons] Short press detected. Showing diagnostics report..."));
+      if (connectWiFi()) {
+        showDiagnostics();
+      } else {
+        drawErrorSplashDirect("WiFi Connection Failed", "Check SSID/Password", "Server unreachable");
+      }
       Serial.println(F("[Diagnostics] Diagnostics displayed. Entering sleep in 10 seconds..."));
       delay(10000); // Show diagnostics for 10 seconds before sleeping
       goToSleep(nextRefreshSeconds);
