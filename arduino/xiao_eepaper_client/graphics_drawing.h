@@ -138,8 +138,8 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     drawString(40, 150, line1, 1);
     drawString(40, 180, line2, 1);
     drawString(40, 210, line3, 1);
-    drawString(40, 260, "Key 2: refresh report.  Key 0 or 1: return to display.", 1);
-    drawString(40, 285, "Hold Key 2 for 3s: wipe config and start WiFi setup.", 1);
+    drawString(40, 260, "Key 3: refresh report.  Key 1 or 2: return to display.", 1);
+    drawString(40, 285, "Hold Key 3 for 3s: wipe config and start WiFi setup.", 1);
     drawString(40, 390, "--------------------------------------------------------", 1);
     drawString(40, 420, macLine, 1);
   }
