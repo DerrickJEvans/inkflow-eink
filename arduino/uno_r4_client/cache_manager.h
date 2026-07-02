@@ -27,7 +27,7 @@
 #define MAX_SLOTS                   16       // Support up to 16 cached screens (16 * 256KB = 4MB)
 
 struct CacheHeader {
-  char magic[4];              // "INKF"
+  char magic[4];              // "INK4"
   char signature[32];         // Server carousel hash hex (32 bytes)
   uint32_t width;
   uint32_t height;
@@ -150,7 +150,7 @@ public:
   // Reads from header block
   bool getHeader(CacheHeader& header) {
     readData(CACHE_HEADER_ADDR, (uint8_t*)&header, sizeof(CacheHeader));
-    return (strncmp(header.magic, "INKF", 4) == 0);
+    return (strncmp(header.magic, "INK4", 4) == 0);
   }
 
   // Writes new header
@@ -162,7 +162,7 @@ public:
   void initCache(const String& newSignature, uint32_t w, uint32_t h) {
     Serial.println(F("[Cache] Invalidation triggered. Re-initializing SPI Flash..."));
     CacheHeader header;
-    strncpy(header.magic, "INKF", 4);
+    strncpy(header.magic, "INK4", 4);
     memset(header.signature, 0, 32);
     memcpy(header.signature, newSignature.c_str(), min(32, (int)newSignature.length()));
     header.width = w;

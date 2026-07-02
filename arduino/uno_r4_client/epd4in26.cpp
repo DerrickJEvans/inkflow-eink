@@ -175,8 +175,8 @@ int Epd::Init_4GRAY(void) {
 	SendData(0x80);
 
 	SendCommand(0x01);   //      drive output control    
-	SendData((WIDTH-1)%256); //  Y  
-	SendData((WIDTH-1)/256); //  Y 
+	SendData((HEIGHT-1)%256); //  Y  
+	SendData((HEIGHT-1)/256); //  Y 
 	SendData(0x02);
 
 	SendCommand(0x3C);        // Border       Border setting 
