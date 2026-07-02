@@ -171,11 +171,8 @@ void setup() {
       startSetupWizard(); // Enters endless loop
     } else {
       Serial.println(F("[Buttons] Short press detected. Showing diagnostics report..."));
-      if (connectWiFi()) {
-        showDiagnostics();
-      } else {
-        drawErrorSplashDirect("WiFi Connection Failed", "Check SSID/Password", "Server unreachable");
-      }
+      connectWiFiSilent(); // Attempt a silent connection to populate IP and RSSI if available
+      showDiagnostics();   // Show diagnostics overlay regardless of connection success
       Serial.println(F("[Diagnostics] Diagnostics displayed. Entering sleep in 10 seconds..."));
       delay(10000); // Show diagnostics for 10 seconds before sleeping
       goToSleep(nextRefreshSeconds);

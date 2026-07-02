@@ -378,22 +378,27 @@ inline void drawErrorSplashDirect(String errorMsg, String detail1, String detail
 inline void showDiagnostics() {
   Serial.println(F("[Diagnostics] Displaying system diagnostics overlay..."));
   
-  char localIPStr[16];
-  IPAddress ip = WiFi.localIP();
-  snprintf(localIPStr, sizeof(localIPStr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+  String line1, line2;
   
-  long rssi = WiFi.RSSI();
+  if (WiFi.status() == WL_CONNECTED) {
+    char localIPStr[16];
+    IPAddress ip = WiFi.localIP();
+    snprintf(localIPStr, sizeof(localIPStr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    long rssi = WiFi.RSSI();
+    line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (" + String(rssi) + " dBm)";
+    line2 = "IP: " + String(localIPStr);
+  } else {
+    line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (Offline)";
+    line2 = "IP: Disconnected";
+  }
   
   RTCTime time;
-  String timeStr = "";
   if (RTC.getTime(time)) {
     char buf[12];
     snprintf(buf, sizeof(buf), "%02d:%02d:%02d", time.getHour(), time.getMinutes(), time.getSeconds());
-    timeStr = " | Time: " + String(buf);
+    line2 += " | Time: " + String(buf);
   }
   
-  String line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (" + String(rssi) + " dBm)";
-  String line2 = "IP: " + String(localIPStr) + timeStr;
   String line3 = "Server: " + String(activeConfig.server_host) + ":" + String(activeConfig.server_port);
   
   drawErrorSplashDirect(line1, line2, line3);

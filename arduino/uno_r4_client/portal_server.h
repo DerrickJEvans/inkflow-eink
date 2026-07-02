@@ -360,4 +360,38 @@ inline bool connectWiFi() {
   }
 }
 
+inline bool connectWiFiSilent() {
+  Serial.print(F("[WiFi] Attempting silent connection to SSID: "));
+  Serial.println(activeConfig.wifi_ssid);
+  
+  // Wait up to 2 seconds for WiFi shield boot/ready state
+  int waitShield = 0;
+  while (WiFi.status() == WL_NO_SHIELD && waitShield < 10) {
+    delay(200);
+    waitShield++;
+  }
+  
+  if (WiFi.status() == WL_NO_SHIELD) {
+    Serial.println(F("[WiFi] Co-processor missing or not ready."));
+    return false;
+  }
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(F("[WiFi] Already connected."));
+    return true;
+  }
+  
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 3) {
+    WiFi.begin(activeConfig.wifi_ssid, activeConfig.wifi_pass);
+    unsigned long startTry = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - startTry < 3000) {
+      delay(100);
+    }
+    attempts++;
+  }
+  
+  return (WiFi.status() == WL_CONNECTED);
+}
+
 #endif // PORTAL_SERVER_H
