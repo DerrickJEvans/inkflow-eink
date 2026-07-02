@@ -59,7 +59,7 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     line1 = "SSID: " + param1;
     line2 = "Host: " + param2;
     line3 = "Port: " + param3;
-  } else if (mode == 3) {
+  } else if (mode == 3 || mode == 6) {
     line1 = param1;
     line2 = param2;
     line3 = param3;
