@@ -7,6 +7,8 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <time.h>
+#include <sys/time.h>
 #include "config.h"
 #include "config_manager.h"
 #include "font8x8.h"
@@ -193,6 +195,15 @@ inline void showDiagnostics() {
   } else {
     line1 = "SSID: " + String(activeConfig.wifi_ssid) + " (Offline)";
     line2 = "IP: Disconnected";
+  }
+  
+  time_t now = time(nullptr);
+  struct tm timeinfo;
+  if (now > 100000) {
+    localtime_r(&now, &timeinfo);
+    char buf[12];
+    snprintf(buf, sizeof(buf), "%02d:%02d:%02d", timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+    line2 += " | Time: " + String(buf);
   }
   
   String line3 = "Server: " + String(activeConfig.server_host) + ":" + String(activeConfig.server_port);

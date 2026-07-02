@@ -53,6 +53,7 @@ int scannedSSIDCount = 0;
 bool fetchAndStreamDisplay(String action = "");
 void displayCachedImage(int slotIndex);
 void loadOfflineCache();
+void syncRTCTime(String dateStr);
 void updateDisplay();
 
 void setup() {
@@ -222,8 +223,8 @@ bool fetchAndStreamDisplay(String action) {
   Serial.printf("[HTTP] Fetching raw stream: %s\n", url);
   http.begin(url);
   
-  const char* collectHeaders[] = {"X-Refresh-Rate", "X-Carousel-Signature", "X-Image-Index", "X-Total-Images"};
-  http.collectHeaders(collectHeaders, 4);
+  const char* collectHeaders[] = {"X-Refresh-Rate", "X-Carousel-Signature", "X-Image-Index", "X-Total-Images", "Date"};
+  http.collectHeaders(collectHeaders, 5);
  
   http.addHeader("ID", macAddress);
   http.addHeader("Access-Token", macAddress);
@@ -265,6 +266,14 @@ bool fetchAndStreamDisplay(String action) {
   int serverTotalImages = 1;
   if (http.hasHeader("X-Total-Images")) {
     serverTotalImages = http.header("X-Total-Images").toInt();
+  }
+  
+  if (http.hasHeader("Date")) {
+    String dateVal = http.header("Date");
+    dateVal.trim();
+    Serial.print(F("[Header] Date matched: "));
+    Serial.println(dateVal);
+    syncRTCTime(dateVal);
   }
   
   WiFiClient* stream = http.getStreamPtr();
@@ -344,4 +353,86 @@ bool fetchAndStreamDisplay(String action) {
   }
   
   return true;
+}
+
+void syncRTCTime(String dateStr) {
+  // Expected format: "Thu, 02 Jul 2026 11:30:00 GMT" or "02 Jul 2026 11:30:00 GMT"
+  int commaIdx = dateStr.indexOf(',');
+  if (commaIdx != -1) {
+    dateStr = dateStr.substring(commaIdx + 1);
+    dateStr.trim();
+  }
+  
+  int firstSpace = dateStr.indexOf(' ');
+  if (firstSpace == -1) return;
+  String dayStr = dateStr.substring(0, firstSpace);
+  
+  int secondSpace = dateStr.indexOf(' ', firstSpace + 1);
+  if (secondSpace == -1) return;
+  String monthStr = dateStr.substring(firstSpace + 1, secondSpace);
+  
+  int thirdSpace = dateStr.indexOf(' ', secondSpace + 1);
+  if (thirdSpace == -1) return;
+  String yearStr = dateStr.substring(secondSpace + 1, thirdSpace);
+  
+  int fourthSpace = dateStr.indexOf(' ', thirdSpace + 1);
+  String timeStr;
+  if (fourthSpace == -1) {
+    timeStr = dateStr.substring(thirdSpace + 1);
+  } else {
+    timeStr = dateStr.substring(thirdSpace + 1, fourthSpace);
+  }
+  
+  int day = dayStr.toInt();
+  int year = yearStr.toInt();
+  
+  int month = 0; // 0-11
+  monthStr.toLowerCase();
+  if (monthStr == "jan") month = 0;
+  else if (monthStr == "feb") month = 1;
+  else if (monthStr == "mar") month = 2;
+  else if (monthStr == "apr") month = 3;
+  else if (monthStr == "may") month = 4;
+  else if (monthStr == "jun") month = 5;
+  else if (monthStr == "jul") month = 6;
+  else if (monthStr == "aug") month = 7;
+  else if (monthStr == "sep") month = 8;
+  else if (monthStr == "oct") month = 9;
+  else if (monthStr == "nov") month = 10;
+  else if (monthStr == "dec") month = 11;
+  
+  int firstColon = timeStr.indexOf(':');
+  if (firstColon == -1) return;
+  String hourStr = timeStr.substring(0, firstColon);
+  
+  int secondColon = timeStr.indexOf(':', firstColon + 1);
+  if (secondColon == -1) return;
+  String minStr = timeStr.substring(firstColon + 1, secondColon);
+  String secStr = timeStr.substring(secondColon + 1);
+  
+  int hour = hourStr.toInt();
+  int minute = minStr.toInt();
+  int second = secStr.toInt();
+  
+  if (year >= 2026 && day >= 1 && day <= 31 && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+    struct tm t;
+    t.tm_sec = second;
+    t.tm_min = minute;
+    t.tm_hour = hour;
+    t.tm_mday = day;
+    t.tm_mon = month;
+    t.tm_year = year - 1900;
+    t.tm_isdst = -1;
+    
+    time_t epoch = mktime(&t);
+    if (epoch != (time_t)-1) {
+      struct timeval tv;
+      tv.tv_sec = epoch;
+      tv.tv_usec = 0;
+      settimeofday(&tv, NULL);
+      Serial.print(F("[RTC] Synchronized time successfully to: "));
+      Serial.print(day); Serial.print("-"); Serial.print(monthStr); Serial.print("-"); Serial.print(year);
+      Serial.print(" "); Serial.print(hour); Serial.print(":"); Serial.print(minute); Serial.print(":"); Serial.println(second);
+    }
+  }
 }
