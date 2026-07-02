@@ -236,29 +236,62 @@ void displayCachedImage(int slotIndex) {
   }
 
   uint32_t startAddr = CACHE_SLOTS_START_ADDR + ((uint32_t)slotIndex * SLOT_SPACING);
-  uint8_t tempBuf[64];
+  
+  // We allocate a buffer for chunk processing (4800 bytes = 12 E-Paper rows)
+  const uint32_t chunkSize = 4800;
+  uint8_t* tempBuf = (uint8_t*)malloc(chunkSize);
+  if (!tempBuf) {
+    Serial.println(F("[Error] Failed to allocate temporary buffer for EPD transfer."));
+    return;
+  }
 
-  // Pass 1: Send RAM1 (0x24) - Lower Bit
+  // Pass 1: Send RAM1 (0x24) - Lower Bit in bursts
   Serial.println(F("[Display] Sending RAM1 (0x24) lower bit channel..."));
-  epd.SendCommand(0x24);
-  for (uint32_t i = 0; i < totalImageBytes; i += 64) {
-    cache.readData(startAddr + i, tempBuf, 64);
-    for (int k = 0; k < 64; k += 4) {
-      uint8_t unpackedVal = unpackRAM1(tempBuf[k], tempBuf[k+1], tempBuf[k+2], tempBuf[k+3]);
-      epd.SendData(unpackedVal);
+  for (uint32_t i = 0; i < totalImageBytes; i += chunkSize) {
+    cache.readData(startAddr + i, tempBuf, chunkSize);
+    
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    if (i == 0) {
+      digitalWrite(CS_PIN, LOW);
+      digitalWrite(DC_PIN, LOW); // Command mode
+      SPI.transfer(0x24);
+      digitalWrite(CS_PIN, HIGH);
     }
+    
+    digitalWrite(CS_PIN, LOW);
+    digitalWrite(DC_PIN, HIGH); // Data mode
+    for (uint32_t k = 0; k < chunkSize; k += 4) {
+      uint8_t unpackedVal = unpackRAM1(tempBuf[k], tempBuf[k+1], tempBuf[k+2], tempBuf[k+3]);
+      SPI.transfer(unpackedVal);
+    }
+    digitalWrite(CS_PIN, HIGH);
+    SPI.endTransaction();
   }
 
-  // Pass 2: Send RAM2 (0x26) - Upper Bit
+  // Pass 2: Send RAM2 (0x26) - Upper Bit in bursts
   Serial.println(F("[Display] Sending RAM2 (0x26) upper bit channel..."));
-  epd.SendCommand(0x26);
-  for (uint32_t i = 0; i < totalImageBytes; i += 64) {
-    cache.readData(startAddr + i, tempBuf, 64);
-    for (int k = 0; k < 64; k += 4) {
-      uint8_t unpackedVal = unpackRAM2(tempBuf[k], tempBuf[k+1], tempBuf[k+2], tempBuf[k+3]);
-      epd.SendData(unpackedVal);
+  for (uint32_t i = 0; i < totalImageBytes; i += chunkSize) {
+    cache.readData(startAddr + i, tempBuf, chunkSize);
+    
+    SPI.beginTransaction(SPISettings(2000000, MSBFIRST, SPI_MODE0));
+    if (i == 0) {
+      digitalWrite(CS_PIN, LOW);
+      digitalWrite(DC_PIN, LOW); // Command mode
+      SPI.transfer(0x26);
+      digitalWrite(CS_PIN, HIGH);
     }
+    
+    digitalWrite(CS_PIN, LOW);
+    digitalWrite(DC_PIN, HIGH); // Data mode
+    for (uint32_t k = 0; k < chunkSize; k += 4) {
+      uint8_t unpackedVal = unpackRAM2(tempBuf[k], tempBuf[k+1], tempBuf[k+2], tempBuf[k+3]);
+      SPI.transfer(unpackedVal);
+    }
+    digitalWrite(CS_PIN, HIGH);
+    SPI.endTransaction();
   }
+
+  free(tempBuf);
 
   // Trigger physical EPD 4-gray refresh
   Serial.println(F("[Display] Triggering physical 4-gray screen refresh..."));
