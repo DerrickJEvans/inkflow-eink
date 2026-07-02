@@ -213,6 +213,37 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
       elements[numElements++] = {line3, 10, 75, 1};
       elements[numElements++] = {macLine, 10, 110, 1};
     }
+  } else if (mode == 6) {
+    snprintf(line1, sizeof(line1), "%s", param1.c_str());
+    snprintf(line2, sizeof(line2), "%s", param2.c_str());
+    snprintf(line3, sizeof(line3), "%s", param3.c_str());
+
+    if (displayWidth >= 800) {
+      elements[numElements++] = {"InkFlow System Diagnostics", 40, 40, 2};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 70, 1};
+      elements[numElements++] = {"SYSTEM CONFIGURATION & STATUS:", 40, 110, 2};
+      elements[numElements++] = {line1, 40, 150, 1};
+      elements[numElements++] = {line2, 40, 180, 1};
+      elements[numElements++] = {line3, 40, 210, 1};
+      elements[numElements++] = {"Press Button 3 again to wake, or hold for 3s to reset.", 40, 260, 1};
+      elements[numElements++] = {"--------------------------------------------------------", 40, 390, 1};
+      elements[numElements++] = {macLine, 40, 420, 1};
+    } else if (displayWidth >= 400) {
+      elements[numElements++] = {"Diagnostics", 20, 20, 2};
+      elements[numElements++] = {"----------------------------------------", 20, 45, 1};
+      elements[numElements++] = {line1, 20, 80, 1};
+      elements[numElements++] = {line2, 20, 110, 1};
+      elements[numElements++] = {line3, 20, 140, 1};
+      elements[numElements++] = {"Config report active.", 20, 180, 1};
+      elements[numElements++] = {"----------------------------------------", 20, 230, 1};
+      elements[numElements++] = {macLine, 20, 260, 1};
+    } else { // 296x128
+      elements[numElements++] = {"Diagnostics", 10, 10, 1};
+      elements[numElements++] = {line1, 10, 35, 1};
+      elements[numElements++] = {line2, 10, 55, 1};
+      elements[numElements++] = {line3, 10, 75, 1};
+      elements[numElements++] = {macLine, 10, 110, 1};
+    }
   }
 
   // Row and column bounds for border spacing
@@ -375,6 +406,10 @@ inline void drawErrorSplashDirect(String errorMsg, String detail1, String detail
   drawSplashDirect(3, errorMsg, detail1, detail2);
 }
 
+inline void drawDiagnosticsDirect(String ssidLine, String ipLine, String serverLine) {
+  drawSplashDirect(6, ssidLine, ipLine, serverLine);
+}
+
 inline void showDiagnostics() {
   Serial.println(F("[Diagnostics] Displaying system diagnostics overlay..."));
   
@@ -401,7 +436,7 @@ inline void showDiagnostics() {
   
   String line3 = "Server: " + String(activeConfig.server_host) + ":" + String(activeConfig.server_port);
   
-  drawErrorSplashDirect(line1, line2, line3);
+  drawDiagnosticsDirect(line1, line2, line3);
 }
 
 #endif // GRAPHICS_DRAWING_H
