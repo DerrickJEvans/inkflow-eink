@@ -190,7 +190,7 @@
                 <div class="form-group">
                   <label for="edit-device-refresh">Poll Interval (seconds)</label>
                   <input type="number" id="edit-device-refresh" min="10" step="10" required>
-                  <span class="input-hint">30 mins = 1800s. Client devices will sleep for this duration.</span>
+                  <span class="input-hint">30 mins = 1800s. XIAO/Arduino clients enter hardware deep sleep for this duration (near-zero power). The Python/Raspberry Pi client simply waits this interval before polling again — the process stays running.</span>
                 </div>
 
                 <div class="form-group">
@@ -228,12 +228,12 @@
                       <option value="false">Disabled (Stay Awake)</option>
                       <option value="true">Enabled (Quiet Mode)</option>
                     </select>
-                    <span class="input-hint">Puts device to sleep during quiet hours to save battery.</span>
+                    <span class="input-hint">Stops display refreshes during quiet hours. XIAO/Arduino clients enter hardware deep sleep (saves battery). Python/Raspberry Pi clients keep running but pause polling — no power saving, but the screen won't update overnight.</span>
                   </div>
                   <div class="form-group">
                     <label for="edit-device-sleep-start">Sleep Start Time</label>
                     <input type="time" id="edit-device-sleep-start" value="22:00">
-                    <span class="input-hint">Local time when device goes to sleep.</span>
+                    <span class="input-hint">Local time when device stops refreshing. XIAO sleeps; Python client pauses polling.</span>
                   </div>
                   <div class="form-group">
                     <label for="edit-device-sleep-end">Sleep End Time</label>
