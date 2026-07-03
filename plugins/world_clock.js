@@ -347,6 +347,8 @@ module.exports = {
         points.push(`${mapX.toFixed(1)},${mapY.toFixed(1)}`);
       }
 
+      const terminatorPoints = points.join(' ');
+
       // Night shadow opacity: 1-bit dithered screens (floyd-steinberg / threshold / bayer)
       // use a much lighter overlay so the sea dither pattern stays visibly distinct from land.
       // 4-gray and preview screens can handle a slightly stronger shadow.
