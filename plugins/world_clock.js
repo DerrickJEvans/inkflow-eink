@@ -179,7 +179,10 @@ const formatSolarTime = (utcDecimalHour, date, timezone) => {
   }
 };
 
-// Generates mathematically precise vector moon phase SVG
+// Generates mathematically precise vector moon phase SVG.
+// Northern Hemisphere orientation: waxing lit on RIGHT (D-shape), waning lit on LEFT (C-shape).
+// Arc 1 traces the RIGHT limb (counter-clockwise, sweep=0) top to bottom.
+// Arc 2 is the terminator: sweep=0 (waxing, right stays lit), sweep=1 (waning, left stays lit).
 const drawSvgMoonPhase = (phase) => {
   const r = 20;
   const cx = 25;
@@ -195,11 +198,13 @@ const drawSvgMoonPhase = (phase) => {
     return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="white" stroke="black" stroke-width="2" />`;
   }
   
-  // Calculate terminator curve horizontal axis ratio
+  // xRatio: cos(2π·phase) gives terminator ellipse x-radius as fraction of r.
+  // sweepLit=0 (waxing): terminator curves left, keeping right side white (D-shape).
+  // sweepLit=1 (waning): terminator curves right, keeping left side white (C-shape).
   const xRatio = Math.cos(2 * Math.PI * phase);
-  const sweepLit = phase < 0.5 ? 1 : 0;
+  const sweepLit = phase < 0.5 ? 0 : 1;
   const pathD = `M ${cx} ${cy - r}
-                 A ${r} ${r} 0 0 1 ${cx} ${cy + r}
+                 A ${r} ${r} 0 0 0 ${cx} ${cy + r}
                  A ${r * Math.abs(xRatio)} ${r} 0 0 ${sweepLit} ${cx} ${cy - r}`;
   
   return `
