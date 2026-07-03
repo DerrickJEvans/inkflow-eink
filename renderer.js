@@ -403,7 +403,7 @@ const generateSVG = async (device, settings) => {
     if (pId && PLUGINS[pId] && fetchedData[pId]) {
       layoutElements += `
         <g transform="translate(0, 0)">
-          ${PLUGINS[pId].renderSVG(fetchedData[pId], w, h)}
+          ${PLUGINS[pId].renderSVG(fetchedData[pId], w, h, device.ditherMode || 'floyd-steinberg')}
         </g>
       `;
     }

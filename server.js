@@ -443,8 +443,12 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
     const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
     
     const crypto = require('crypto');
+    // Include the render timestamp so the signature changes each time the server produces a
+    // fresh render. This ensures time-sensitive plugins (world clock, train times, TfL, etc.)
+    // always cause the client to re-fetch when the server-side cache expires and new content
+    // is rendered — without the client needing to know anything about plugin refresh rates.
     const signature = crypto.createHash('md5')
-      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || '') + '_' + now.toString())
       .digest('hex');
 
     // Create a temporary device representation with sleep status injected
@@ -1088,7 +1092,7 @@ app.get('/api/display/image.png', async (req, res) => {
     const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
     const crypto = require('crypto');
     const signature = crypto.createHash('md5')
-      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || '') + '_' + (cached ? cached.timestamp : Date.now()).toString())
       .digest('hex');
 
     res.setHeader('Content-Type', 'image/png');
@@ -1193,7 +1197,7 @@ app.get('/api/display/raw', async (req, res) => {
     const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
     const crypto = require('crypto');
     const signature = crypto.createHash('md5')
-      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || ''))
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || '') + '_' + (cached ? cached.timestamp : Date.now()).toString())
       .digest('hex');
 
     res.setHeader('Content-Type', 'application/octet-stream');

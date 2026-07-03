@@ -281,7 +281,7 @@ module.exports = {
     };
   },
 
-  renderSVG(data, width, height) {
+  renderSVG(data, width, height, ditherMode = 'floyd-steinberg') {
     const isFullScreen = width > 500;
     
     // Shaded overlay for the night shadow (using opacity for premium look)
@@ -347,9 +347,13 @@ module.exports = {
         points.push(`${mapX.toFixed(1)},${mapY.toFixed(1)}`);
       }
 
-      const terminatorPoints = points.join(' ');
-      // Shaded overlay for the night shadow
-      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" fill-opacity="0.15" />`;
+      // Night shadow opacity: 1-bit dithered screens (floyd-steinberg / threshold / bayer)
+      // use a much lighter overlay so the sea dither pattern stays visibly distinct from land.
+      // 4-gray and preview screens can handle a slightly stronger shadow.
+      const is1Bit = !ditherMode || ditherMode === 'floyd-steinberg' || ditherMode === 'threshold' ||
+                     ditherMode === 'atkinson' || ditherMode.startsWith('bayer');
+      const nightOpacity = is1Bit ? 0.08 : 0.15;
+      dotsHtml += `<polygon points="${terminatorPoints}" fill="black" fill-opacity="${nightOpacity}" />`;
       dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
     } else {
       for (let y = 0; y < mapHeightCells; y++) {
