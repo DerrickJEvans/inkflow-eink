@@ -432,8 +432,16 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
   
   const cacheDurationMs = refreshRate * 1000;
 
+  // Serve cached render if still fresh — BUT if quiet hours have just started and the
+  // cached image is normal content (not the sleep screen), bypass the cache immediately
+  // so the sleep screen appears without waiting up to one full rotation interval.
+  const cachedIsSleepScreen = cached && cached.data && cached.data.imageId === 'sleep_screen';
   if (cached && !forceRefresh && (now - cached.timestamp < cacheDurationMs)) {
-    return cached.data;
+    if (sleepStatus.isSleeping && !cachedIsSleepScreen) {
+      console.log(`[Sleep Period] Device ${device.id} has entered quiet hours. Bypassing stale cache to render sleep screen immediately.`);
+    } else {
+      return cached.data;
+    }
   }
 
   console.log(`[Renderer] Compiling screen elements for device: ${device.id} (Interval: ${refreshRate}s)...`);
