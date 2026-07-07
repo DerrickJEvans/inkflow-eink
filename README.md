@@ -11,9 +11,9 @@ Python client code and C++ arduino code has been built and tested using Raspberr
 
 Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnmostic page and a configuration captive web page.
 
-The arduino client has support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
+The arduino clients have support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
 
-The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Both are served from the server also running on the Pi 4B.
+The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Also shown are the Arduino UNO R4 client and also the SeeeD Studio EE04 board with 4.26 inch panels.
 
 ---
 
