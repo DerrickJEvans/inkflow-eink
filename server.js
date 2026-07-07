@@ -1184,6 +1184,11 @@ app.get('/api/display/image.bmp', async (req, res) => {
     res.setHeader('X-Trmnl-Temp-Profile', '1');
     res.setHeader('temperature-profile', '1');
     res.setHeader('temp-profile', '1');
+
+    // Add compatibility headers
+    res.setHeader('X-Maximum-Compatibility', '1');
+    res.setHeader('X-Compatibility', '1');
+    res.setHeader('X-Trmnl-Maximum-Compatibility', '1');
     
     res.send(data.bmp);
   } catch (err) {
@@ -1334,6 +1339,11 @@ app.all('/api/display', async (req, res) => {
     res.setHeader('temperature-profile', is4Gray ? '0' : '1');
     res.setHeader('temp-profile', is4Gray ? '0' : '1');
 
+    // Add compatibility headers
+    res.setHeader('X-Maximum-Compatibility', is4Gray ? '0' : '1');
+    res.setHeader('X-Compatibility', is4Gray ? '0' : '1');
+    res.setHeader('X-Trmnl-Maximum-Compatibility', is4Gray ? '0' : '1');
+
     // Return official TRMNL BYOS response format
     res.json({
       status: 0, // Return standard success status inside JSON body (0 = success in TRMNL BYOS)
@@ -1349,7 +1359,14 @@ app.all('/api/display', async (req, res) => {
       temperature_profile: is4Gray ? 0 : 1,
       "temperature-profile": is4Gray ? 0 : 1,
       temperatureProfile: is4Gray ? 0 : 1,
-      tempProfile: is4Gray ? 0 : 1
+      tempProfile: is4Gray ? 0 : 1,
+      
+      // Maximum Compatibility flags to force refresh mode 1
+      maximum_compatibility: is4Gray ? false : true,
+      compatibility: is4Gray ? false : true,
+      compatible: is4Gray ? false : true,
+      maximumCompatibility: is4Gray ? false : true,
+      "maximum-compatibility": is4Gray ? false : true
     });
   } catch (err) {
     console.error(err);
