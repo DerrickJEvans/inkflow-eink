@@ -481,10 +481,13 @@ const renderDeviceImage = async (device, settings) => {
   }
 
   // 4. Export PNG
-  const pngColors = is4Gray ? 4 : 2;
-  const pngBuffer = await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
-    .png({ palette: true, colors: pngColors })
-    .toBuffer();
+  const pngBuffer = is4Gray
+    ? await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
+        .png({ palette: true, colors: 4 })
+        .toBuffer()
+    : await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
+        .png({ palette: false })
+        .toBuffer();
 
   // 5. Export Raw Horizontal Bit-Packed Buffer
   const rawBuffer = is4Gray ? packToRaw4Bpp(dithered, w, h) : packToRaw1Bit(dithered, w, h);
