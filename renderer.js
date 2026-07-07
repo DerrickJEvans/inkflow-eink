@@ -486,7 +486,9 @@ const renderDeviceImage = async (device, settings) => {
         .png({ palette: true, colors: 4 })
         .toBuffer()
     : await sharp(dithered, { raw: { width: w, height: h, channels: 1 } })
-        .png({ palette: false })
+        .grayscale()
+        .toColorspace('b-w')
+        .png()
         .toBuffer();
 
   // 5. Export Raw Horizontal Bit-Packed Buffer
