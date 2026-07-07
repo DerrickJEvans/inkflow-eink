@@ -1317,10 +1317,8 @@ app.all('/api/display', async (req, res) => {
     const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
     const serverIp = req.headers.host;
     
-    // Choose file extension: .bmp for monochrome, .png for grayscale
-    const ditherMode = device.ditherMode || 'floyd-steinberg';
-    const is4Gray = ditherMode === '4gray' || ditherMode === '4-gray';
-    const ext = is4Gray ? 'png' : 'bmp';
+    // Force PNG format since PNG decoding (PNGdec) is compiled in on all display models (unlike BMP which is compiled out on FastEPD boards)
+    const ext = 'png';
 
     const imageUrl = `${protocol}://${serverIp}/api/display/image.${ext}?device=${device.id}`;
 
