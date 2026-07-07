@@ -4,9 +4,10 @@ An optimized, premium Node.js Express server that aggregates data from multiple 
 
 Designed for self-hosted home LAN environments, InkFlow supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/XIAO microcontrollers—allowing you to build the ultimate wireless status console.
 
-<img width="4080" height="2296" alt="reTerminal with TRMNL firmware and Raspberry Pi 4 with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure" src="https://github.com/user-attachments/assets/8e9377f0-8745-4171-9c17-5cc3396777f0" />
+<img width="4080" height="2296" alt="clients" src="https://github.com/user-attachments/assets/b95c4842-c6e4-41d2-8978-96fcd34198c1" />
 
-Python client code and C++ arduino code has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield.
+
+Python client code and C++ arduino code has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield. There is also an ESP32S client based on the SEEED Studio EE04 ePaper Board.
 
 Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnmostic page and a configuration captive web page.
 
