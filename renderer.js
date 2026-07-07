@@ -479,7 +479,7 @@ const encode1BitBMP = (dithered, w, h) => {
   buf.writeUInt8(0xFF, 58);
   buf.writeUInt8(0xFF, 59);
   buf.writeUInt8(0xFF, 60);
-  buf.writeUInt8(0xFF, 61);
+  buf.writeUInt8(0x00, 61);
 
   // Pixel Data (Bottom-to-Top)
   let offset = 62;
