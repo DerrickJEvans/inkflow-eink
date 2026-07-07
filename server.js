@@ -1118,6 +1118,62 @@ app.get('/api/display/image.png', async (req, res) => {
   }
 });
 
+app.get('/api/display/image.bmp', async (req, res) => {
+  try {
+    const deviceId = req.query.device || (config.devices[0] ? config.devices[0].id : 'default_screen');
+    const force = req.query.force === 'true';
+    
+    const device = getOrCreateDevice(deviceId, req);
+    recordDeviceConnection(device, req);
+
+    // Handle manual next/prev button actions
+    const action = req.query.action;
+    if (action && device.activePlugins && device.activePlugins.length > 1) {
+      const activePlugins = device.activePlugins.filter(pId => PLUGINS[pId]);
+      if (activePlugins.length > 1) {
+        const len = activePlugins.length;
+        const currentIndex = parseInt(device.currentPluginIndex) || 0;
+        if (action === 'prev') {
+          device.currentPluginIndex = (currentIndex - 2 + len) % len;
+          console.log(`[Buttons] Button Action 'prev': Changed plugin index from ${currentIndex} to ${device.currentPluginIndex}`);
+        } else if (action === 'next') {
+          console.log(`[Buttons] Button Action 'next': Keeping plugin index at ${device.currentPluginIndex} to render it`);
+        }
+        saveConfig();
+      }
+    }
+
+    const advanceIndex = req.query.advance === 'true';
+    const data = await fetchDeviceDisplayData(device, force, advanceIndex);
+    
+    const cached = imageCache[device.id];
+    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepStatus = checkDeviceSleepStatus(device);
+    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
+
+    const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
+    const totalImages = activePluginsList.length;
+    const renderedIndex = totalImages > 0 ? (parseInt(device.currentPluginIndex) || 0) : 0;
+    const crypto = require('crypto');
+    const signature = crypto.createHash('md5')
+      .update(activePluginsList.join(',') + '_' + JSON.stringify(config.settings) + '_' + (device.cacheBuster || '') + '_' + (cached ? cached.timestamp : Date.now()).toString())
+      .digest('hex');
+
+    res.setHeader('Content-Type', 'image/bmp');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('X-Refresh-Rate', sleepInterval.toString());
+    res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
+    res.setHeader('X-Carousel-Signature', data.carouselSignature || signature);
+    res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
+    res.setHeader('X-Image-Index', (data.imageIndex !== undefined ? data.imageIndex : renderedIndex).toString());
+    res.setHeader('X-Total-Images', (data.totalImages !== undefined ? data.totalImages : totalImages).toString());
+    res.send(data.bmp);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Render engine error");
+  }
+});
+
 // Single widget preview PNG renderer
 app.get('/api/display/preview-plugin.png', async (req, res) => {
   try {
@@ -1237,7 +1293,13 @@ app.all('/api/display', async (req, res) => {
 
     const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
     const serverIp = req.headers.host;
-    const imageUrl = `${protocol}://${serverIp}/api/display/image.png?device=${device.id}`;
+    
+    // Choose file extension: .bmp for monochrome, .png for grayscale
+    const ditherMode = device.ditherMode || 'floyd-steinberg';
+    const is4Gray = ditherMode === '4gray' || ditherMode === '4-gray';
+    const ext = is4Gray ? 'png' : 'bmp';
+
+    const imageUrl = `${protocol}://${serverIp}/api/display/image.${ext}?device=${device.id}`;
 
     const cached = imageCache[device.id];
     const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
@@ -1250,8 +1312,8 @@ app.all('/api/display', async (req, res) => {
     res.json({
       status: 0, // Return standard success status inside JSON body (0 = success in TRMNL BYOS)
       image_url: imageUrl,
-      filename: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Standard BYOS field name
-      image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.png`, // Backwards compatibility field
+      filename: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.${ext}`, // Standard BYOS field name
+      image_name: `screen-${device.id}-${Math.floor(Date.now() / 1000)}.${ext}`, // Backwards compatibility field
       update_firmware: false,
       firmware_url: null,
       refresh_rate: parseInt(sleepInterval) || 1800, // Return standard integer refresh rate

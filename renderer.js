@@ -440,6 +440,72 @@ const generateSVG = async (device, settings) => {
   `;
 };
 
+const encode1BitBMP = (dithered, w, h) => {
+  const rowBytes = Math.ceil(w / 8);
+  const rowPadding = (4 - (rowBytes % 4)) % 4;
+  const stride = rowBytes + rowPadding;
+  const pixelDataSize = stride * h;
+  const fileSize = 62 + pixelDataSize;
+
+  const buf = Buffer.alloc(fileSize);
+
+  // File Header
+  buf.write('BM', 0); // bfType
+  buf.writeUInt32LE(fileSize, 2); // bfSize
+  buf.writeUInt16LE(0, 6); // bfReserved1
+  buf.writeUInt16LE(0, 8); // bfReserved2
+  buf.writeUInt32LE(62, 10); // bfOffBits
+
+  // DIB Header
+  buf.writeUInt32LE(40, 14); // biSize
+  buf.writeInt32LE(w, 18); // biWidth
+  buf.writeInt32LE(h, 22); // biHeight (positive = bottom-to-top)
+  buf.writeUInt16LE(1, 26); // biPlanes
+  buf.writeUInt16LE(1, 28); // biBitCount
+  buf.writeUInt32LE(0, 30); // biCompression
+  buf.writeUInt32LE(pixelDataSize, 34); // biSizeImage
+  buf.writeInt32LE(2835, 38); // biXPelsPerMeter
+  buf.writeInt32LE(2835, 42); // biYPelsPerMeter
+  buf.writeUInt32LE(2, 46); // biClrUsed
+  buf.writeUInt32LE(2, 50); // biClrImportant
+
+  // Color Palette (B, G, R, Reserved)
+  // Color 0: Black
+  buf.writeUInt8(0x00, 54);
+  buf.writeUInt8(0x00, 55);
+  buf.writeUInt8(0x00, 56);
+  buf.writeUInt8(0x00, 57);
+  // Color 1: White
+  buf.writeUInt8(0xFF, 58);
+  buf.writeUInt8(0xFF, 59);
+  buf.writeUInt8(0xFF, 60);
+  buf.writeUInt8(0xFF, 61);
+
+  // Pixel Data (Bottom-to-Top)
+  let offset = 62;
+  for (let y = h - 1; y >= 0; y--) {
+    const rowStart = y * w;
+    let byteVal = 0;
+    for (let x = 0; x < w; x++) {
+      const bitIdx = 7 - (x % 8);
+      const isWhite = dithered[rowStart + x] > 127;
+      if (isWhite) {
+        byteVal |= (1 << bitIdx);
+      }
+      if (bitIdx === 0 || x === w - 1) {
+        buf.writeUInt8(byteVal, offset++);
+        byteVal = 0;
+      }
+    }
+    // Add row padding
+    for (let p = 0; p < rowPadding; p++) {
+      buf.writeUInt8(0, offset++);
+    }
+  }
+
+  return buf;
+};
+
 /**
  * Main render function. Generates both PNG and Raw formats for a device.
  */
@@ -494,10 +560,14 @@ const renderDeviceImage = async (device, settings) => {
   // 5. Export Raw Horizontal Bit-Packed Buffer
   const rawBuffer = is4Gray ? packToRaw4Bpp(dithered, w, h) : packToRaw1Bit(dithered, w, h);
 
+  // 6. Export 1-Bit BMP (only for monochrome screens)
+  const bmpBuffer = is4Gray ? null : encode1BitBMP(dithered, w, h);
+
   return {
     svg: svgString,
     png: pngBuffer,
-    raw: rawBuffer
+    raw: rawBuffer,
+    bmp: bmpBuffer
   };
 };
 
