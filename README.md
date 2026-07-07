@@ -14,7 +14,7 @@ Optionally, for the Python client on a Raspberry Pi, there is support for capaci
 
 The C++ MCU clients have support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
 
-The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Also shown are the Arduino UNO R4 client and also the SeeeD Studio EE04 board with 4.26 inch panels.
+The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Also shown are the Arduino UNO R4 client and also the Seeed Studio EE04 board with 4.26 inch panels.
 
 ---
 
