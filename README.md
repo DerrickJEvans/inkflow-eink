@@ -6,12 +6,13 @@ Designed for self-hosted home LAN environments, InkFlow supports a wide variety 
 
 <img width="4080" height="2296" alt="clients" src="https://github.com/user-attachments/assets/b95c4842-c6e4-41d2-8978-96fcd34198c1" />
 
+The Node JS Express server code has been built and tested on Raspberry PI 4 B and 5.
 
-Python client code and C++ arduino code has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield. There is also an ESP32S client based on the SEEED Studio EE04 ePaper Board.
+Python client code  has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino C++ client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield. There is also an ESP32S client based on the SEEED Studio EE04 ePaper Board also written in C++.
 
 Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnmostic page and a configuration captive web page.
 
-The arduino clients have support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
+The C++ MCU clients have support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
 
 The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Also shown are the Arduino UNO R4 client and also the SeeeD Studio EE04 board with 4.26 inch panels.
 
