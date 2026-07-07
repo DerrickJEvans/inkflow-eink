@@ -1317,7 +1317,8 @@ app.all('/api/display', async (req, res) => {
       update_firmware: false,
       firmware_url: null,
       refresh_rate: parseInt(sleepInterval) || 1800, // Return standard integer refresh rate
-      reset_firmware: false
+      reset_firmware: false,
+      temp_profile: is4Gray ? 0 : 1
     });
   } catch (err) {
     console.error(err);
