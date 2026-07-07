@@ -1319,6 +1319,8 @@ app.all('/api/display', async (req, res) => {
     
     // Force PNG format since PNG decoding (PNGdec) is compiled in on all display models (unlike BMP which is compiled out on FastEPD boards)
     const ext = 'png';
+    const ditherMode = device.ditherMode || 'floyd-steinberg';
+    const is4Gray = ditherMode === '4gray' || ditherMode === '4-gray';
 
     const imageUrl = `${protocol}://${serverIp}/api/display/image.${ext}?device=${device.id}`;
 
