@@ -580,6 +580,13 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
 
 ---
 
+## 3D Printed Cases
+
+The repository also has STL files for 3D printed cases for the Raspberry Pi 4  with 7in5 panel and Seeed Studio EE04 board with 4in26 panel (see image below).
+
+<img width="4080" height="2296" alt="cases" src="https://github.com/user-attachments/assets/856277f8-2fe8-487a-b442-7a8cd2e67b75" />
+
+
 ## 🛡️ License
 
 This project is licensed under the [MIT License](LICENSE) (MIT). Feel free to use, modify, and distribute it in your custom low-power dashboard environments!
