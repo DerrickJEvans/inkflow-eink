@@ -1111,6 +1111,15 @@ app.get('/api/display/image.png', async (req, res) => {
     res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
     res.setHeader('X-Image-Index', (data.imageIndex !== undefined ? data.imageIndex : renderedIndex).toString());
     res.setHeader('X-Total-Images', (data.totalImages !== undefined ? data.totalImages : totalImages).toString());
+    
+    // Add all potential temperature-profile header variants
+    res.setHeader('X-Temperature-Profile', '1');
+    res.setHeader('X-Temp-Profile', '1');
+    res.setHeader('X-Trmnl-Temperature-Profile', '1');
+    res.setHeader('X-Trmnl-Temp-Profile', '1');
+    res.setHeader('temperature-profile', '1');
+    res.setHeader('temp-profile', '1');
+    
     res.send(data.png);
   } catch (err) {
     console.error(err);
@@ -1167,6 +1176,15 @@ app.get('/api/display/image.bmp', async (req, res) => {
     res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
     res.setHeader('X-Image-Index', (data.imageIndex !== undefined ? data.imageIndex : renderedIndex).toString());
     res.setHeader('X-Total-Images', (data.totalImages !== undefined ? data.totalImages : totalImages).toString());
+    
+    // Add all potential temperature-profile header variants
+    res.setHeader('X-Temperature-Profile', '1');
+    res.setHeader('X-Temp-Profile', '1');
+    res.setHeader('X-Trmnl-Temperature-Profile', '1');
+    res.setHeader('X-Trmnl-Temp-Profile', '1');
+    res.setHeader('temperature-profile', '1');
+    res.setHeader('temp-profile', '1');
+    
     res.send(data.bmp);
   } catch (err) {
     console.error(err);
@@ -1307,6 +1325,14 @@ app.all('/api/display', async (req, res) => {
     const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
 
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
+    
+    // Add all potential temperature-profile header variants
+    res.setHeader('X-Temperature-Profile', is4Gray ? '0' : '1');
+    res.setHeader('X-Temp-Profile', is4Gray ? '0' : '1');
+    res.setHeader('X-Trmnl-Temperature-Profile', is4Gray ? '0' : '1');
+    res.setHeader('X-Trmnl-Temp-Profile', is4Gray ? '0' : '1');
+    res.setHeader('temperature-profile', is4Gray ? '0' : '1');
+    res.setHeader('temp-profile', is4Gray ? '0' : '1');
 
     // Return official TRMNL BYOS response format
     res.json({
@@ -1318,7 +1344,12 @@ app.all('/api/display', async (req, res) => {
       firmware_url: null,
       refresh_rate: parseInt(sleepInterval) || 1800, // Return standard integer refresh rate
       reset_firmware: false,
-      temp_profile: is4Gray ? 0 : 1
+      // Return all key variations to ensure compatibility
+      temp_profile: is4Gray ? 0 : 1,
+      temperature_profile: is4Gray ? 0 : 1,
+      "temperature-profile": is4Gray ? 0 : 1,
+      temperatureProfile: is4Gray ? 0 : 1,
+      tempProfile: is4Gray ? 0 : 1
     });
   } catch (err) {
     console.error(err);
