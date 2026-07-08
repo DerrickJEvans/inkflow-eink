@@ -92,14 +92,14 @@ const getMoonDetails = (date) => {
   
   let phaseName = "";
   let icon = "";
-  if (age < 1.845) { phaseName = "New Moon"; icon = "🌑"; }
-  else if (age < 5.536) { phaseName = "Waxing Crescent"; icon = "🌒"; }
-  else if (age < 9.228) { phaseName = "First Quarter"; icon = "🌓"; }
-  else if (age < 12.920) { phaseName = "Waxing Gibbous"; icon = "🌔"; }
-  else if (age < 16.610) { phaseName = "Full Moon"; icon = "🌕"; }
-  else if (age < 20.300) { phaseName = "Waning Gibbous"; icon = "🌖"; }
-  else if (age < 23.990) { phaseName = "Third Quarter"; icon = "🌗"; }
-  else if (age < 27.680) { phaseName = "Waning Crescent"; icon = "🌘"; }
+  if (phase < 0.03 || phase > 0.97) { phaseName = "New Moon"; icon = "🌑"; }
+  else if (phase >= 0.03 && phase < 0.22) { phaseName = "Waxing Crescent"; icon = "🌒"; }
+  else if (phase >= 0.22 && phase < 0.28) { phaseName = "First Quarter"; icon = "🌓"; }
+  else if (phase >= 0.28 && phase < 0.47) { phaseName = "Waxing Gibbous"; icon = "🌔"; }
+  else if (phase >= 0.47 && phase < 0.53) { phaseName = "Full Moon"; icon = "🌕"; }
+  else if (phase >= 0.53 && phase < 0.72) { phaseName = "Waning Gibbous"; icon = "🌖"; }
+  else if (phase >= 0.72 && phase < 0.78) { phaseName = "Third Quarter"; icon = "🌗"; }
+  else if (phase >= 0.78 && phase <= 0.97) { phaseName = "Waning Crescent"; icon = "🌘"; }
   else { phaseName = "New Moon"; icon = "🌑"; }
 
   // Moon longitude: based on sun's longitude plus relative phase angle
