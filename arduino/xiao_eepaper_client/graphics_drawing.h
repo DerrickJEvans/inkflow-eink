@@ -22,9 +22,9 @@ inline void drawCharacter(int startX, int startY, char c, int scale) {
     for (int col = 0; col < 8; col++) {
       if ((fontByte >> col) & 1) {
         if (scale == 1) {
-          epaper.drawPixel(startX + col, startY + row, TFT_GRAY_0);
+          epaper.drawPixel(startX + col, startY + row, TFT_BLACK);
         } else {
-          epaper.fillRect(startX + col * scale, startY + row * scale, scale, scale, TFT_GRAY_0);
+          epaper.fillRect(startX + col * scale, startY + row * scale, scale, scale, TFT_BLACK);
         }
       }
     }
@@ -69,12 +69,12 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
   int border1 = 5;
   int border2 = 10;
 
-  // Clear buffer with white (TFT_GRAY_3)
-  epaper.fillScreen(TFT_GRAY_3);
+  // Clear buffer with white (TFT_WHITE)
+  epaper.fillScreen(TFT_WHITE);
   
   // 1. Draw elegant double borders
-  epaper.drawRect(border1, border1, displayWidth - border1 * 2, displayHeight - border1 * 2, TFT_GRAY_0);
-  epaper.drawRect(border2, border2, displayWidth - border2 * 2, displayHeight - border2 * 2, TFT_GRAY_0);
+  epaper.drawRect(border1, border1, displayWidth - border1 * 2, displayHeight - border1 * 2, TFT_BLACK);
+  epaper.drawRect(border2, border2, displayWidth - border2 * 2, displayHeight - border2 * 2, TFT_BLACK);
   
   if (mode == 0) {
     drawString(40, 30, "InkFlow E-Ink Setup Portal (Step 1/2)", 2);
@@ -147,9 +147,9 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
   // 2. Draw Logo/QR bitmaps using drawBitmap
   if (mode == 0 || mode == 5) {
     const uint8_t* qrVal = (mode == 0) ? qr_wifi_110x110 : qr_url_110x110;
-    epaper.drawBitmap(620, 185, qrVal, 110, 110, TFT_GRAY_0, TFT_GRAY_3);
+    epaper.drawBitmap(620, 185, qrVal, 110, 110, TFT_BLACK, TFT_WHITE);
   } else {
-    epaper.drawBitmap(580, 120, logo_160x160, 160, 160, TFT_GRAY_3, TFT_GRAY_0);
+    epaper.drawBitmap(580, 120, logo_160x160, 160, 160, TFT_WHITE, TFT_BLACK);
   }
 
   // Update physical screen

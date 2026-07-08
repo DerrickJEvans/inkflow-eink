@@ -80,7 +80,6 @@ void setup() {
   epaper.begin();
   epaper.fillScreen(TFT_WHITE); // Fill with White in 1-bit mode
   epaper.update();
-  epaper.initGrayMode(GRAY_LEVEL4);
 
   // Detect Sleep Wakeup Cause and map Button inputs
   String action = "";
@@ -211,8 +210,8 @@ bool fetchAndStreamDisplay(String action) {
   String macAddress = WiFi.macAddress();
   
   char url[256];
-  // Append dither=4gray so server renders 4-gray levels and packages into 4bpp (192KB) buffer
-  snprintf(url, sizeof(url), "http://%s:%d/api/display/raw?device=%s&width=%d&height=%d&dither=4gray", 
+  // Request 1-bit monochrome raw pixel buffer
+  snprintf(url, sizeof(url), "http://%s:%d/api/display/raw?device=%s&width=%d&height=%d&dither=floyd-steinberg", 
            activeConfig.server_host, activeConfig.server_port, macAddress.c_str(), displayWidth, displayHeight);
            
   if (action.length() > 0) {

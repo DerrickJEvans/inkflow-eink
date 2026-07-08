@@ -359,7 +359,7 @@ module.exports = {
       // 4-gray and preview screens can handle a slightly stronger shadow.
       const is1Bit = !ditherMode || ditherMode === 'floyd-steinberg' || ditherMode === 'threshold' ||
                      ditherMode === 'atkinson' || ditherMode.startsWith('bayer');
-      const nightOpacity = is1Bit ? 0.08 : 0.15;
+      const nightOpacity = is1Bit ? 0.28 : 0.15;
       dotsHtml += `<polygon points="${terminatorPoints}" fill="black" fill-opacity="${nightOpacity}" />`;
       dotsHtml += `<rect x="${mapX}" y="${mapY}" width="${mapWidth}" height="${mapHeight}" fill="none" stroke="black" stroke-width="1.5" />`;
     } else {

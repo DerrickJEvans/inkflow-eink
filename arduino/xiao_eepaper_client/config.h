@@ -41,8 +41,8 @@ extern EPaper epaper;
 #error "EPaper support not enabled! Check if driver.h defines BOARD_SCREEN_COMBO correctly."
 #endif
 
-// Buffer size for 4-level grayscale (4bpp, 2 pixels per byte)
-// 800 * 480 / 2 = 192,000 bytes
-const int bufferSize = (displayWidth * displayHeight) / 2;
+// Buffer size for 1-bit monochrome (1bpp, 8 pixels per byte)
+// 800 * 480 / 8 = 48,000 bytes
+const int bufferSize = (displayWidth * displayHeight) / 8;
 
 #endif // CONFIG_H
