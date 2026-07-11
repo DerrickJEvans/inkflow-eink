@@ -314,6 +314,7 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(html.encode("utf-8"))
 
     def do_GET(self):
+        self.close_connection = True
         global last_connection_error, client_connected
         parsed_url = urllib.parse.urlparse(self.path)
         
@@ -341,6 +342,7 @@ class SetupPortalHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
+        self.close_connection = True
         if self.path == "/save":
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length).decode('utf-8')
@@ -473,6 +475,7 @@ def apply_config_and_reconnect(ssid, password, server_ip, port, device_name):
             if httpd:
                 print("[Setup Portal] Stopping setup web server...")
                 httpd.shutdown()
+                httpd.server_close()
                 
             print("[Setup Portal] Restarting client process to apply configurations...")
             time.sleep(1)

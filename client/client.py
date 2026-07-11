@@ -160,81 +160,75 @@ def poll_server():
                     request_params['action'] = action_to_send
                     request_params['force'] = 'true'
 
-                response = requests.get(server_url, params=request_params, headers=headers, stream=True, timeout=10)
-                
-                if response.status_code != 200:
-                    print(f"[Server Warning] Server responded with status code: {response.status_code}")
-                    response.close()
-                    raise requests.exceptions.RequestException(f"Bad status code {response.status_code}")
-                
-                consecutive_failures = 0
-                carousel_sig = response.headers.get('X-Carousel-Signature')
-                image_index_val = response.headers.get('X-Image-Index')
-                total_images_val = response.headers.get('X-Total-Images')
-                refresh_rate_val = response.headers.get('X-Refresh-Rate')
-                
-                if refresh_rate_val:
-                    try:
-                        poll_interval = int(refresh_rate_val)
-                        print(f"[{time.strftime('%H:%M:%S')}] Server set refresh rate: {poll_interval}s")
-                    except ValueError:
-                        pass
-                
-                image_index = None
-                total_images = None
-                if image_index_val is not None:
-                    try:
-                        image_index = int(image_index_val)
-                    except ValueError:
-                        pass
-                if total_images_val is not None:
-                    try:
-                        total_images = int(total_images_val)
-                    except ValueError:
-                        pass
-                
-                is_cached = False
-                raw_bytes = None
-                
-                if carousel_sig and image_index is not None:
-                    manifest = cache_manager.read_cache_manifest()
-                    if manifest.get('carousel_signature') != carousel_sig:
-                        print(f"[{time.strftime('%H:%M:%S')}] [Cache] Carousel signature mismatch. Purging cache...")
-                        cache_manager.clear_cache_slides()
-                        manifest = {
-                            'carousel_signature': carousel_sig,
-                            'total_images': total_images or 1,
-                            'width': drivers.WIDTH,
-                            'height': drivers.HEIGHT
-                        }
-                        cache_manager.write_cache_manifest(manifest)
-                        
-                    raw_bytes = cache_manager.get_cached_slide(image_index)
-                    if raw_bytes is not None:
-                        is_cached = True
-                        print(f"[{time.strftime('%H:%M:%S')}] [Cache] Cache hit! Loading Slide {image_index} from local cache...")
-                        response.close()
-                
-                if not is_cached:
-                    try:
-                        raw_bytes = response.content
-                    finally:
-                        response.close()
+                with requests.get(server_url, params=request_params, headers=headers, stream=True, timeout=10) as response:
+                    if response.status_code != 200:
+                        print(f"[Server Warning] Server responded with status code: {response.status_code}")
+                        raise requests.exceptions.RequestException(f"Bad status code {response.status_code}")
                     
-                    print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(raw_bytes)} bytes)")
+                    consecutive_failures = 0
+                    carousel_sig = response.headers.get('X-Carousel-Signature')
+                    image_index_val = response.headers.get('X-Image-Index')
+                    total_images_val = response.headers.get('X-Total-Images')
+                    refresh_rate_val = response.headers.get('X-Refresh-Rate')
                     
-                    # Pad/truncate safety check (only for 1-bit raw stream, skip for 4-gray PNG)
-                    if color_depth != 4:
-                        expected_size = int((drivers.WIDTH * drivers.HEIGHT) / 8)
-                        if len(raw_bytes) < expected_size:
-                            missing = expected_size - len(raw_bytes)
-                            raw_bytes += b'\xff' * missing
-                        elif len(raw_bytes) > expected_size:
-                            raw_bytes = raw_bytes[:expected_size]
+                    if refresh_rate_val:
+                        try:
+                            poll_interval = int(refresh_rate_val)
+                            print(f"[{time.strftime('%H:%M:%S')}] Server set refresh rate: {poll_interval}s")
+                        except ValueError:
+                            pass
+                    
+                    image_index = None
+                    total_images = None
+                    if image_index_val is not None:
+                        try:
+                            image_index = int(image_index_val)
+                        except ValueError:
+                            pass
+                    if total_images_val is not None:
+                        try:
+                            total_images = int(total_images_val)
+                        except ValueError:
+                            pass
+                    
+                    is_cached = False
+                    raw_bytes = None
                     
                     if carousel_sig and image_index is not None:
-                        cache_manager.save_cached_slide(image_index, raw_bytes)
-                        print(f"[{time.strftime('%H:%M:%S')}] [Cache] Saved Slide {image_index} to local disk cache.")
+                        manifest = cache_manager.read_cache_manifest()
+                        if manifest.get('carousel_signature') != carousel_sig:
+                            print(f"[{time.strftime('%H:%M:%S')}] [Cache] Carousel signature mismatch. Purging cache...")
+                            cache_manager.clear_cache_slides()
+                            manifest = {
+                                'carousel_signature': carousel_sig,
+                                'total_images': total_images or 1,
+                                'width': drivers.WIDTH,
+                                'height': drivers.HEIGHT
+                            }
+                            cache_manager.write_cache_manifest(manifest)
+                            
+                        raw_bytes = cache_manager.get_cached_slide(image_index)
+                        if raw_bytes is not None:
+                            is_cached = True
+                            print(f"[{time.strftime('%H:%M:%S')}] [Cache] Cache hit! Loading Slide {image_index} from local cache...")
+                    
+                    if not is_cached:
+                        raw_bytes = response.content
+                        
+                        print(f"[{time.strftime('%H:%M:%S')}] Image downloaded successfully ({len(raw_bytes)} bytes)")
+                        
+                        # Pad/truncate safety check (only for 1-bit raw stream, skip for 4-gray PNG)
+                        if color_depth != 4:
+                            expected_size = int((drivers.WIDTH * drivers.HEIGHT) / 8)
+                            if len(raw_bytes) < expected_size:
+                                missing = expected_size - len(raw_bytes)
+                                raw_bytes += b'\xff' * missing
+                            elif len(raw_bytes) > expected_size:
+                                raw_bytes = raw_bytes[:expected_size]
+                        
+                        if carousel_sig and image_index is not None:
+                            cache_manager.save_cached_slide(image_index, raw_bytes)
+                            print(f"[{time.strftime('%H:%M:%S')}] [Cache] Saved Slide {image_index} to local disk cache.")
                 
                 last_successful_sync_time = time.time()
                 
