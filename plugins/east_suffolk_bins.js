@@ -28,7 +28,7 @@ function makeRequest(url, method = 'GET', body = null, headers = {}) {
         ...headers
       },
       timeout: 10000,
-      rejectUnauthorized: false // Bypass local proxy or leaf certificate issues
+      rejectUnauthorized: false
     };
     
     if (body) {
@@ -100,72 +100,56 @@ const parseBinType = (rawType) => {
   };
 };
 
-// Generate realistic future collection dates for mock display
+// Generate realistic future collection dates for mock display matching East Suffolk weekly schedule
 const getMockCollections = () => {
   const collections = [];
   const today = new Date();
   
-  // Food waste is weekly
-  for (let i = 1; i <= 4; i++) {
-    const d = new Date(today);
-    // Let's assume collection is every Tuesday
-    const dayOffset = (2 - today.getDay() + 7) % 7 || 7;
-    d.setDate(today.getDate() + dayOffset + (i - 1) * 7);
+  // Find next Thursday
+  const nextThursday = new Date(today);
+  const dayOffset = (4 - today.getDay() + 7) % 7 || 7;
+  nextThursday.setDate(today.getDate() + dayOffset);
+  
+  // Generate 4 weeks matching the screenshot structure
+  const mockWeeks = [
+    {
+      bins: [
+        { shortName: 'General Waste', container: 'Standard Bin', color: 'grey' },
+        { shortName: 'Food Waste', container: 'Outdoor Caddy', color: 'food' }
+      ]
+    },
+    {
+      bins: [
+        { shortName: 'Recycling', container: 'Standard Bin', color: 'blue' },
+        { shortName: 'Garden Waste', container: 'Standard Bin', color: 'garden' },
+        { shortName: 'Food Waste', container: 'Outdoor Caddy', color: 'food' }
+      ]
+    },
+    {
+      bins: [
+        { shortName: 'Paper & Card', container: 'Standard Bin', color: 'green' },
+        { shortName: 'Food Waste', container: 'Outdoor Caddy', color: 'food' }
+      ]
+    },
+    {
+      bins: [
+        { shortName: 'General Waste', container: 'Standard Bin', color: 'grey' },
+        { shortName: 'Garden Waste', container: 'Standard Bin', color: 'garden' },
+        { shortName: 'Food Waste', container: 'Outdoor Caddy', color: 'food' }
+      ]
+    }
+  ];
+  
+  mockWeeks.forEach((week, idx) => {
+    const d = new Date(nextThursday);
+    d.setDate(nextThursday.getDate() + idx * 7);
     collections.push({
       date: d.toISOString().split('T')[0],
-      fullName: 'Food waste',
-      shortName: 'Food Waste',
-      container: 'Outdoor Caddy',
-      color: 'food'
+      bins: week.bins
     });
-  }
-  
-  // General waste is every 3 weeks (refuse)
-  const dRefuse = new Date(today);
-  const refuseOffset = (5 - today.getDay() + 7) % 7 || 7; // Friday
-  dRefuse.setDate(today.getDate() + refuseOffset);
-  collections.push({
-    date: dRefuse.toISOString().split('T')[0],
-    fullName: 'General waste',
-    shortName: 'General Waste',
-    container: 'Standard Bin',
-    color: 'grey'
   });
   
-  const dRefuse2 = new Date(dRefuse);
-  dRefuse2.setDate(dRefuse.getDate() + 21);
-  collections.push({
-    date: dRefuse2.toISOString().split('T')[0],
-    fullName: 'General waste',
-    shortName: 'General Waste',
-    container: 'Standard Bin',
-    color: 'grey'
-  });
-
-  // Recycling (Blue Lid) is every 3 weeks
-  const dRecycle = new Date(dRefuse);
-  dRecycle.setDate(dRefuse.getDate() + 7);
-  collections.push({
-    date: dRecycle.toISOString().split('T')[0],
-    fullName: 'Container recycling',
-    shortName: 'Recycling',
-    container: 'Standard Bin',
-    color: 'blue'
-  });
-
-  // Paper/Cardboard (Green Lid) is every 3 weeks
-  const dPaper = new Date(dRefuse);
-  dPaper.setDate(dRefuse.getDate() + 14);
-  collections.push({
-    date: dPaper.toISOString().split('T')[0],
-    fullName: 'Paper and cardboard',
-    shortName: 'Paper & Card',
-    container: 'Standard Bin',
-    color: 'green'
-  });
-
-  // Sort by date
-  return collections.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return collections;
 };
 
 // Render bin vectors in 4-level grayscale
@@ -194,39 +178,38 @@ const drawBinIcon = (binColor, cx, cy, scale = 1.0) => {
     return `
       <g transform="translate(${cx}, ${cy}) scale(${scale})">
         <!-- Caddy Body -->
-        <rect x="-11" y="-8" width="22" height="19" rx="2" fill="#666666" stroke="black" stroke-width="1.8" />
+        <rect x="-10" y="-7" width="20" height="17" rx="2" fill="#666666" stroke="black" stroke-width="1.8" />
         <!-- Caddy Lid -->
-        <rect x="-13" y="-12" width="26" height="4" rx="1.5" fill="#333333" stroke="black" stroke-width="1.5" />
+        <rect x="-12" y="-11" width="24" height="4" rx="1.5" fill="#333333" stroke="black" stroke-width="1.5" />
         <!-- Handle -->
-        <path d="M-10 1 L-10 -15 L10 -15 L10 1" fill="none" stroke="black" stroke-width="1.2" stroke-linecap="round" />
+        <path d="M-9 1 L-9 -14 L9 -14 L9 1" fill="none" stroke="black" stroke-width="1.2" stroke-linecap="round" />
         <!-- Food Symbol (Apple Core) -->
-        <path d="M-3 -4 L3 -4 A3 3 0 0 1 1 0 A3 3 0 0 1 3 4 L-3 4 A3 3 0 0 1 -1 0 A3 3 0 0 1 -3 -4 Z" fill="white" />
-        <line x1="0" y1="-6" x2="0" y2="-4" stroke="white" stroke-width="1" />
+        <path d="M-2.5 -3 L2.5 -3 A2.5 2.5 0 0 1 1 0 A2.5 2.5 0 0 1 2.5 3 L-2.5 3 A2.5 2.5 0 0 1 -1 0 A2.5 2.5 0 0 1 -2.5 -3 Z" fill="white" />
       </g>
     `;
   } else {
     return `
       <g transform="translate(${cx}, ${cy}) scale(${scale})">
         <!-- Wheels -->
-        <circle cx="-10" cy="18" r="4" fill="black" />
-        <circle cx="10" cy="18" r="4" fill="black" />
-        <circle cx="-10" cy="18" r="1.5" fill="white" />
-        <circle cx="10" cy="18" r="1.5" fill="white" />
+        <circle cx="-9" cy="17" r="3.5" fill="black" />
+        <circle cx="9" cy="17" r="3.5" fill="black" />
+        <circle cx="-9" cy="17" r="1.2" fill="white" />
+        <circle cx="9" cy="17" r="1.2" fill="white" />
         
         <!-- Bin Body -->
-        <polygon points="-13,-16 13,-16 9.5,16 -9.5,16" fill="${bodyFill}" stroke="black" stroke-width="2" />
+        <polygon points="-12,-15 12,-15 9,15 -9,15" fill="${bodyFill}" stroke="black" stroke-width="1.8" />
         
         <!-- Body texture lines -->
-        <line x1="-5" y1="-10" x2="-3.5" y2="10" stroke="black" stroke-width="1.2" opacity="0.2" />
-        <line x1="0" y1="-10" x2="0" y2="10" stroke="black" stroke-width="1.2" opacity="0.2" />
-        <line x1="5" y1="-10" x2="3.5" y2="10" stroke="black" stroke-width="1.2" opacity="0.2" />
+        <line x1="-5" y1="-10" x2="-3.5" y2="10" stroke="black" stroke-width="1" opacity="0.25" />
+        <line x1="0" y1="-10" x2="0" y2="10" stroke="black" stroke-width="1" opacity="0.25" />
+        <line x1="5" y1="-10" x2="3.5" y2="10" stroke="black" stroke-width="1" opacity="0.25" />
         
         <!-- Bin Lid -->
-        <path d="M-15,-16 L15,-16 L11.5,-21 L-11.5,-21 Z" fill="${lidFill}" stroke="black" stroke-width="2" stroke-linejoin="round" />
-        <rect x="-4" y="-24" width="8" height="3" fill="black" rx="1" />
+        <path d="M-14,-15 L14,-15 L11,-19 L-11,-19 Z" fill="${lidFill}" stroke="black" stroke-width="1.8" stroke-linejoin="round" />
+        <rect x="-3.5" y="-22" width="7" height="3" fill="black" rx="1" />
         
         <!-- Handle -->
-        <path d="M-13,-12 L-17,-12 L-17,-3" fill="none" stroke="black" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M-12,-11 L-15,-11 L-15,-3" fill="none" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
       </g>
     `;
   }
@@ -341,9 +324,8 @@ module.exports = {
         };
       }
       
-      // Deduplicate and parse rows
-      const seen = new Set();
-      const collections = [];
+      // Group collections by date to prevent weekly food waste from squeezing out dry recycling and general waste
+      const grouped = {};
       
       Object.keys(binRows).forEach(key => {
         const row = binRows[key];
@@ -352,27 +334,26 @@ module.exports = {
         
         if (rawDate && rawType) {
           const parsed = parseBinType(rawType);
-          const uniqKey = `${rawDate}_${parsed.shortName}`;
-          if (!seen.has(uniqKey)) {
-            seen.add(uniqKey);
-            collections.push({
+          if (!grouped[rawDate]) {
+            grouped[rawDate] = {
               date: rawDate,
-              fullName: parsed.fullName,
-              shortName: parsed.shortName,
-              container: parsed.container,
-              color: parsed.color
-            });
+              bins: []
+            };
+          }
+          // Avoid duplicate bin types on the same day
+          if (!grouped[rawDate].bins.some(b => b.shortName === parsed.shortName)) {
+            grouped[rawDate].bins.push(parsed);
           }
         }
       });
       
       // Sort collections by date
-      collections.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const collections = Object.values(grouped).sort((a, b) => new Date(a.date) - new Date(b.date));
       
       return {
         uprn,
         isMock: false,
-        collections: collections.slice(0, 8) // Limit to next 8 collections
+        collections: collections.slice(0, 4) // Show next 4 collection dates (weeks)
       };
       
     } catch (e) {
@@ -448,6 +429,47 @@ module.exports = {
           headerText = 'black';
         }
         
+        // Draw the bin icons side by side if there are multiple bins, otherwise draw a large single bin
+        let binsIconHtml = '';
+        let textDetailsHtml = '';
+        
+        const binCount = col.bins.length;
+        if (binCount === 1) {
+          binsIconHtml = drawBinIcon(col.bins[0].color, cardWidth / 2, 130, 1.8);
+          textDetailsHtml = `
+            <text x="${cardWidth / 2}" y="240" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[0].shortName)}</text>
+            <text x="${cardWidth / 2}" y="260" font-family="sans-serif" font-size="11.5" fill="black" opacity="0.6" text-anchor="middle">${escapeXml(col.bins[0].container)}</text>
+          `;
+        } else if (binCount === 2) {
+          binsIconHtml = `
+            ${drawBinIcon(col.bins[0].color, cardWidth / 2 - 28, 130, 1.25)}
+            ${drawBinIcon(col.bins[1].color, cardWidth / 2 + 28, 130, 1.25)}
+          `;
+          textDetailsHtml = `
+            <text x="${cardWidth / 2}" y="235" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[0].shortName)}</text>
+            <text x="${cardWidth / 2}" y="252" font-family="sans-serif" font-size="12" fill="black" opacity="0.4" text-anchor="middle">&amp;</text>
+            <text x="${cardWidth / 2}" y="270" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[1].shortName)}</text>
+          `;
+        } else {
+          // 3 or more bins (e.g. Recycling + Garden + Food waste)
+          binsIconHtml = `
+            ${drawBinIcon(col.bins[0].color, cardWidth / 2 - 38, 130, 1.0)}
+            ${drawBinIcon(col.bins[1].color, cardWidth / 2, 130, 1.0)}
+            ${drawBinIcon(col.bins[2].color, cardWidth / 2 + 38, 130, 1.0)}
+          `;
+          
+          let line1 = col.bins[0].shortName;
+          let line2 = `${col.bins[1].shortName} &amp; ${col.bins[2].shortName}`;
+          if (line2.length > 20) {
+            line2 = `${col.bins[1].shortName.substring(0, 5)} &amp; ${col.bins[2].shortName.substring(0, 5)}`;
+          }
+          textDetailsHtml = `
+            <text x="${cardWidth / 2}" y="230" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(line1)}</text>
+            <text x="${cardWidth / 2}" y="248" font-family="sans-serif" font-size="11" fill="black" opacity="0.4" text-anchor="middle">&amp;</text>
+            <text x="${cardWidth / 2}" y="266" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[1].shortName)} &amp; ${escapeXml(col.bins[2].shortName)}</text>
+          `;
+        }
+        
         cardsHtml += `
           <!-- Card ${idx + 1} -->
           <g transform="translate(${startX}, ${startY})">
@@ -464,12 +486,11 @@ module.exports = {
             <!-- Header Text -->
             <text x="${cardWidth / 2}" y="23" font-family="sans-serif" font-size="12" font-weight="bold" fill="${headerText}" text-anchor="middle" letter-spacing="0.5">${daysText}</text>
             
-            <!-- Bin Vector Icon -->
-            ${drawBinIcon(col.color, cardWidth / 2, 130, 1.8)}
+            <!-- Bin Vector Icons -->
+            ${binsIconHtml}
             
             <!-- Bin Type Details -->
-            <text x="${cardWidth / 2}" y="240" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.shortName)}</text>
-            <text x="${cardWidth / 2}" y="260" font-family="sans-serif" font-size="11.5" fill="black" opacity="0.6" text-anchor="middle">${escapeXml(col.container)}</text>
+            ${textDetailsHtml}
             
             <!-- Date Capsule Badge -->
             <rect x="15" y="295" width="${cardWidth - 30}" height="30" rx="15" fill="none" stroke="black" stroke-width="1" stroke-dasharray="${isUrgent ? 'none' : '3,3'}" />
@@ -478,7 +499,6 @@ module.exports = {
         `;
       });
       
-      // If less than 4 cards, show placeholder
       if (activeCollections.length === 0) {
         cardsHtml = `
           <rect x="${padding}" y="${startY}" width="${width - padding * 2}" height="${cardHeight}" rx="8" fill="none" stroke="black" stroke-width="1" stroke-dasharray="4,4" opacity="0.4" />
@@ -532,15 +552,23 @@ module.exports = {
           labelStyle = 'font-weight="bold" fill="black"';
         }
         
+        // Draw the bin icons
+        let iconsHtml = '';
+        col.bins.slice(0, 3).forEach((bin, bIdx) => {
+          iconsHtml += drawBinIcon(bin.color, compactPadding + 10 + bIdx * 18, 16, 0.7);
+        });
+        
+        // Label list
+        const names = col.bins.map(b => b.shortName).join(', ');
+        
         listHtml += `
           <!-- Row ${idx + 1} -->
           <g transform="translate(0, ${yPos})">
-            <!-- Small Bin Icon -->
-            ${drawBinIcon(col.color, compactPadding + 10, 16, 0.9)}
+            <!-- Bin Icons -->
+            ${iconsHtml}
             
             <!-- Collection Info -->
-            <text x="${compactPadding + 32}" y="15" font-family="sans-serif" font-size="12" font-weight="bold" fill="black">${escapeXml(col.shortName)}</text>
-            <text x="${compactPadding + 32}" y="27" font-family="sans-serif" font-size="10.5" fill="black" opacity="0.5">${escapeXml(col.container)}</text>
+            <text x="${compactPadding + 15 + Math.min(col.bins.length, 3) * 18}" y="20" font-family="sans-serif" font-size="12.5" font-weight="bold" fill="black">${escapeXml(names)}</text>
             
             <!-- Date & Days remaining -->
             <text x="${width - compactPadding}" y="15" font-family="sans-serif" font-size="11.5" ${labelStyle} text-anchor="end">${daysText}</text>
