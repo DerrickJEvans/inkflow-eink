@@ -438,35 +438,36 @@ module.exports = {
           binsIconHtml = drawBinIcon(col.bins[0].color, cardWidth / 2, 130, 1.8);
           textDetailsHtml = `
             <text x="${cardWidth / 2}" y="240" font-family="sans-serif" font-size="15" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[0].shortName)}</text>
-            <text x="${cardWidth / 2}" y="260" font-family="sans-serif" font-size="11.5" fill="black" opacity="0.6" text-anchor="middle">${escapeXml(col.bins[0].container)}</text>
+            <text x="${cardWidth / 2}" y="260" font-family="sans-serif" font-size="11" fill="black" opacity="0.5" text-anchor="middle">${escapeXml(col.bins[0].container)}</text>
           `;
         } else if (binCount === 2) {
+          // Stack names vertically to prevent horizontal overflow (e.g. "General Waste & Food Waste")
+          const name1 = col.bins[0].shortName.replace(' Waste', '');
+          const name2 = col.bins[1].shortName.replace(' Waste', '');
+          
           binsIconHtml = `
             ${drawBinIcon(col.bins[0].color, cardWidth / 2 - 28, 130, 1.25)}
             ${drawBinIcon(col.bins[1].color, cardWidth / 2 + 28, 130, 1.25)}
           `;
           textDetailsHtml = `
-            <text x="${cardWidth / 2}" y="235" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[0].shortName)}</text>
-            <text x="${cardWidth / 2}" y="252" font-family="sans-serif" font-size="12" fill="black" opacity="0.4" text-anchor="middle">&amp;</text>
-            <text x="${cardWidth / 2}" y="270" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[1].shortName)}</text>
+            <text x="${cardWidth / 2}" y="235" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(name1)}</text>
+            <text x="${cardWidth / 2}" y="258" font-family="sans-serif" font-size="14.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(name2)}</text>
           `;
         } else {
-          // 3 or more bins (e.g. Recycling + Garden + Food waste)
+          // 3 bins: stack names vertically to completely eliminate horizontal wrapping / overflow issues
+          const name1 = col.bins[0].shortName.replace(' Waste', '');
+          const name2 = col.bins[1].shortName.replace(' Waste', '');
+          const name3 = col.bins[2].shortName.replace(' Waste', '');
+          
           binsIconHtml = `
             ${drawBinIcon(col.bins[0].color, cardWidth / 2 - 38, 130, 1.0)}
             ${drawBinIcon(col.bins[1].color, cardWidth / 2, 130, 1.0)}
             ${drawBinIcon(col.bins[2].color, cardWidth / 2 + 38, 130, 1.0)}
           `;
-          
-          let line1 = col.bins[0].shortName;
-          let line2 = `${col.bins[1].shortName} &amp; ${col.bins[2].shortName}`;
-          if (line2.length > 20) {
-            line2 = `${col.bins[1].shortName.substring(0, 5)} &amp; ${col.bins[2].shortName.substring(0, 5)}`;
-          }
           textDetailsHtml = `
-            <text x="${cardWidth / 2}" y="230" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(line1)}</text>
-            <text x="${cardWidth / 2}" y="248" font-family="sans-serif" font-size="11" fill="black" opacity="0.4" text-anchor="middle">&amp;</text>
-            <text x="${cardWidth / 2}" y="266" font-family="sans-serif" font-size="13" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(col.bins[1].shortName)} &amp; ${escapeXml(col.bins[2].shortName)}</text>
+            <text x="${cardWidth / 2}" y="222" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(name1)}</text>
+            <text x="${cardWidth / 2}" y="244" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(name2)}</text>
+            <text x="${cardWidth / 2}" y="266" font-family="sans-serif" font-size="13.5" font-weight="bold" fill="black" text-anchor="middle">${escapeXml(name3)}</text>
           `;
         }
         
