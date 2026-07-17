@@ -198,33 +198,47 @@ def display_waveshare(img, partial=False, sleep_after=True):
     model = WAVESHARE_MODEL
     print(f"[Hardware Display] Loading Waveshare EPD driver: {model}")
     try:
-        import importlib
-        cfg_mod = sys.modules.get('waveshare_epd.epdconfig')
-        if cfg_mod:
-            print("[Hardware Display] Releasing active gpiozero pin objects before module reload...")
-            impl = getattr(cfg_mod, 'implementation', None)
-            objects_to_check = [cfg_mod]
-            if impl:
-                objects_to_check.append(impl)
-            for obj in objects_to_check:
-                for attr_name in dir(obj):
-                    if attr_name.endswith('_PIN') or attr_name == 'SPI':
-                        attr = getattr(obj, attr_name)
-                        if hasattr(attr, 'close'):
-                            try:
-                                attr.close()
-                            except Exception:
-                                pass
-                            
-        for mod in ['waveshare_epd.epdconfig', f'waveshare_epd.{model}']:
-            if mod in sys.modules:
-                try:
-                    importlib.reload(sys.modules[mod])
-                except Exception as e:
-                    print(f"[Warning] Failed to reload module {mod}: {e}")
-
-        # Dynamically import waveshare e-paper drivers
+        # Dynamically import waveshare e-paper drivers.
+        # We avoid reloading the modules here (via importlib.reload) because reloading
+        # modules that wrap C libraries or initialize hardware (like spidev and gpiozero)
+        # leaks file descriptors over time, eventually causing "Too many open files".
+        # Instead, we cleanly close previous pin/SPI objects and restore the original
+        # pin integers so Waveshare's module_init() can recreate them correctly.
         epd_module = __import__(f"waveshare_epd.{model}", fromlist=["EPD"])
+        
+        import waveshare_epd.epdconfig as epdconfig
+        impl = getattr(epdconfig, 'implementation', None)
+        if impl is not None:
+            # 1. Track original pin integers
+            if not hasattr(impl, '_original_pins'):
+                impl._original_pins = {}
+            for attr_name in dir(impl):
+                if attr_name.endswith('_PIN'):
+                    val = getattr(impl, attr_name)
+                    if isinstance(val, int):
+                        impl._original_pins[attr_name] = val
+                    elif hasattr(val, 'pin') and hasattr(val.pin, 'number'):
+                        if attr_name not in impl._original_pins:
+                            impl._original_pins[attr_name] = val.pin.number
+            
+            # 2. Cleanly close any existing gpiozero device objects and restore integers
+            for attr_name, pin_num in impl._original_pins.items():
+                val = getattr(impl, attr_name, None)
+                if val is not None and hasattr(val, 'close'):
+                    try:
+                        val.close()
+                    except Exception:
+                        pass
+                setattr(impl, attr_name, pin_num)
+            
+            # 3. Cleanly close the SPI device so it can be re-opened in epd.init()
+            spi_obj = getattr(impl, 'SPI', None) or getattr(epdconfig, 'SPI', None)
+            if spi_obj is not None and hasattr(spi_obj, 'close'):
+                try:
+                    spi_obj.close()
+                except Exception:
+                    pass
+        
         epd = epd_module.EPD()
         
         # Check for fast full-frame (non-flashing) refresh capabilities in the driver.
