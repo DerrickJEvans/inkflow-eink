@@ -202,42 +202,39 @@ def display_waveshare(img, partial=False, sleep_after=True):
         # We avoid reloading the modules here (via importlib.reload) because reloading
         # modules that wrap C libraries or initialize hardware (like spidev and gpiozero)
         # leaks file descriptors over time, eventually causing "Too many open files".
-        # Instead, we cleanly close previous pin/SPI objects and restore the original
-        # pin integers so Waveshare's module_init() can recreate them correctly.
+        # Instead, we cleanly close previous pin/SPI objects, instantiate a fresh
+        # implementation object, and re-bind its methods to the epdconfig module.
         epd_module = __import__(f"waveshare_epd.{model}", fromlist=["EPD"])
         
         import waveshare_epd.epdconfig as epdconfig
         impl = getattr(epdconfig, 'implementation', None)
         if impl is not None:
-            # 1. Track original pin integers
-            if not hasattr(impl, '_original_pins'):
-                impl._original_pins = {}
-            for attr_name in dir(impl):
-                if attr_name.endswith('_PIN'):
-                    val = getattr(impl, attr_name)
-                    if isinstance(val, int):
-                        impl._original_pins[attr_name] = val
-                    elif hasattr(val, 'pin') and hasattr(val.pin, 'number'):
-                        if attr_name not in impl._original_pins:
-                            impl._original_pins[attr_name] = val.pin.number
-            
-            # 2. Cleanly close any existing gpiozero device objects and restore integers
-            for attr_name, pin_num in impl._original_pins.items():
-                val = getattr(impl, attr_name, None)
-                if val is not None and hasattr(val, 'close'):
-                    try:
-                        val.close()
-                    except Exception:
-                        pass
-                setattr(impl, attr_name, pin_num)
-            
-            # 3. Cleanly close the SPI device so it can be re-opened in epd.init()
+            # 1. Cleanly close the old SPI device
             spi_obj = getattr(impl, 'SPI', None) or getattr(epdconfig, 'SPI', None)
             if spi_obj is not None and hasattr(spi_obj, 'close'):
                 try:
                     spi_obj.close()
                 except Exception:
                     pass
+            
+            # 2. Cleanly close any existing gpiozero device objects
+            for attr_name in dir(impl):
+                val = getattr(impl, attr_name, None)
+                if val is not None and hasattr(val, 'close'):
+                    try:
+                        val.close()
+                    except Exception:
+                        pass
+            
+            # 3. Instantiate a fresh RaspberryPi implementation
+            if hasattr(epdconfig, 'RaspberryPi'):
+                new_impl = epdconfig.RaspberryPi()
+                epdconfig.implementation = new_impl
+                
+                # 4. Re-bind the new implementation's methods to the epdconfig module level
+                for method in dir(new_impl):
+                    if not method.startswith('_'):
+                        setattr(epdconfig, method, getattr(new_impl, method))
         
         epd = epd_module.EPD()
         
