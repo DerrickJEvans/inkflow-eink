@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const { generateDailyBriefing } = require('../ai_core');
+const rssPlugin = require('./rss');
+const weatherPlugin = require('./weather');
 
 // Helper to escape XML special characters
 const escapeXml = (unsafe) => {
@@ -73,9 +75,40 @@ module.exports = {
       return prevBriefingData;
     }
 
+    // Load config.json to resolve global settings for dependent plugins
+    let config = { settings: {} };
+    try {
+      const configPath = path.join(__dirname, '..', 'config.json');
+      if (fs.existsSync(configPath)) {
+        config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      }
+    } catch (err) {
+      console.error("[AI Briefing] Failed to read config.json:", err);
+    }
+
+    const getMergedSettings = (pluginId) => {
+      const globalPluginSettings = (config.settings && config.settings[pluginId]) || {};
+      const devicePluginSettings = (device.settings && device.settings[pluginId]) || {};
+      return { ...globalPluginSettings, ...devicePluginSettings };
+    };
+
     // 1. Gather news headlines
     let rssText = '';
-    const rssData = getCachedData('rss');
+    let rssData = getCachedData('rss');
+    if (!rssData) {
+      try {
+        console.log("[AI Briefing] RSS cache empty or missing. Fetching RSS dynamically...");
+        const rssSettings = getMergedSettings('rss');
+        rssData = await rssPlugin.fetchData(rssSettings, device);
+        if (rssData) {
+          const cachePath = path.join(cacheDir, `data_${deviceId}_rss.json`);
+          fs.writeFileSync(cachePath, JSON.stringify(rssData, null, 2), 'utf8');
+        }
+      } catch (err) {
+        console.error("[AI Briefing] Dynamic RSS fetch failed:", err);
+      }
+    }
+
     if (rssData && rssData.items && rssData.items.length > 0) {
       rssText = rssData.items.slice(0, 5).map(item => `- ${item.title} (Source: ${item.source})`).join('\n');
     } else {
@@ -84,7 +117,21 @@ module.exports = {
 
     // 2. Gather weather info
     let weatherText = '';
-    const weatherData = getCachedData('weather');
+    let weatherData = getCachedData('weather');
+    if (!weatherData) {
+      try {
+        console.log("[AI Briefing] Weather cache empty or missing. Fetching Weather dynamically...");
+        const weatherSettings = getMergedSettings('weather');
+        weatherData = await weatherPlugin.fetchData(weatherSettings, device);
+        if (weatherData) {
+          const cachePath = path.join(cacheDir, `data_${deviceId}_weather.json`);
+          fs.writeFileSync(cachePath, JSON.stringify(weatherData, null, 2), 'utf8');
+        }
+      } catch (err) {
+        console.error("[AI Briefing] Dynamic weather fetch failed:", err);
+      }
+    }
+
     if (weatherData) {
       weatherText = `${weatherData.temp || 15}${weatherData.unit || '°C'}, ${weatherData.condition || 'Clear'}. High of ${weatherData.high || 18}${weatherData.unit || '°C'}, low of ${weatherData.low || 11}${weatherData.unit || '°C'}.`;
     } else {

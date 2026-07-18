@@ -2,7 +2,10 @@
 const Parser = require('rss-parser');
 const parser = new Parser({
   headers: { 'User-Agent': 'TrmnlPiServer/1.0 (RaspberryPi E-Ink Dashboard)' },
-  timeout: 5000
+  timeout: 5000,
+  requestOptions: {
+    rejectUnauthorized: false
+  }
 });
 
 // Helper to escape XML special characters
