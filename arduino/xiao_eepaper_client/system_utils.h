@@ -72,44 +72,73 @@ inline void goToSleep(int seconds) {
   esp_deep_sleep_start();
 }
 
-// Battery voltage measurement helper for XIAO ESP32 / EE04 / External Chargers
+// Battery voltage measurement helper for Seeed Studio XIAO ePaper Board EE04
 inline float readBatteryVoltage() {
-  // Dedicated battery ADC pins:
-  // VBAT_ADC_PIN (from config.h)
-  // GPIO 14: Onboard XIAO ESP32-S3 VBAT ADC channel
-  // GPIO 1 (A0): External expansion / EE04 ADC channel
-  // GPIO 4 (A3): External user ADC pin
-  const int candidatePins[] = {VBAT_ADC_PIN, 14, 1, 4};
-  float validVoltage = 0.0;
-
   analogReadResolution(12);
 
-  for (int i = 0; i < 4; i++) {
-    int pin = candidatePins[i];
+  // On the Seeed Studio EE04 ePaper board, the onboard LiPo battery divider is power-gated
+  // by a MOSFET on GPIO 14 to save battery power during deep sleep.
+  // We must temporarily drive GPIO 14 to activate the divider connected to A0 (GPIO 1).
+  
+  float validVoltage = 0.0;
+
+  // Attempt 1: Drive GPIO 14 LOW (active-low MOSFET gate) to measure A0 (GPIO 1)
+  pinMode(14, OUTPUT);
+  digitalWrite(14, LOW);
+  delay(10);
+  
+  pinMode(1, INPUT);
+  delay(2);
+  
+  uint32_t sumMv = 0;
+  for (int s = 0; s < 10; s++) {
+    sumMv += analogReadMilliVolts(1);
+    delay(1);
+  }
+  float avgMv = sumMv / 10.0;
+  float v1 = (avgMv * 2.0) / 1000.0;
+  
+  // Power down MOSFET gate after measurement
+  pinMode(14, INPUT);
+
+  if (v1 >= 1.00 && v1 <= 4.35) {
+    validVoltage = v1;
+  } else {
+    // Attempt 2: Drive GPIO 14 HIGH (active-high MOSFET gate) to measure A0 (GPIO 1)
+    pinMode(14, OUTPUT);
+    digitalWrite(14, HIGH);
+    delay(10);
     
-    // Set pin as plain floating INPUT (no pull-up)
-    pinMode(pin, INPUT);
-    delay(2);
-    
-    // Take calibrated millivolts reading using ESP32 eFuse calibration
-    uint32_t sumMv = 0;
-    for (int s = 0; s < 5; s++) {
-      sumMv += analogReadMilliVolts(pin);
+    sumMv = 0;
+    for (int s = 0; s < 10; s++) {
+      sumMv += analogReadMilliVolts(1);
       delay(1);
     }
-    float avgMv = sumMv / 5.0;
+    avgMv = sumMv / 10.0;
+    float v2 = (avgMv * 2.0) / 1000.0;
     
-    // Apply 2x resistor divider multiplier (100k/100k)
-    float v = (avgMv * 2.0) / 1000.0;
-    
-    // Log voltage per pin to Serial for debugging external charging circuits
-    // Serial.printf("[Battery ADC] Pin %d reads: %.2fV\n", pin, v);
-    
-    // A valid LiPo / charging voltage MUST be between 1.00V and 4.35V.
-    // Any reading > 4.35V (e.g. 6.31V) is a 3.3V digital pull-up artifact (3.155V * 2) and is discarded!
-    if (v >= 1.00 && v <= 4.35) {
-      if (v > validVoltage) {
-        validVoltage = v;
+    pinMode(14, INPUT);
+
+    if (v2 >= 1.00 && v2 <= 4.35) {
+      validVoltage = v2;
+    } else {
+      // Attempt 3: Direct ADC reading on GPIO 14 or GPIO 1
+      const int fallbackPins[] = {14, 1, 4};
+      for (int i = 0; i < 3; i++) {
+        int pin = fallbackPins[i];
+        pinMode(pin, INPUT);
+        delay(2);
+        
+        sumMv = 0;
+        for (int s = 0; s < 5; s++) {
+          sumMv += analogReadMilliVolts(pin);
+          delay(1);
+        }
+        avgMv = sumMv / 5.0;
+        float vf = (avgMv * 2.0) / 1000.0;
+        if (vf >= 1.00 && vf <= 4.35 && vf > validVoltage) {
+          validVoltage = vf;
+        }
       }
     }
   }
