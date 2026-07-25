@@ -72,28 +72,49 @@ inline void goToSleep(int seconds) {
   esp_deep_sleep_start();
 }
 
-// Battery voltage measurement helper for XIAO ESP32
+// Battery voltage measurement helper for XIAO ESP32 / EE04
 inline float readBatteryVoltage() {
-  pinMode(VBAT_ADC_PIN, INPUT);
-  
-  // Average 10 ADC samples to smooth out transient noise
-  uint32_t sum = 0;
-  for (int i = 0; i < 10; i++) {
-    sum += analogRead(VBAT_ADC_PIN);
-    delay(2);
+  // Candidate ADC pins across XIAO ESP32-S3 & expansion boards:
+  // GPIO 14: Onboard XIAO ESP32-S3 VBAT ADC channel
+  // GPIO 1 (A0): External expansion / EE04 board ADC channel
+  const int candidatePins[] = {14, 1, 2, 3};
+  float maxVoltage = 0.0;
+
+  analogReadResolution(12);
+
+  for (int i = 0; i < 4; i++) {
+    int pin = candidatePins[i];
+    
+    // Take calibrated millivolts reading using ESP32 eFuse calibration
+    uint32_t sumMv = 0;
+    for (int s = 0; s < 5; s++) {
+      sumMv += analogReadMilliVolts(pin);
+      delay(1);
+    }
+    float avgMv = sumMv / 5.0;
+    
+    // Apply 2x resistor divider multiplier (100k/100k)
+    float v = (avgMv * 2.0) / 1000.0;
+    
+    if (v > maxVoltage) {
+      maxVoltage = v;
+    }
   }
-  float rawAdc = sum / 10.0;
   
-  // 12-bit ADC (0 - 4095) with 3.3V reference and 2x voltage divider
-  float voltage = (rawAdc / 4095.0) * 3.3 * 2.0;
-  return voltage;
+  return maxVoltage;
 }
 
 // Battery health status calculator
 inline String getBatteryHealthStatus() {
   float v = readBatteryVoltage();
 
-  if (v >= 4.25) {
+  // If voltage reading is under 1.0V, no battery ADC pin is connected/routed (USB power active)
+  if (v < 1.00) {
+    return "Power: USB / External Power (Active)";
+  }
+
+  // If voltage is >= 4.20V, device is connected to USB charger
+  if (v >= 4.20) {
     return "Power: USB Connected / Charging (" + String(v, 2) + "V)";
   }
 
