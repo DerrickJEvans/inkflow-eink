@@ -72,4 +72,45 @@ inline void goToSleep(int seconds) {
   esp_deep_sleep_start();
 }
 
+// Battery voltage measurement helper for XIAO ESP32
+inline float readBatteryVoltage() {
+  pinMode(VBAT_ADC_PIN, INPUT);
+  
+  // Average 10 ADC samples to smooth out transient noise
+  uint32_t sum = 0;
+  for (int i = 0; i < 10; i++) {
+    sum += analogRead(VBAT_ADC_PIN);
+    delay(2);
+  }
+  float rawAdc = sum / 10.0;
+  
+  // 12-bit ADC (0 - 4095) with 3.3V reference and 2x voltage divider
+  float voltage = (rawAdc / 4095.0) * 3.3 * 2.0;
+  return voltage;
+}
+
+// Battery health status calculator
+inline String getBatteryHealthStatus() {
+  float v = readBatteryVoltage();
+
+  if (v >= 4.25) {
+    return "Power: USB Connected / Charging (" + String(v, 2) + "V)";
+  }
+
+  int pct = 0;
+  if (v >= 4.10)      pct = 95 + (int)((v - 4.10) / 0.10 * 5);
+  else if (v >= 3.80) pct = 50 + (int)((v - 3.80) / 0.30 * 45);
+  else if (v >= 3.50) pct = 15 + (int)((v - 3.50) / 0.30 * 35);
+  else if (v >= 3.20) pct = (int)((v - 3.20) / 0.30 * 15);
+  pct = constrain(pct, 0, 100);
+
+  if (v < 3.50) {
+    return "BATTERY: CRITICAL (" + String(pct) + "% / " + String(v, 2) + "V) - Low Volts!";
+  } else if (v < 3.70) {
+    return "Battery Health: Low (" + String(pct) + "% / " + String(v, 2) + "V)";
+  } else {
+    return "Battery Health: Good (" + String(pct) + "% / " + String(v, 2) + "V)";
+  }
+}
+
 #endif // SYSTEM_UTILS_H

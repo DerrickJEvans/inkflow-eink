@@ -85,8 +85,9 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     drawString(80, 215, "(Or scan the WiFi QR code on the right to connect)", 1);
     drawString(40, 255, "2. Once connected, this screen will automatically refresh", 1);
     drawString(40, 275, "   and display the setup portal link and QR code.", 1);
+    drawString(40, 305, getBatteryHealthStatus(), 1);
     if (param1 != "") {
-      drawString(40, 315, "WARNING: Connection failed. Check credentials in portal.", 1);
+      drawString(40, 335, "WARNING: Connection failed. Check credentials in portal.", 1);
     }
     drawString(40, 390, "--------------------------------------------------------", 1);
     drawString(40, 420, macLine, 1);
@@ -100,6 +101,7 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     drawString(80, 215, "(Or scan the URL QR code on the right)", 1);
     drawString(40, 255, "Select your home WiFi network, enter password, and set", 1);
     drawString(40, 275, "the InkFlow server IP and port. The panel will then reboot.", 1);
+    drawString(40, 305, getBatteryHealthStatus(), 1);
     drawString(40, 390, "--------------------------------------------------------", 1);
     drawString(40, 420, macLine, 1);
     drawString(595, 305, "Scan to Open Portal", 1);
@@ -128,7 +130,8 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     drawString(40, 150, line1, 1);
     drawString(40, 180, line2, 1);
     drawString(40, 210, line3, 1);
-    drawString(40, 260, "Check network settings or launch Serial Monitor.", 1);
+    drawString(40, 240, getBatteryHealthStatus(), 1);
+    drawString(40, 280, "Check network settings or launch Serial Monitor.", 1);
     drawString(40, 390, "--------------------------------------------------------", 1);
     drawString(40, 420, macLine, 1);
   } else if (mode == 6) {
@@ -138,8 +141,9 @@ inline void drawSplashDirect(int mode, String param1 = "", String param2 = "", S
     drawString(40, 150, line1, 1);
     drawString(40, 180, line2, 1);
     drawString(40, 210, line3, 1);
-    drawString(40, 260, "Key 3: refresh report.  Key 1 or 2: return to display.", 1);
-    drawString(40, 285, "Hold Key 3 for 3s: wipe config and start WiFi setup.", 1);
+    drawString(40, 240, getBatteryHealthStatus(), 1);
+    drawString(40, 280, "Key 3: refresh report.  Key 1 or 2: return to display.", 1);
+    drawString(40, 305, "Hold Key 3 for 3s: wipe config and start WiFi setup.", 1);
     drawString(40, 390, "--------------------------------------------------------", 1);
     drawString(40, 420, macLine, 1);
   }

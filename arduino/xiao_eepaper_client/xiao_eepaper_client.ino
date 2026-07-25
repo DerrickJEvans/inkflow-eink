@@ -230,7 +230,7 @@ bool fetchAndStreamDisplay(String action) {
   http.addHeader("Device-Name", activeConfig.device_name);
   http.addHeader("FW-Version", "InkFlow-XIAO-v1.0.0");
   http.addHeader("RSSI", String(WiFi.RSSI()));
-  http.addHeader("Battery-Voltage", "USB");
+  http.addHeader("Battery-Voltage", String(readBatteryVoltage(), 2) + "V");
   http.addHeader("Connection", "close");
 
   int httpCode = http.GET();

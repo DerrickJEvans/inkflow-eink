@@ -34,6 +34,11 @@ const int fallbackSleepSeconds = 1800;
 #define BTN_KEY1   3 // KEY1 (GPIO 3) - Wakes and fetches Next carousel slide
 #define BTN_KEY2   5 // KEY2 (GPIO 5) - Wakes and triggers Diagnostics / Setup
 
+// 6. Battery ADC Pin Mapping (XIAO ESP32-S3 GPIO 1 / A0)
+#ifndef VBAT_ADC_PIN
+#define VBAT_ADC_PIN 1
+#endif
+
 // 6. Global Display Driver Object
 #ifdef EPAPER_ENABLE
 extern EPaper epaper;
