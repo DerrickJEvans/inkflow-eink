@@ -72,17 +72,19 @@ inline void goToSleep(int seconds) {
   esp_deep_sleep_start();
 }
 
-// Battery voltage measurement helper for XIAO ESP32 / EE04
+// Battery voltage measurement helper for XIAO ESP32 / EE04 / External Chargers
 inline float readBatteryVoltage() {
   // Dedicated battery ADC pins:
+  // VBAT_ADC_PIN (from config.h)
   // GPIO 14: Onboard XIAO ESP32-S3 VBAT ADC channel
-  // GPIO 1 (A0): External expansion / EE04 board ADC channel
-  const int candidatePins[] = {14, 1};
+  // GPIO 1 (A0): External expansion / EE04 ADC channel
+  // GPIO 4 (A3): External user ADC pin
+  const int candidatePins[] = {VBAT_ADC_PIN, 14, 1, 4};
   float validVoltage = 0.0;
 
   analogReadResolution(12);
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 4; i++) {
     int pin = candidatePins[i];
     
     // Set pin as plain floating INPUT (no pull-up)
@@ -99,6 +101,9 @@ inline float readBatteryVoltage() {
     
     // Apply 2x resistor divider multiplier (100k/100k)
     float v = (avgMv * 2.0) / 1000.0;
+    
+    // Log voltage per pin to Serial for debugging external charging circuits
+    // Serial.printf("[Battery ADC] Pin %d reads: %.2fV\n", pin, v);
     
     // A valid LiPo / charging voltage MUST be between 1.00V and 4.35V.
     // Any reading > 4.35V (e.g. 6.31V) is a 3.3V digital pull-up artifact (3.155V * 2) and is discarded!
