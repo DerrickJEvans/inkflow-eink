@@ -73,23 +73,40 @@ inline void goToSleep(int seconds) {
 }
 
 // Battery voltage measurement helper for Seeed Studio XIAO ePaper Board EE04
+// Official TRMNL BYOD & Seeed Studio EE04 Hardware Spec:
+// - ADC Enable Pin (MOSFET Gate): GPIO 6 (D5)
+// - ADC Measurement Pin: GPIO 1 (A0)
 inline float readBatteryVoltage() {
-  analogReadResolution(12);
+  const int BAT_ENABLE_PIN = 6; // GPIO 6 (D5)
+  const int BAT_ADC_PIN    = 1; // GPIO 1 (A0)
 
-  // Passively sample A0 (GPIO 1) using ESP32 factory eFuse calibration
-  // NEVER alter pinMode on GPIO 14 (EPD_BUSY) to protect SSD1677 SPI display bus!
+  // 1. Turn ON the onboard voltage divider circuit
+  pinMode(BAT_ENABLE_PIN, OUTPUT);
+  digitalWrite(BAT_ENABLE_PIN, HIGH);
+  delay(10); // Allow voltage to settle
+
+  // 2. Sample ADC voltage on A0 (GPIO 1) using calibrated ESP32 eFuse readings
+  analogReadResolution(12);
+  pinMode(BAT_ADC_PIN, INPUT);
+
   uint32_t sumMv = 0;
-  for (int s = 0; s < 5; s++) {
-    sumMv += analogReadMilliVolts(1);
+  for (int s = 0; s < 10; s++) {
+    sumMv += analogReadMilliVolts(BAT_ADC_PIN);
     delay(1);
   }
-  float avgMv = sumMv / 5.0;
+  float avgMv = sumMv / 10.0;
+
+  // 3. Turn OFF the voltage divider circuit to prevent battery drain during deep sleep
+  digitalWrite(BAT_ENABLE_PIN, LOW);
+  pinMode(BAT_ENABLE_PIN, INPUT);
+
+  // 4. Calculate actual LiPo battery voltage (2x voltage divider multiplier)
   float v = (avgMv * 2.0) / 1000.0;
-  
+
   if (v >= 1.00 && v <= 4.35) {
     return v;
   }
-  
+
   return 0.0;
 }
 
