@@ -104,6 +104,29 @@ inline float readBatteryVoltage() {
   return maxVoltage;
 }
 
+// Estimate remaining charge time in minutes based on battery voltage, capacity, and charge current
+inline int getEstimateChargeMinutesLeft(float v, int batteryCapacityMh = 1000, int chargeCurrentMa = 350) {
+  if (v >= 4.22) return 0; // Fully charged
+  
+  int pct = 0;
+  if (v >= 4.10)      pct = 95 + (int)((v - 4.10) / 0.10 * 5);
+  else if (v >= 3.80) pct = 50 + (int)((v - 3.80) / 0.30 * 45);
+  else if (v >= 3.50) pct = 15 + (int)((v - 3.50) / 0.30 * 35);
+  else if (v >= 3.20) pct = (int)((v - 3.20) / 0.30 * 15);
+  pct = constrain(pct, 0, 100);
+
+  float missingCapacityMh = batteryCapacityMh * ((100.0 - pct) / 100.0);
+  float hoursNeeded = (missingCapacityMh / (float)chargeCurrentMa) * 1.15;
+  int minutesNeeded = (int)(hoursNeeded * 60.0);
+
+  // In Constant Voltage (CV) phase (v >= 4.10V), current tapers down, taking at least 15-20 mins for top-off
+  if (v >= 4.10 && minutesNeeded < 20) {
+    minutesNeeded = 20;
+  }
+
+  return minutesNeeded;
+}
+
 // Battery health status calculator
 inline String getBatteryHealthStatus() {
   float v = readBatteryVoltage();
@@ -113,11 +136,6 @@ inline String getBatteryHealthStatus() {
     return "Power: USB / External Power (Active)";
   }
 
-  // If voltage is >= 4.20V, device is connected to USB charger
-  if (v >= 4.20) {
-    return "Power: USB Connected / Charging (" + String(v, 2) + "V)";
-  }
-
   int pct = 0;
   if (v >= 4.10)      pct = 95 + (int)((v - 4.10) / 0.10 * 5);
   else if (v >= 3.80) pct = 50 + (int)((v - 3.80) / 0.30 * 45);
@@ -125,12 +143,19 @@ inline String getBatteryHealthStatus() {
   else if (v >= 3.20) pct = (int)((v - 3.20) / 0.30 * 15);
   pct = constrain(pct, 0, 100);
 
+  // If voltage is >= 4.22V, battery is completely full
+  if (v >= 4.22) {
+    return "Power: USB / Fully Charged (100% / " + String(v, 2) + "V)";
+  }
+
+  int minsLeft = getEstimateChargeMinutesLeft(v);
+  
   if (v < 3.50) {
     return "BATTERY: CRITICAL (" + String(pct) + "% / " + String(v, 2) + "V) - Low Volts!";
   } else if (v < 3.70) {
-    return "Battery Health: Low (" + String(pct) + "% / " + String(v, 2) + "V)";
+    return "Battery: Low (" + String(pct) + "% / " + String(v, 2) + "V) - ~" + String(minsLeft) + "m to full";
   } else {
-    return "Battery Health: Good (" + String(pct) + "% / " + String(v, 2) + "V)";
+    return "Battery: Good (" + String(pct) + "% / " + String(v, 2) + "V) - ~" + String(minsLeft) + "m to full";
   }
 }
 
