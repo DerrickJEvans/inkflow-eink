@@ -76,74 +76,21 @@ inline void goToSleep(int seconds) {
 inline float readBatteryVoltage() {
   analogReadResolution(12);
 
-  // On the Seeed Studio EE04 ePaper board, the onboard LiPo battery divider is power-gated
-  // by a MOSFET on GPIO 14 to save battery power during deep sleep.
-  // We must temporarily drive GPIO 14 to activate the divider connected to A0 (GPIO 1).
-  
-  float validVoltage = 0.0;
-
-  // Attempt 1: Drive GPIO 14 LOW (active-low MOSFET gate) to measure A0 (GPIO 1)
-  pinMode(14, OUTPUT);
-  digitalWrite(14, LOW);
-  delay(10);
-  
-  pinMode(1, INPUT);
-  delay(2);
-  
+  // Passively sample A0 (GPIO 1) using ESP32 factory eFuse calibration
+  // NEVER alter pinMode on GPIO 14 (EPD_BUSY) to protect SSD1677 SPI display bus!
   uint32_t sumMv = 0;
-  for (int s = 0; s < 10; s++) {
+  for (int s = 0; s < 5; s++) {
     sumMv += analogReadMilliVolts(1);
     delay(1);
   }
-  float avgMv = sumMv / 10.0;
-  float v1 = (avgMv * 2.0) / 1000.0;
+  float avgMv = sumMv / 5.0;
+  float v = (avgMv * 2.0) / 1000.0;
   
-  // Power down MOSFET gate after measurement
-  pinMode(14, INPUT);
-
-  if (v1 >= 1.00 && v1 <= 4.35) {
-    validVoltage = v1;
-  } else {
-    // Attempt 2: Drive GPIO 14 HIGH (active-high MOSFET gate) to measure A0 (GPIO 1)
-    pinMode(14, OUTPUT);
-    digitalWrite(14, HIGH);
-    delay(10);
-    
-    sumMv = 0;
-    for (int s = 0; s < 10; s++) {
-      sumMv += analogReadMilliVolts(1);
-      delay(1);
-    }
-    avgMv = sumMv / 10.0;
-    float v2 = (avgMv * 2.0) / 1000.0;
-    
-    pinMode(14, INPUT);
-
-    if (v2 >= 1.00 && v2 <= 4.35) {
-      validVoltage = v2;
-    } else {
-      // Attempt 3: Direct ADC reading on GPIO 14 or GPIO 1
-      const int fallbackPins[] = {14, 1, 4};
-      for (int i = 0; i < 3; i++) {
-        int pin = fallbackPins[i];
-        pinMode(pin, INPUT);
-        delay(2);
-        
-        sumMv = 0;
-        for (int s = 0; s < 5; s++) {
-          sumMv += analogReadMilliVolts(pin);
-          delay(1);
-        }
-        avgMv = sumMv / 5.0;
-        float vf = (avgMv * 2.0) / 1000.0;
-        if (vf >= 1.00 && vf <= 4.35 && vf > validVoltage) {
-          validVoltage = vf;
-        }
-      }
-    }
+  if (v >= 1.00 && v <= 4.35) {
+    return v;
   }
   
-  return validVoltage;
+  return 0.0;
 }
 
 // Estimate remaining charge time in minutes based on battery voltage, capacity, and charge current
