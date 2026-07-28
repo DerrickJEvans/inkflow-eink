@@ -979,6 +979,57 @@ textarea:focus {
   text-align: center;
 }
 
+/* Telemetry Section inside Widget Card */
+.widget-card-telemetry {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-sizing: border-box;
+}
+
+.widget-telemetry-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 9.5px;
+  line-height: 1.2;
+  cursor: help;
+}
+
+.telemetry-chip-label {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.telemetry-chip-val {
+  font-weight: 600;
+  font-size: 9px;
+  border-radius: 3px;
+  padding: 1px 4px;
+}
+
+.telemetry-chip-val.val-updated {
+  color: #64ffda;
+  background: rgba(100, 255, 218, 0.12);
+}
+
+.telemetry-chip-val.val-rendered {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.telemetry-chip-val.val-delivered {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+}
+
 /* ==========================================
    InkFlow Premium Tab System & Widgets Grid
    ========================================== */

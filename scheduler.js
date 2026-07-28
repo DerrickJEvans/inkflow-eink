@@ -8,6 +8,7 @@ if (!fs.existsSync(CACHE_DIR)) fs.mkdirSync(CACHE_DIR, { recursive: true });
 
 let configRef = null;
 let saveConfigRef = null;
+let updateWidgetStatRef = null;
 
 const getCachePath = (deviceId, pluginId) => {
   return path.join(CACHE_DIR, `data_${deviceId}_${pluginId}.json`);
@@ -44,8 +45,9 @@ const fetchAndCachePlugin = async (device, pluginId, settings) => {
     
     fs.writeFileSync(cachePath, JSON.stringify(data, null, 2), 'utf8');
     
-    // Save configuration if indexes were mutated (e.g. sequential rss or xkcd index advance)
-    if (saveConfigRef) {
+    if (updateWidgetStatRef) {
+      updateWidgetStatRef(device.id, pluginId, 'lastUpdated');
+    } else if (saveConfigRef) {
       saveConfigRef();
     }
   } catch (err) {
@@ -74,9 +76,10 @@ const runAllFetches = async () => {
 /**
  * Initializes the background timer loop
  */
-const start = (sharedConfig, sharedSaveConfig) => {
+const start = (sharedConfig, sharedSaveConfig, sharedUpdateWidgetStat) => {
   configRef = sharedConfig;
   saveConfigRef = sharedSaveConfig;
+  updateWidgetStatRef = sharedUpdateWidgetStat;
 
   console.log("[Scheduler] Decoupled Caching Scheduler initialized.");
   

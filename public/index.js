@@ -406,11 +406,39 @@ async function fetchPlugins() {
   }
 }
 
+// Helper to format ISO timestamp into relative time string ("5m ago", "1h ago") with full tooltip
+function formatRelativeTime(isoString) {
+  if (!isoString) return { short: 'Never', full: 'No record available' };
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return { short: 'Never', full: 'Invalid timestamp' };
+    
+    const now = new Date();
+    const diffSecs = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const full = date.toLocaleString();
+    
+    if (diffSecs < 0 || diffSecs < 10) return { short: 'Just now', full };
+    if (diffSecs < 60) return { short: `${diffSecs}s ago`, full };
+    const diffMins = Math.floor(diffSecs / 60);
+    if (diffMins < 60) return { short: `${diffMins}m ago`, full };
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return { short: `${diffHours}h ago`, full };
+    const diffDays = Math.floor(diffHours / 24);
+    return { short: `${diffDays}d ago`, full };
+  } catch (e) {
+    return { short: 'Never', full: 'Parsing error' };
+  }
+}
+
 // Render dynamic reorderable cards inside a horizontal flex scroll container and available palette
-function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}) {
+function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}, widgetStats = {}) {
   const containerSelector = document.getElementById('plugins-selector');
   const containerPalette = document.getElementById('plugins-palette');
   if (!containerSelector || !containerPalette) return;
+
+  // Resolve widgetStats fallback if not directly provided
+  const activeDevice = serverConfig && serverConfig.devices ? serverConfig.devices.find(d => d.id === activeDeviceId) : null;
+  const currentWidgetStats = (widgetStats && Object.keys(widgetStats).length > 0) ? widgetStats : (activeDevice ? (activeDevice.widgetStats || {}) : {});
 
   containerSelector.innerHTML = '';
   containerPalette.innerHTML = '';
@@ -449,7 +477,7 @@ function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}) {
         if (index > -1) {
           selectedPluginIds.splice(index, 1);
         }
-        renderPluginsSelector(selectedPluginIds, rotationIntervals);
+        renderPluginsSelector(selectedPluginIds, rotationIntervals, currentWidgetStats);
       });
       card.appendChild(removeBtn);
 
@@ -476,6 +504,30 @@ function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}) {
       contentWrap.appendChild(icon);
       contentWrap.appendChild(title);
       card.appendChild(contentWrap);
+
+      // Widget Telemetry (Last Updated, Last Rendered, Last Delivered)
+      const stats = currentWidgetStats[plugin.id] || {};
+      const updatedInfo = formatRelativeTime(stats.lastUpdated);
+      const renderedInfo = formatRelativeTime(stats.lastRendered);
+      const deliveredInfo = formatRelativeTime(stats.lastDelivered);
+
+      const telemetryWrap = document.createElement('div');
+      telemetryWrap.className = 'widget-card-telemetry';
+      telemetryWrap.innerHTML = `
+        <div class="widget-telemetry-row" title="Data fetched & updated: ${updatedInfo.full}">
+          <span class="telemetry-chip-label">Updated:</span>
+          <span class="telemetry-chip-val val-updated">${updatedInfo.short}</span>
+        </div>
+        <div class="widget-telemetry-row" title="Image rendered: ${renderedInfo.full}">
+          <span class="telemetry-chip-label">Rendered:</span>
+          <span class="telemetry-chip-val val-rendered">${renderedInfo.short}</span>
+        </div>
+        <div class="widget-telemetry-row" title="Delivered to device screen: ${deliveredInfo.full}">
+          <span class="telemetry-chip-label">Delivered:</span>
+          <span class="telemetry-chip-val val-delivered">${deliveredInfo.short}</span>
+        </div>
+      `;
+      card.appendChild(telemetryWrap);
 
       // Duration spinner (Minutes and Seconds)
       const durationWrap = document.createElement('div');

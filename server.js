@@ -93,6 +93,42 @@ const saveConfig = () => {
   }
 };
 
+/**
+ * Records widget telemetry timestamps (lastUpdated, lastRendered, lastDelivered)
+ */
+const updateWidgetStat = (deviceId, pluginId, eventType) => {
+  if (!deviceId || !pluginId || !eventType) return;
+  const device = (config.devices || []).find(d => d.id === deviceId);
+  if (!device) return;
+
+  if (!device.widgetStats) device.widgetStats = {};
+  if (!device.widgetStats[pluginId]) device.widgetStats[pluginId] = {};
+
+  device.widgetStats[pluginId][eventType] = new Date().toISOString();
+  saveConfig();
+};
+
+/**
+ * Ensures widgetStats structure exists and falls back lastUpdated to cache file mtime if missing
+ */
+const populateWidgetStats = (device) => {
+  if (!device) return;
+  if (!device.widgetStats) device.widgetStats = {};
+  const activePlugins = device.activePlugins || [];
+  for (const pluginId of activePlugins) {
+    if (!device.widgetStats[pluginId]) device.widgetStats[pluginId] = {};
+    const stats = device.widgetStats[pluginId];
+    if (!stats.lastUpdated) {
+      const cachePath = path.join(CACHE_DIR, `data_${device.id}_${pluginId}.json`);
+      if (fs.existsSync(cachePath)) {
+        try {
+          const fileStat = fs.statSync(cachePath);
+          stats.lastUpdated = new Date(fileStat.mtimeMs).toISOString();
+        } catch (e) {}
+      }
+    }
+  }
+};
 
 const clearDeviceJsonCache = (deviceId) => {
   try {
@@ -127,7 +163,7 @@ const clearAllJsonCache = () => {
 };
 
 // Start background scheduler for decoupled cache updates
-scheduler.start(config, saveConfig);
+scheduler.start(config, saveConfig, updateWidgetStat);
 
 // Memory cache for compiled screen data
 const imageCache = {};
@@ -471,6 +507,15 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
     rendered.imageIndex = renderedIndex;
     rendered.totalImages = totalImages;
     rendered.imageId = sleepStatus.isSleeping ? 'sleep_screen' : (activePluginsList[renderedIndex] || 'default');
+
+    // Record lastRendered telemetry timestamp for active plugin(s)
+    if (!sleepStatus.isSleeping) {
+      if (device.layoutMode === 'grid') {
+        activePluginsList.forEach(pId => updateWidgetStat(device.id, pId, 'lastRendered'));
+      } else if (activePluginsList[renderedIndex]) {
+        updateWidgetStat(device.id, activePluginsList[renderedIndex], 'lastRendered');
+      }
+    }
 
     saveConfig();
     
@@ -1015,6 +1060,9 @@ app.get('/api/ai/ollama/pull-status', (req, res) => {
 
 // Get global settings and devices
 app.get('/api/settings', (req, res) => {
+  if (config && Array.isArray(config.devices)) {
+    config.devices.forEach(populateWidgetStats);
+  }
   res.json({
     ...config,
     aiEngines: {
@@ -1120,6 +1168,11 @@ app.get('/api/display/image.png', async (req, res) => {
     res.setHeader('temperature-profile', '1');
     res.setHeader('temp-profile', '1');
     
+    const deliveredPlugin = data.imageId;
+    if (deliveredPlugin && deliveredPlugin !== 'sleep_screen' && deliveredPlugin !== 'default') {
+      updateWidgetStat(device.id, deliveredPlugin, 'lastDelivered');
+    }
+
     res.send(data.png);
   } catch (err) {
     console.error(err);
@@ -1190,6 +1243,11 @@ app.get('/api/display/image.bmp', async (req, res) => {
     res.setHeader('X-Compatibility', '1');
     res.setHeader('X-Trmnl-Maximum-Compatibility', '1');
     
+    const deliveredPluginBmp = data.imageId;
+    if (deliveredPluginBmp && deliveredPluginBmp !== 'sleep_screen' && deliveredPluginBmp !== 'default') {
+      updateWidgetStat(device.id, deliveredPluginBmp, 'lastDelivered');
+    }
+
     res.send(data.bmp);
   } catch (err) {
     console.error(err);
@@ -1295,6 +1353,12 @@ app.get('/api/display/raw', async (req, res) => {
     res.setHeader('X-Image-ID', data.imageId || (activePluginsList[renderedIndex] || 'default'));
     res.setHeader('X-Image-Index', (data.imageIndex !== undefined ? data.imageIndex : renderedIndex).toString());
     res.setHeader('X-Total-Images', (data.totalImages !== undefined ? data.totalImages : totalImages).toString());
+    
+    const deliveredPluginRaw = data.imageId;
+    if (deliveredPluginRaw && deliveredPluginRaw !== 'sleep_screen' && deliveredPluginRaw !== 'default') {
+      updateWidgetStat(device.id, deliveredPluginRaw, 'lastDelivered');
+    }
+
     res.send(data.raw);
   } catch (err) {
     console.error(err);
