@@ -519,20 +519,34 @@ function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}, w
       const renderedInfo = formatRelativeTime(stats.lastRendered);
       const deliveredInfo = formatRelativeTime(stats.lastDelivered);
 
+      const safeShort = (val) => {
+        if (!val) return 'Never';
+        if (typeof val === 'string') return val === 'undefined' ? 'Never' : val;
+        if (typeof val === 'object' && val.short !== undefined) return String(val.short);
+        return 'Never';
+      };
+
+      const safeFull = (val) => {
+        if (!val) return 'No record available';
+        if (typeof val === 'string') return val === 'undefined' ? 'No record available' : val;
+        if (typeof val === 'object' && val.full !== undefined) return String(val.full);
+        return 'No record available';
+      };
+
       const telemetryWrap = document.createElement('div');
       telemetryWrap.className = 'widget-card-telemetry';
       telemetryWrap.innerHTML = `
-        <div class="widget-telemetry-row" title="Data fetched & updated: ${updatedInfo.full}">
+        <div class="widget-telemetry-row" title="Data fetched & updated: ${safeFull(updatedInfo)}">
           <span class="telemetry-chip-label">Updated:</span>
-          <span class="telemetry-chip-val val-updated">${updatedInfo.short}</span>
+          <span class="telemetry-chip-val val-updated">${safeShort(updatedInfo)}</span>
         </div>
-        <div class="widget-telemetry-row" title="Image rendered: ${renderedInfo.full}">
+        <div class="widget-telemetry-row" title="Image rendered: ${safeFull(renderedInfo)}">
           <span class="telemetry-chip-label">Rendered:</span>
-          <span class="telemetry-chip-val val-rendered">${renderedInfo.short}</span>
+          <span class="telemetry-chip-val val-rendered">${safeShort(renderedInfo)}</span>
         </div>
-        <div class="widget-telemetry-row" title="Delivered to device screen: ${deliveredInfo.full}">
+        <div class="widget-telemetry-row" title="Delivered to device screen: ${safeFull(deliveredInfo)}">
           <span class="telemetry-chip-label">Delivered:</span>
-          <span class="telemetry-chip-val val-delivered">${deliveredInfo.short}</span>
+          <span class="telemetry-chip-val val-delivered">${safeShort(deliveredInfo)}</span>
         </div>
       `;
       card.appendChild(telemetryWrap);

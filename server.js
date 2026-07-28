@@ -76,9 +76,10 @@ if (fs.existsSync(configPath)) {
         return true;
       });
       if (deduplicated) {
-        saveConfig();
         console.log("[Startup] Cleaned duplicate devices and auto-saved config.json.");
       }
+      config.devices.forEach(populateWidgetStats);
+      saveConfig();
     }
   } catch (err) {
     console.error("Error reading config.json, using defaults", err);
