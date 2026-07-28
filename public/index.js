@@ -2245,6 +2245,46 @@ function renderHostedWidgetsList(filterText = '') {
 let ollamaStatusInterval = null;
 let ollamaPullInterval = null;
 let savedOllamaModel = 'llama3.2:1b';
+let savedGeminiBuilderModel = 'gemini-2.5-pro';
+let savedGeminiWidgetsModel = 'gemini-2.5-flash-lite';
+
+// Fetch live Google Gemini models list and populate select dropdowns
+async function fetchGeminiModels() {
+  const builderSelect = document.getElementById('ai-env-gemini-builder-model');
+  const widgetsSelect = document.getElementById('ai-env-gemini-widgets-model');
+  if (!builderSelect || !widgetsSelect) return;
+
+  try {
+    const res = await fetch('/api/ai/gemini/models');
+    if (!res.ok) return;
+    const data = await res.json();
+    const models = data.models || [];
+
+    if (models.length > 0) {
+      const renderOptions = (selectedValue, defaultVal) => {
+        let html = '';
+        let found = false;
+        models.forEach(m => {
+          const isSelected = (selectedValue === m.id) || (!selectedValue && m.id === defaultVal);
+          if (isSelected) found = true;
+          html += `<option value="${m.id}" ${isSelected ? 'selected' : ''}>${m.name} (${m.id})</option>`;
+        });
+        if (selectedValue && !found) {
+          html = `<option value="${selectedValue}" selected>${selectedValue} (Configured)</option>` + html;
+        }
+        return html;
+      };
+
+      builderSelect.innerHTML = renderOptions(savedGeminiBuilderModel, 'gemini-2.5-pro');
+      if (savedGeminiBuilderModel) builderSelect.value = savedGeminiBuilderModel;
+
+      widgetsSelect.innerHTML = renderOptions(savedGeminiWidgetsModel, 'gemini-2.5-flash-lite');
+      if (savedGeminiWidgetsModel) widgetsSelect.value = savedGeminiWidgetsModel;
+    }
+  } catch (err) {
+    console.error("Failed to load dynamic Gemini models list:", err);
+  }
+}
 
 // Helper to update active AI engine badges
 function updateEngineBadge(elementId, engine, selectedProvider) {
@@ -2293,6 +2333,9 @@ async function fetchAiEnvConfig() {
     document.getElementById('ai-env-builder-provider').value = data.widgetBuilderProvider;
     document.getElementById('ai-env-widgets-provider').value = data.dynamicWidgetsProvider;
     
+    savedGeminiBuilderModel = data.widgetBuilderGeminiModel || 'gemini-2.5-pro';
+    savedGeminiWidgetsModel = data.dynamicWidgetsGeminiModel || 'gemini-2.5-flash-lite';
+    
     updateEngineBadge('ai-builder-active-engine', data.widgetBuilderEngine, data.widgetBuilderProvider);
     updateEngineBadge('ai-widgets-active-engine', data.dynamicWidgetsEngine, data.dynamicWidgetsProvider);
     
@@ -2316,6 +2359,8 @@ async function fetchAiEnvConfig() {
       modelSelect.innerHTML = `<option value="${savedOllamaModel}">${savedOllamaModel}</option>`;
       modelSelect.value = savedOllamaModel;
     }
+
+    await fetchGeminiModels();
   } catch (err) {
     console.error("Failed to load AI Env Config:", err);
     showToast("Failed to fetch AI configuration settings", true);
@@ -2484,6 +2529,8 @@ function setupAiAdminTabListeners() {
         const payload = {
           widgetBuilderProvider: document.getElementById('ai-env-builder-provider').value,
           dynamicWidgetsProvider: document.getElementById('ai-env-widgets-provider').value,
+          widgetBuilderGeminiModel: document.getElementById('ai-env-gemini-builder-model')?.value || 'gemini-2.5-pro',
+          dynamicWidgetsGeminiModel: document.getElementById('ai-env-gemini-widgets-model')?.value || 'gemini-2.5-flash-lite',
           geminiKey: document.getElementById('ai-env-gemini-key').value,
           groqKey: document.getElementById('ai-env-groq-key').value,
           ollamaHost: document.getElementById('ai-env-ollama-host').value,

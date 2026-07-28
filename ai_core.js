@@ -143,9 +143,11 @@ const generateWithGemini = async (prompt, systemInstruction = null, context = "g
   if (!genAI) {
     throw new Error("Google Gemini API client is not initialized. Please configure your GEMINI_API_KEY in the dashboard.");
   }
-  // Use gemini-2.5-pro for high-fidelity code widget building, and gemini-2.5-flash-lite for lightweight daily text summaries!
-  const primaryModelName = context === "widget" ? "gemini-2.5-pro" : "gemini-2.5-flash-lite";
-  const fallbackModelName = "gemini-2.5-flash";
+  // Dynamically resolve Gemini models from environment variables with defaults
+  const primaryModelName = context === "widget"
+    ? (process.env.WIDGET_BUILDER_GEMINI_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-pro")
+    : (process.env.DYNAMIC_WIDGETS_GEMINI_MODEL || process.env.GEMINI_MODEL || "gemini-2.5-flash-lite");
+  const fallbackModelName = process.env.GEMINI_FALLBACK_MODEL || "gemini-2.5-flash";
 
   const attemptCall = async (modelName) => {
     const modelOptions = { model: modelName };

@@ -840,6 +840,77 @@ let ollamaPullState = {
   error: null
 };
 
+// GET Live Google Gemini Available Models List
+app.get('/api/ai/gemini/models', async (req, res) => {
+  try {
+    const dotenv = require('dotenv');
+    let geminiKey = process.env.GEMINI_API_KEY;
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+      const parsed = dotenv.parse(fs.readFileSync(envPath));
+      if (parsed.GEMINI_API_KEY) geminiKey = parsed.GEMINI_API_KEY;
+    }
+
+    if (!geminiKey || geminiKey === 'your_gemini_api_key_here') {
+      return res.json({
+        available: false,
+        error: 'GEMINI_API_KEY is not configured',
+        models: [
+          { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+          { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+          { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite' },
+          { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' }
+        ]
+      });
+    }
+
+    // Temporarily bypass certificate verification for local SSL environment issues if encountered
+    const oldTlsSetting = process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+    try {
+      const apiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
+      if (oldTlsSetting !== undefined) process.env.NODE_TLS_REJECT_UNAUTHORIZED = oldTlsSetting;
+      else delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+
+      if (!apiRes.ok) {
+        throw new Error(`Google API returned status ${apiRes.status}`);
+      }
+
+      const data = await apiRes.json();
+      const rawModels = data.models || [];
+      const models = rawModels
+        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+        .map(m => {
+          const id = m.name.replace(/^models\//, '');
+          return {
+            id: id,
+            name: m.displayName || id,
+            description: m.description || ''
+          };
+        });
+
+      res.json({ available: true, models });
+    } catch (fetchErr) {
+      if (oldTlsSetting !== undefined) process.env.NODE_TLS_REJECT_UNAUTHORIZED = oldTlsSetting;
+      else delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
+      throw fetchErr;
+    }
+  } catch (err) {
+    console.error('[Gemini Models API] Error listing models:', err.message);
+    res.json({
+      available: false,
+      error: err.message,
+      models: [
+        { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Fallback)' },
+        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Fallback)' },
+        { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (Fallback)' },
+        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Fallback)' }
+      ]
+    });
+  }
+});
+
 // GET AI Configuration and Environment Variables (Masked)
 app.get('/api/ai/env', (req, res) => {
   try {
@@ -867,6 +938,8 @@ app.get('/api/ai/env', (req, res) => {
       hasGroqKey: !!groqKey,
       widgetBuilderProvider: envVars.WIDGET_BUILDER_AI_PROVIDER || 'gemini',
       dynamicWidgetsProvider: envVars.DYNAMIC_WIDGETS_AI_PROVIDER || 'gemini',
+      widgetBuilderGeminiModel: envVars.WIDGET_BUILDER_GEMINI_MODEL || 'gemini-2.5-pro',
+      dynamicWidgetsGeminiModel: envVars.DYNAMIC_WIDGETS_GEMINI_MODEL || 'gemini-2.5-flash-lite',
       widgetBuilderEngine: aiCore.getWidgetBuilderEngine(),
       dynamicWidgetsEngine: aiCore.getDynamicWidgetsEngine(),
       ollamaHost: envVars.OLLAMA_HOST || 'http://127.0.0.1:11434',
@@ -881,7 +954,7 @@ app.get('/api/ai/env', (req, res) => {
 // POST AI Configuration and Environment Variables
 app.post('/api/ai/env', (req, res) => {
   try {
-    const { geminiKey, groqKey, widgetBuilderProvider, dynamicWidgetsProvider, ollamaHost, ollamaModel } = req.body;
+    const { geminiKey, groqKey, widgetBuilderProvider, dynamicWidgetsProvider, widgetBuilderGeminiModel, dynamicWidgetsGeminiModel, ollamaHost, ollamaModel } = req.body;
     const dotenv = require('dotenv');
     const envPath = path.join(__dirname, '.env');
     
@@ -908,6 +981,8 @@ app.post('/api/ai/env', (req, res) => {
       GROQ_API_KEY: finalGroqKey,
       WIDGET_BUILDER_AI_PROVIDER: widgetBuilderProvider || 'gemini',
       DYNAMIC_WIDGETS_AI_PROVIDER: dynamicWidgetsProvider || 'gemini',
+      WIDGET_BUILDER_GEMINI_MODEL: widgetBuilderGeminiModel || 'gemini-2.5-pro',
+      DYNAMIC_WIDGETS_GEMINI_MODEL: dynamicWidgetsGeminiModel || 'gemini-2.5-flash-lite',
       OLLAMA_HOST: ollamaHost || 'http://127.0.0.1:11434',
       OLLAMA_MODEL: ollamaModel || 'llama3.2:1b'
     };
