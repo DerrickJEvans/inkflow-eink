@@ -98,7 +98,8 @@ const saveConfig = () => {
  */
 const updateWidgetStat = (deviceId, pluginId, eventType) => {
   if (!deviceId || !pluginId || !eventType) return;
-  const device = (config.devices || []).find(d => d.id === deviceId);
+  const targetId = deviceId.replace(/:/g, '').toUpperCase();
+  const device = (config.devices || []).find(d => d.id && d.id.toUpperCase() === targetId);
   if (!device) return;
 
   if (!device.widgetStats) device.widgetStats = {};
@@ -118,9 +119,14 @@ const populateWidgetStats = (device) => {
   for (const pluginId of activePlugins) {
     if (!device.widgetStats[pluginId]) device.widgetStats[pluginId] = {};
     const stats = device.widgetStats[pluginId];
-    if (!stats.lastUpdated) {
-      const cachePath = path.join(CACHE_DIR, `data_${device.id}_${pluginId}.json`);
-      if (fs.existsSync(cachePath)) {
+    if (!stats.lastUpdated || stats.lastUpdated === 'undefined') {
+      const devIdLower = (device.id || '').toLowerCase();
+      const devIdUpper = (device.id || '').toUpperCase();
+      const path1 = path.join(CACHE_DIR, `data_${devIdLower}_${pluginId}.json`);
+      const path2 = path.join(CACHE_DIR, `data_${devIdUpper}_${pluginId}.json`);
+      const path3 = path.join(CACHE_DIR, `data_${device.id}_${pluginId}.json`);
+      const cachePath = [path1, path2, path3].find(p => fs.existsSync(p));
+      if (cachePath) {
         try {
           const fileStat = fs.statSync(cachePath);
           stats.lastUpdated = new Date(fileStat.mtimeMs).toISOString();

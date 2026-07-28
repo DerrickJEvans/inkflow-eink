@@ -408,10 +408,14 @@ async function fetchPlugins() {
 
 // Helper to format ISO timestamp into relative time string ("5m ago", "1h ago") with full tooltip
 function formatRelativeTime(isoString) {
-  if (!isoString) return { short: 'Never', full: 'No record available' };
+  if (!isoString || isoString === 'undefined' || isoString === 'null') {
+    return { short: 'Never', full: 'No record available' };
+  }
   try {
     const date = new Date(isoString);
-    if (isNaN(date.getTime())) return { short: 'Never', full: 'Invalid timestamp' };
+    if (isNaN(date.getTime())) {
+      return { short: 'Never', full: 'No record available' };
+    }
     
     const now = new Date();
     const diffSecs = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -426,7 +430,7 @@ function formatRelativeTime(isoString) {
     const diffDays = Math.floor(diffHours / 24);
     return { short: `${diffDays}d ago`, full };
   } catch (e) {
-    return { short: 'Never', full: 'Parsing error' };
+    return { short: 'Never', full: 'No record available' };
   }
 }
 
@@ -437,8 +441,12 @@ function renderPluginsSelector(selectedPluginIds = [], rotationIntervals = {}, w
   if (!containerSelector || !containerPalette) return;
 
   // Resolve widgetStats fallback if not directly provided
-  const activeDevice = serverConfig && serverConfig.devices ? serverConfig.devices.find(d => d.id === activeDeviceId) : null;
-  const currentWidgetStats = (widgetStats && Object.keys(widgetStats).length > 0) ? widgetStats : (activeDevice ? (activeDevice.widgetStats || {}) : {});
+  const activeDevice = (serverConfig && serverConfig.devices && activeDeviceId) 
+    ? serverConfig.devices.find(d => d.id && d.id.toUpperCase() === activeDeviceId.toUpperCase()) 
+    : null;
+  const currentWidgetStats = (widgetStats && Object.keys(widgetStats).length > 0) 
+    ? widgetStats 
+    : (activeDevice ? (activeDevice.widgetStats || {}) : {});
 
   containerSelector.innerHTML = '';
   containerPalette.innerHTML = '';
@@ -1031,7 +1039,7 @@ function selectDevice(deviceId, isNew = false) {
     }
 
     // Checkboxes and inline durations
-    renderPluginsSelector(device.activePlugins, device.rotationIntervals || {});
+    renderPluginsSelector(device.activePlugins, device.rotationIntervals || {}, device.widgetStats || {});
 
     // Load ditherMode
     document.getElementById('edit-device-dither').value = device.ditherMode || 'floyd-steinberg';
