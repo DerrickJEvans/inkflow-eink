@@ -142,9 +142,10 @@ To make deploying and using InkFlow as simple as possible, use the links below t
    - [Option C: Arduino & XIAO Microcontrollers (Battery Powered)](#option-c-arduino--xiao-microcontrollers-ultra-low-power)
    - [Option D: Combined Server & Client Setup (Single Raspberry Pi)](#option-d-combined-server--client-setup-single-raspberry-pi)
 3. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
-4. [**🛠️ Step 4: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
-5. [**🧠 Step 5: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
-6. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
+4. [**🔌 Step 4: Plugin Developer Guide (Custom Widgets)**](#-plugin-developer-guide--creating-custom-widgets)
+5. [**🛠️ Step 5: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
+6. [**🧠 Step 6: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
+7. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
 
 ---
 
@@ -545,6 +546,239 @@ Direct specific AI features to different backend providers:
 
 #### 5. Save & Hot-Reload Action
 * Click 💾 **Save & Hot-Reload Configurations** to persist all AI settings to `.env` and `config.json` and instantly refresh active AI pipelines without restarting the server.
+
+---
+
+## 🔌 Plugin Developer Guide — Creating Custom Widgets
+
+InkFlow's modular plugin architecture allows developers to easily create and add custom widgets. Plugins fetch remote data (from REST APIs, RSS feeds, system metrics, database queries, etc.) and construct dither-ready SVG layouts that are rasterized by the server and pushed to E-Paper display screens.
+
+---
+
+### 1. 🏗️ Plugin Architecture & Lifecycle
+
+* **Directory Location**: All plugins reside in the [`/plugins`](plugins) directory at the root of the server repository (e.g. `plugins/my_custom_widget.js`).
+* **Auto-Discovery**: On server startup (or when requested via the Web Control Center), InkFlow automatically scans the `plugins` folder, clears Node's `require.cache` for modified files, and loads compliant modules into memory.
+* **Zero-Restart Hot-Reloading**: Creating, updating, or deleting a `.js` file in the `plugins` folder hot-reloads the module instantly—no server restart required!
+
+---
+
+### 2. 📜 Plugin API Specification & Export Contract
+
+Every plugin file must be a standard Node.js module exporting an object (`module.exports = { ... }`) that satisfies the following contract:
+
+```javascript
+module.exports = {
+  id: "unique_plugin_id",        // Required: String matching the filename (without .js extension)
+  name: "Plugin Display Name",    // Required: Title shown in the Web Control Center catalog
+  description: "Brief summary",  // Required: Short explanation of what the plugin displays
+  
+  // Optional: Array of form field definitions rendered in the Web Control Center settings UI
+  configFields: [
+    { key: "apiKey", label: "API Key", type: "password", default: "" },
+    { key: "city", label: "Target City", type: "text", default: "London" },
+    { key: "count", label: "Item Count", type: "number", default: 5 },
+    { 
+      key: "mode", 
+      label: "Display Mode", 
+      type: "select", 
+      default: "compact",
+      options: [
+        { value: "compact", label: "Compact Grid" },
+        { value: "full", label: "Detailed View" }
+      ] 
+    }
+  ],
+
+  /**
+   * Asynchronously fetches raw data required for rendering.
+   * @param {Object} settings - User settings saved from the Web Control Center for this plugin.
+   * @returns {Promise<Object>} Data object passed directly into renderSVG().
+   */
+  async fetchData(settings) {
+    // 1. Extract settings with fallbacks
+    const city = settings.city || "London";
+    
+    // 2. Fetch external data (API calls, HTTP requests, system commands)
+    try {
+      const response = await fetch(`https://api.example.com/data?city=${encodeURIComponent(city)}`);
+      const json = await response.json();
+      return { city, items: json.results || [] };
+    } catch (err) {
+      console.error("[MyPlugin] Fetch error:", err);
+      return { city, items: [], error: "Failed to load data" }; // Safe fallback
+    }
+  },
+
+  /**
+   * Synchronously constructs an SVG layout string for the E-Paper display.
+   * @param {Object} data - Object returned by fetchData().
+   * @param {number} width - Canvas width in pixels (e.g. 800 for 7.5"/4.26" screens).
+   * @param {number} height - Canvas height in pixels (e.g. 480 for 7.5"/4.26" screens).
+   * @returns {string} Valid SVG string snippet or <g> element group.
+   */
+  renderSVG(data, width, height) {
+    const isFullScreen = height > 300; // Layout breakpoint flag
+    
+    return `
+      <g>
+        <!-- Title Banner -->
+        <rect x="0" y="0" width="${width}" height="40" fill="black" />
+        <text x="20" y="26" font-family="sans-serif" font-size="18" font-weight="bold" fill="white">
+          MY CUSTOM WIDGET — ${data.city.toUpperCase()}
+        </text>
+        
+        <!-- Content Area -->
+        <text x="20" y="80" font-family="sans-serif" font-size="16" fill="black">
+          ${data.error ? data.error : `Loaded ${data.items.length} items successfully.`}
+        </text>
+      </g>
+    `;
+  }
+};
+```
+
+---
+
+### 3. 🎨 E-Paper SVG Layout & Rendering Best Practices
+
+To ensure your widget renders crisp, readable, and aesthetic output across 1-bit monochrome and 4-gray e-paper screens, observe these rules:
+
+#### A. High Contrast & Palette Optimization
+* **1-Bit / Grayscale Colors**: Stick primarily to pure `black` and `white`. The dithering engine handles error diffusion for gray shading, but solid vectors render cleanest.
+* **Solid Title Banners**: Use a full-width solid black rectangle (`<rect fill="black">`) with white text (`fill="white"`) at the top of the canvas for clean branding.
+
+#### B. Canvas Dimensions & Responsiveness
+* **Width/Height Parameters**: Always scale elements using the passed `width` and `height` parameters rather than hardcoded pixel bounds.
+* **Layout Breakpoint (`isFullScreen`)**:
+  * `height > 300` (e.g. 800x480 or 400x300): Render full-detail layouts with multi-column grids, secondary stat boxes, or extended lists.
+  * `height <= 300` (e.g. 296x128 or half-screen slots): Render streamlined layouts focusing only on primary metrics.
+
+#### C. XML Escaping & Safe Text Formatting
+* **XML Special Characters**: Dynamic strings from APIs (titles, descriptions, user names) MUST be XML-escaped to prevent unclosed XML tag errors in Sharp:
+  ```javascript
+  const escapeXml = (str) => {
+    if (!str) return "";
+    return str.toString()
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  };
+  ```
+* **Unicode Emojis**: SVG text engines (like Librsvg/Sharp) do not natively render multi-color Unicode emojis and may output broken boxes. Strip emojis or replace them with clean SVG `<path>` icons:
+  ```javascript
+  const stripEmojis = (str) => str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}]/gu, '');
+  ```
+
+---
+
+### 4. 📝 Step-by-Step Complete Working Example
+
+Create a file named [`plugins/quote_of_the_day.js`](plugins/quote_of_the_day.js):
+
+```javascript
+// plugins/quote_of_the_day.js
+const https = require('https');
+
+const getJson = (url) => {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'InkFlowServer/1.0' } }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+};
+
+const escapeXml = (unsafe) => {
+  if (!unsafe) return "";
+  return unsafe.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+};
+
+module.exports = {
+  id: "quote_of_the_day",
+  name: "Daily Inspiration Quote",
+  description: "Fetches inspiring quotes and displays them with crisp SVG typography.",
+  
+  configFields: [
+    { key: "category", label: "Quote Category", type: "text", default: "inspirational" }
+  ],
+
+  async fetchData(settings) {
+    try {
+      const res = await getJson("https://dummyjson.com/quotes/random");
+      return {
+        quote: res.quote || "Simplicity is the prerequisite for reliability.",
+        author: res.author || "Edsger W. Dijkstra"
+      };
+    } catch (e) {
+      return {
+        quote: "Talk is cheap. Show me the code.",
+        author: "Linus Torvalds"
+      };
+    }
+  },
+
+  renderSVG(data, width, height) {
+    const padding = 30;
+    const quoteText = escapeXml(data.quote);
+    const authorText = escapeXml(data.author);
+
+    return `
+      <g>
+        <!-- Header Banner -->
+        <rect x="0" y="0" width="${width}" height="45" fill="black" />
+        <text x="${padding}" y="28" font-family="sans-serif" font-size="16" font-weight="bold" fill="white" letter-spacing="1">
+          DAILY QUOTE
+        </text>
+
+        <!-- Quote Card Box -->
+        <rect x="${padding}" y="75" width="${width - padding * 2}" height="${height - 110}" rx="12" fill="none" stroke="black" stroke-width="2" />
+        
+        <!-- Opening Quote Mark Icon -->
+        <text x="${padding + 20}" y="125" font-family="serif" font-size="64" font-weight="bold" fill="black" opacity="0.25">“</text>
+
+        <!-- Quote Body -->
+        <text x="${padding + 30}" y="150" font-family="sans-serif" font-size="20" font-weight="500" fill="black">
+          ${quoteText}
+        </text>
+
+        <!-- Author Attribution -->
+        <text x="${width - padding - 30}" y="${height - 60}" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="end" fill="black">
+          — ${authorText}
+        </text>
+      </g>
+    `;
+  }
+};
+```
+
+---
+
+### 5. 🧪 Testing & Deploying Your Plugin
+
+1. **Save the File**: Place `quote_of_the_day.js` into the `plugins/` directory of your InkFlow server.
+2. **Preview in Control Center**:
+   - Open your browser to `http://<server-ip>:5000`.
+   - Navigate to **Tab 2: ✨ AI Studio & Global Configs**.
+   - Locate your plugin in the **Hosted Server Widgets Catalog** and click it to trigger a live render on the AI previewer bezel!
+3. **Direct PNG API Test**:
+   - Test rendering directly via your browser:
+     ```text
+     http://<server-ip>:5000/api/display/preview-plugin.png?id=quote_of_the_day
+     ```
+4. **Assign to Client Displays**:
+   - Go to **Tab 1: 🎛️ Device Console**.
+   - Select your target device, click your new widget from the **Available Widget Palette** to add it to the rotation sequence, and click 💾 **Save Layout**. Your physical E-Paper display will now cycle through your custom widget!
 
 ---
 
