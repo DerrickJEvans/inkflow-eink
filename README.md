@@ -141,9 +141,10 @@ To make deploying and using InkFlow as simple as possible, use the links below t
    - [Option B: Pi Python Client (Pimoroni/Waveshare Hat Setup)](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)
    - [Option C: Arduino & XIAO Microcontrollers (Battery Powered)](#option-c-arduino--xiao-microcontrollers-ultra-low-power)
    - [Option D: Combined Server & Client Setup (Single Raspberry Pi)](#option-d-combined-server--client-setup-single-raspberry-pi)
-3. [**🛠️ Step 3: Manage Your Environment (Dashboard & CLI)**](#%EF%B8%8F-master-control-utilities)
-4. [**🧠 Step 4: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
-5. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
+3. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
+4. [**🛠️ Step 4: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
+5. [**🧠 Step 5: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
+6. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
 
 ---
 
@@ -418,39 +419,132 @@ If you swap your physical E-Paper display panel for a different model after inst
 
 ---
 
-## 🧠 Web control of server
+## 🌐 Web Control Center — Server User Guide
 
-Devices and their assigned widgets can be controlled from the web console on port 5000 of the hosted web server.
+InkFlow features a modern, glassmorphic Web Control Center hosted directly on **port `5000`** of your server (`http://<server-ip>:5000`). It provides real-time hardware monitoring, device configuration, live E-Paper previews, dynamic widget management, and AI engine controls.
 
 <img width="1078" height="1368" alt="webcontrol" src="https://github.com/user-attachments/assets/e363cc2d-7c35-4685-8a4c-2e87b6ea11b2" />
 
-In addition to the devices tab there is a widget studio and control tabs where one can use AI to draft new widgets and also control the features of existing ones.
+The Control Center is organized into **three primary workspace tabs** accessible from the top navigation bar:
 
-The third tab is to control the LLM models used to generate widgets and also the LLM models used to summarize information for some widgets. 
+---
 
-InkFlow blends local offline LLMs with cloud-based AI to provide intelligent, low-latency, and zero-cost dashboard widgets.
+### Tab 1: 🎛️ Device Console
 
-### 1. ✨ Dynamic AI Widget Studio
-Instruct the AI in plain English to build a custom widget (e.g. *"Create a stock market tracker for Apple and Tesla with dithered layout blocks"*). 
-* **Zero Restart Hot-Reloads**: The server compiles, registers, and loads the generated JavaScript code on the fly without rebooting.
-* **Dynamic Credentials UI**: If the plugin requires an API key or password, the AI structures it in the plugin schema. The web control panel automatically builds masked form fields and persists them safely in `config.json`.
-* **One-Click Pruning**: Deleting a generated widget instantly deletes its code file, unloads it from memory, and scrubs its presence from all carousel queues and dither caches.
+The Device Console is your operational command center. It monitors server health, tracks connected physical E-Ink screens, displays real-time dithered previews, and manages widget rotation sequences per device.
 
-### 2. 🎛️ Intelligent Multi-Engine Routing
-Combine powerful cloud models with local offline services to eliminate ongoing costs:
-* **Widget Generation (Reasoning)**: Route schema generation to cloud models (like Gemini Pro) for advanced code reasoning.
-* **Daily Telemetry & Content Generation**: Route daily RSS summaries and morning briefings to a free local Ollama instance running offline.
+#### 1. Pi Host Metrics Telemetry Pane
+Located at the top of the console, this pane displays real-time server hardware stats updated continuously:
+* **CPU Load Gauge**: Animated circular percentage gauge showing current server CPU usage.
+* **Telemetry Graph Canvas**: Dynamic real-time chart tracking CPU activity over time.
+* **CPU Temp**: Current hardware core temperature (e.g. `42.5°C`).
+* **RAM Free**: Live memory utilization (e.g. `1.8 / 3.8 GB`).
+* **Host Uptime**: Elapsed server operational time (e.g. `3 days, 4 hrs`).
 
-#### Example Configuration (`.env`):
-```env
-# Cloud Gemini Pro configuration for complex code generation
-GEMINI_API_KEY=AIzaSyYourActualKeyHere
-WIDGET_BUILDER_AI_PROVIDER=gemini
+#### 2. Screen Devices List & Management
+Lists all physical displays connected to or auto-discovered by the server:
+* **Auto-Discovery**: Displays automatically register the first time they poll the server (`GET /api/display`).
+* **Add Device (`+` Button)**: Manually register a new device ID and screen target.
+* **Auto-Cleanup Offline Screens**: Toggle switch to enable automatic removal of inactive screens, with a configurable threshold field (1 to 90 days offline).
 
-# Local Ollama configuration for daily routines and telemetry audits
-OLLAMA_ENABLED=true
-DYNAMIC_WIDGETS_AI_PROVIDER=ollama
-```
+#### 3. E-Ink Device Frame Mockup & Controls
+An interactive, pixel-accurate rendering frame representing your physical display:
+* **Live Display Mockup**: Renders the compiled SVG/dithered bitmap exactly as it appears on the target panel.
+* **Widget Carousel Tabs & Nav Buttons (`◀` / `▶`)**: Cycle back and forth through active widgets assigned to the selected device.
+* **Action Buttons**:
+  * 🔄 **Force Refresh**: Triggers an immediate server re-render with fresh data, updates the cache-buster signature header, and forces the client to download the new frame on its next poll cycle.
+  * 🧹 **Flush Cache**: Invalidates the device's carousel signature without running an immediate render operation, prompting the client to clear its local flash/disk cache on its next sync.
+  * 🖼️ **PNG URL**: Opens the direct full-color/grayscale PNG image endpoint in a new tab (`/api/display/image.png?device=<id>`).
+  * 💾 **RAW Stream**: Opens the direct 1-bit packed binary byte stream endpoint (`/api/display/raw?device=<id>`).
+
+#### 4. Layout & Device Settings Form
+Select any device from the list to expand its configuration form:
+* **Device Name**: Custom friendly label (e.g. `Kitchen E-Ink`).
+* **Network Address**: Auto-detected IP address or mDNS hostname of the client (read-only).
+* **Width & Height (px)**: Screen dimensions in pixels (e.g. `800 x 480` for 7.5"/4.26" panels, `400 x 300` for 4.2" panels, `296 x 128` for 2.9" panels).
+* **Poll Interval (seconds)**: Sleep/refresh interval (e.g. `1800` for 30 minutes). Microcontrollers (Arduino/XIAO) enter hardware deep sleep (~10µA draw) for this duration. Python clients pause polling between cycles.
+* **Dithering Mode**:
+  * **Floyd-Steinberg**: Custom 1-bit error diffusion for smooth gradients and natural shadows.
+  * **Atkinson**: Classic high-contrast Apple standard dithering; prevents pixel clustering and voltage leakage.
+  * **Strict High-Contrast (Threshold)**: Pure binarization thresholding (`dots`, `solid`, `none`) for vector art and text.
+  * **Bayer 4x4 & Bayer 8x8**: Ordered pattern matrix dithering for retro grid styles.
+  * **4-Level Grayscale (`4gray`)**: 2-bit error diffusion mapping to 4 shades (`Black`, `Dark Gray`, `Light Gray`, `White`) for compatible panels (e.g. Waveshare 7.5" V2).
+* **Color Inversion**: Swap black and white colors dynamically (ideal for Dark Mode display aesthetics).
+* **🌙 Quiet Hours (Sleep Schedule)**:
+  * **Status**: Toggle Enabled / Disabled.
+  * **Start & End Times**: Set local sleep hours (e.g. `22:00` to `07:00`).
+  * **Timezone**: Custom IANA timezone string (e.g. `Europe/London`).
+  * *Behavior*: During quiet hours, hardware microcontrollers enter deep sleep to save battery power, while Raspberry Pi Python clients suspend polling loops to prevent overnight panel flashing.
+* **Live Telemetry Card**: Reports reported Client Firmware type, Firmware Version, WiFi signal strength (RSSI in dBm), and Battery percentage.
+
+#### 5. Widget Carousel Rotation Sequence & Palette
+* **Rotation Sequence**: Interactive list of active widgets assigned to the device. Reorder widgets by dragging cards or clicking arrow controls. Click `✖` to remove a widget from rotation.
+* **Available Widget Palette**: Click any available plugin card in the lower palette to instantly add it to the device's active rotation queue.
+* Click 💾 **Save Layout** to persist changes to `config.json`.
+
+#### 6. Connection Guide Tabs
+Copy-paste integration URLs formatted for your target display hardware:
+* **🔌 Arduino / XIAO**: `/api/display/raw?device=<id>&width=800&height=480`
+* **🐍 Pi Zero Python**: `/api/display/image.png?device=<id>&width=800&height=480`
+* **📦 TRMNL BYOS**: Custom server URL set to `http://<server-ip>:5000`
+
+---
+
+### Tab 2: ✨ AI Studio & Global Configs
+
+The AI Studio tab allows you to generate new custom widgets in natural English using artificial intelligence, test them on an isolated previewer, and configure settings for all installed server plugins.
+
+#### 1. ✨ AI Widget Generator
+Describe desired layout components in plain English:
+* **Prompt Field**: Enter instructions (e.g. *"Create a stock market tracker for Apple and Tesla with dithered layout blocks and high-contrast sparklines"*).
+* **Generate Button**: Triggers the active AI engine (Gemini, Groq, or Ollama) to synthesize JavaScript code, structure UI parameters, and register the plugin.
+* **Hot-Reloading**: The server compiles and registers the newly created widget immediately without requiring a process restart.
+
+#### 2. AI Previewer Display Mockup
+A dedicated mockup bezel frame isolated from production screens:
+* **Safe Sandbox Testing**: Preview generated or catalog widgets without interrupting active display carousels on physical screens.
+* Includes **Refresh Preview** and direct **PNG URL** buttons.
+
+#### 3. Hosted Server Widgets Catalog & Configuration
+Search and calibrate all installed plugins (Weather, RSS, Notice Board, TfL Status, UK Trains, System Stats, UK Fuel Prices, XKCD, World Clock, Feynman Quotes, AI Briefing, AI Telemetry Advisor):
+* **Search Bar**: Quickly filter plugins by name or category.
+* **Inline Configuration Accordions**: Click any plugin card to open its settings form:
+  * **API Keys & Credentials**: Enter credentials (e.g. Open-Meteo locations, TfL API keys, RSS XML feed URLs).
+  * **Location & Postcodes**: Dynamic geocoding for UK postcodes (e.g. UK Fuel Prices, Local Weather).
+  * **Refresh Intervals**: Granular cache expiration settings specified in **hours and minutes** (set to `0h 0m` to update every 4 minutes).
+* **One-Click Deletion**: Delete custom AI-generated widgets instantly. Deleting unloads the module from memory, scrubs its code file, and cleans up all active device queues.
+
+---
+
+### Tab 3: 🧠 AI & Ollama Admin
+
+The AI Admin tab manages local offline LLMs (via Ollama) alongside cloud AI providers (Google Gemini, Groq Cloud), allowing you to route reasoning tasks efficiently.
+
+#### 1. 🎙 Ollama Local Manager
+Manage your zero-cost, offline local AI pipeline:
+* **Status Badge**: Real-time indicator (`ONLINE` / `OFFLINE`).
+* **Connection Host**: Set your local or remote Ollama server address (default: `http://localhost:11434`).
+* **Active Model Selector**: Choose the active model from installed local models (e.g. `llama3.2:1b`, `gemma2:2b`).
+* **Installed Local Models**: List of models downloaded on the host system with file size metrics.
+* **Model Puller / Downloader**:
+  * Select from preset models (`Gemma 2 2B`, `Llama 3.2 1B`, `Llama 3 8B`) or specify a custom model name (e.g. `qwen2.5:1.5b`).
+  * Click 📥 **Pull Model** to download directly inside the server. A real-time **progress bar** displays current percentage and byte transfer rates.
+
+#### 2. ⚙️ AI Engine Feature Routing
+Direct specific AI features to different backend providers:
+* **Widget Builder Provider**: Brain powering interactive widget code generation (`gemini`, `groq`, `ollama`, or `none`). *Gemini Pro is strongly recommended for high-quality SVG code.*
+* **Dynamic AI Widgets Provider**: Brain generating daily editorial summaries and diagnostic insights for plugins like *Daily AI Briefing* and *AI Telemetry Advisor* (`gemini`, `groq`, `ollama`, or `none`). *Use local Ollama for zero API costs.*
+
+#### 3. ♊ Gemini API Manager
+* **API Key Field**: Securely input your Google Gemini API key (starts with `AIzaSy...`). Tokens are stored securely and reloaded dynamically.
+* **Widget Builder Model**: Select target model for code synthesis (e.g. `gemini-2.5-pro`, `gemini-2.5-flash`).
+* **Dynamic Widgets Model**: Select target model for daily text summaries (e.g. `gemini-2.5-flash-lite`, `gemini-2.5-flash`).
+
+#### 4. 🍊 GROQ API Manager
+* **API Key Field**: Enter your Groq Cloud API token (starts with `gsk_...`) for ultra-fast LPU inference.
+
+#### 5. Save & Hot-Reload Action
+* Click 💾 **Save & Hot-Reload Configurations** to persist all AI settings to `.env` and `config.json` and instantly refresh active AI pipelines without restarting the server.
 
 ---
 
