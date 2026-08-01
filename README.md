@@ -463,7 +463,7 @@ Select any device from the list to expand its configuration form:
 * **Device Name**: Custom friendly label (e.g. `Kitchen E-Ink`).
 * **Network Address**: Auto-detected IP address or mDNS hostname of the client (read-only).
 * **Width & Height (px)**: Screen dimensions in pixels (e.g. `800 x 480` for 7.5"/4.26" panels, `400 x 300` for 4.2" panels, `296 x 128` for 2.9" panels).
-* **Poll Interval (seconds)**: Sleep/refresh interval (e.g. `1800` for 30 minutes). Microcontrollers (Arduino/XIAO) enter hardware deep sleep (~10µA draw) for this duration. Python clients pause polling between cycles.
+* **Poll Interval (seconds)**: Base sleep/refresh interval (e.g. `1800` for 30 minutes). Used in single-widget and grid modes. In Carousel rotation mode, this is dynamically overridden per cycle by each active widget's **Show Duration** (see [⏱️ Understanding Refresh Timing](#%EF%B8%8F-understanding-refresh-timing-poll-interval-show-duration--cache-refresh)). Microcontrollers (Arduino/XIAO) enter hardware deep sleep (~10µA draw) for this duration. Python clients pause polling between cycles.
 * **Dithering Mode**:
   * **Floyd-Steinberg**: Custom 1-bit error diffusion for smooth gradients and natural shadows.
   * **Atkinson**: Classic high-contrast Apple standard dithering; prevents pixel clustering and voltage leakage.
@@ -479,7 +479,7 @@ Select any device from the list to expand its configuration form:
 * **Live Telemetry Card**: Reports reported Client Firmware type, Firmware Version, WiFi signal strength (RSSI in dBm), and Battery percentage.
 
 #### 5. Widget Carousel Rotation Sequence & Palette
-* **Rotation Sequence**: Interactive list of active widgets assigned to the device. Reorder widgets by dragging cards or clicking arrow controls. Click `✖` to remove a widget from rotation.
+* **Rotation Sequence**: Interactive list of active widgets assigned to the device. Reorder widgets by dragging cards or clicking arrow controls. Each active card features an inline **Show Duration** control (`Show: XX min YY sec`) defining how long that slide remains visible on screen before rotating.
 * **Available Widget Palette**: Click any available plugin card in the lower palette to instantly add it to the device's active rotation queue.
 * Click 💾 **Save Layout** to persist changes to `config.json`.
 
@@ -488,6 +488,77 @@ Copy-paste integration URLs formatted for your target display hardware:
 * **🔌 Arduino / XIAO**: `/api/display/raw?device=<id>&width=800&height=480`
 * **🐍 Pi Zero Python**: `/api/display/image.png?device=<id>&width=800&height=480`
 * **📦 TRMNL BYOS**: Custom server URL set to `http://<server-ip>:5000`
+
+---
+
+### ⏱️ Understanding Refresh Timing: Poll Interval, Show Duration & Cache Refresh
+
+InkFlow features a decoupled, multi-tier timing architecture designed to maximize microcontroller battery life, enable smooth multi-widget carousels, and strictly protect third-party web API rate limits. Understanding how these three timing settings interact ensures optimal system performance:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant App as External API / Web Service
+    participant Sched as Background Scheduler (Every 4 mins)
+    participant Server as InkFlow Server (Render & Carousel Engine)
+    participant Client as E-Paper Device (Arduino / XIAO / Pi)
+
+    rect rgb(240, 245, 255)
+        note over Sched,App: 1. Global Plugin Cache Refresh (Background)
+        Sched->>Sched: Check cache age vs. Global Cache Refresh Period (e.g. 30m)
+        alt Cache Expired or 0h 0m
+            Sched->>App: Fetch fresh API data (Weather, News, Trains)
+            App-->>Sched: Return fresh API JSON
+            Sched->>Server: Save to cache/data_<device>_<plugin>.json
+        else Cache Still Fresh
+            Sched->>Sched: Skip external API call (Serve cached JSON)
+        end
+    end
+
+    rect rgb(245, 255, 240)
+        note over Client,Server: 2. Device Check-in & Dynamic Carousel Rotation
+        Client->>Server: GET /api/display?device=kitchen
+        Server->>Server: Load active widget data from local JSON cache
+        Server->>Server: Render dithered frame & inject X-Refresh-Rate = Active Widget Show Duration (e.g. 60s)
+        Server-->>Client: Return Bitmap Stream + Header (X-Refresh-Rate: 60)
+        Server->>Server: Advance carousel index to next widget for next poll cycle
+    end
+
+    rect rgb(255, 245, 240)
+        note over Client: 3. Low-Power Deep Sleep / Pause
+        Client->>Client: Display image on E-Paper panel
+        Client->>Client: Enter Hardware Deep Sleep / Pause for 60 seconds (Show Duration)
+    end
+
+    Client->>Server: GET /api/display?device=kitchen (After 60s)
+    Server-->>Client: Return Next Widget Frame + Header (X-Refresh-Rate: 300)
+```
+
+#### Detailed Breakdown of Timing Settings
+
+1. **Device Poll Interval** (*Device Console -> Device Settings*)
+   * **Scope**: Per physical device configuration (in seconds, e.g. `1800`s = 30 minutes).
+   * **Function**: Serves as the fallback or static sleep interval for the device.
+   * **Usage**: When a device is configured in **Single Widget Mode** or **Grid Layout Mode** (where all widgets display simultaneously on a single 2x2 grid screen), the server responds to each poll with `X-Refresh-Rate: <Poll Interval>`. Microcontrollers enter hardware deep sleep (~10µA draw) and Python clients pause polling loops for this duration.
+
+2. **Show Duration** (*Device Console -> Active Widgets Queue*)
+   * **Scope**: Per-active-widget configuration on each device's Carousel queue (in minutes & seconds, e.g. `0m 30s`, `1m 0s`, `5m 0s`).
+   * **Function**: Dictates how long a specific widget slide remains displayed on screen before rotating to the next widget.
+   * **Dynamic Overriding**: In **Carousel Rotation Mode**, when multiple widgets are active, the server dynamically overrides the generic Device Poll Interval header. On every poll cycle, the server calculates `X-Refresh-Rate` from the *active widget's configured Show Duration*, sending it to the device in the HTTP response header. The client device deep-sleeps for that exact duration, wakes up, and fetches the next slide in sequence.
+
+3. **Cache Refresh Period** (*AI Studio & Configs -> Hosted Server Widgets Accordion*)
+   * **Scope**: Global plugin configuration set per widget type (in hours & minutes, e.g. `0h 30m` for Open-Meteo Weather, `1h 0m` for RSS feeds).
+   * **Function**: Controls how frequently the background scheduler (`scheduler.js`) makes network calls to external APIs.
+   * **Decoupling Data Ingestion from Screen Rotation**: The background scheduler runs asynchronously every **4 minutes**. During each sweep, if a plugin's cached JSON data is younger than its configured Cache Refresh Period, external network calls are skipped. Setting a period to `0h 0m` refreshes external data on every 4-minute sweep.
+   * **Key Advantage**: Allows client displays to rapidly cycle through different widgets every 30 to 60 seconds (**Show Duration**) without exhausting third-party API rate limits or delaying client device check-ins (**Cache Refresh Period**).
+
+#### Quick Reference Timing Matrix
+
+| Timing Setting | Location in Web UI | Unit | Primary Purpose | How It Interacts With Hardware / Server |
+| :--- | :--- | :--- | :--- | :--- |
+| **Device Poll Interval** | **Tab 1**: Device Settings Form | Seconds (`1800` = 30m) | Base sleep duration for single/grid screen layouts. | Sent in `X-Refresh-Rate` header when carousel rotation is inactive or unconfigured. |
+| **Widget Show Duration** | **Tab 1**: Active Widget Cards | Minutes & Seconds (`30s`, `1m`, `5m`) | On-screen slide duration in Carousel mode. | Dynamically overrides `X-Refresh-Rate` header per poll cycle; dictates microcontroller hardware deep sleep duration between slide transitions. |
+| **Cache Refresh Period** | **Tab 2**: Plugin Settings Accordion | Hours & Minutes (`0h 30m`, `0h 0m`) | External API fetch throttle window. | Managed asynchronously by background scheduler (`scheduler.js`) every 4 mins. Decouples web requests from client device rendering. |
 
 ---
 
@@ -512,7 +583,7 @@ Search and calibrate all installed plugins (Weather, RSS, Notice Board, TfL Stat
 * **Inline Configuration Accordions**: Click any plugin card to open its settings form:
   * **API Keys & Credentials**: Enter credentials (e.g. Open-Meteo locations, TfL API keys, RSS XML feed URLs).
   * **Location & Postcodes**: Dynamic geocoding for UK postcodes (e.g. UK Fuel Prices, Local Weather).
-  * **Refresh Intervals**: Granular cache expiration settings specified in **hours and minutes** (set to `0h 0m` to update every 4 minutes).
+  * **Refresh Intervals**: Granular cache expiration settings specified in **hours and minutes** (set to `0h 0m` to update every 4 minutes; see [⏱️ Understanding Refresh Timing](#%EF%B8%8F-understanding-refresh-timing-poll-interval-show-duration--cache-refresh)).
 * **One-Click Deletion**: Delete custom AI-generated widgets instantly. Deleting unloads the module from memory, scrubs its code file, and cleans up all active device queues.
 
 ---
