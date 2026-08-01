@@ -552,6 +552,12 @@ sequenceDiagram
    * **Decoupling Data Ingestion from Screen Rotation**: The background scheduler runs asynchronously every **4 minutes**. During each sweep, if a plugin's cached JSON data is younger than its configured Cache Refresh Period, external network calls are skipped. Setting a period to `0h 0m` refreshes external data on every 4-minute sweep.
    * **Key Advantage**: Allows client displays to rapidly cycle through different widgets every 30 to 60 seconds (**Show Duration**) without exhausting third-party API rate limits or delaying client device check-ins (**Cache Refresh Period**).
 
+4. **Client-Side Cache & Signature Synchronization** (*Hardware SPI Flash, LittleFS, or Disk*)
+   * **Scope**: Client hardware feature (Arduino Uno R4 SPI Flash, ESP32-S3 LittleFS, or Raspberry Pi disk storage).
+   * **Function**: Stores downloaded 1-bit / 4-gray slide bitstreams directly on the physical client device.
+   * **`X-Carousel-Signature` Header Verification**: On every check-in, the server returns an MD5 signature header (`X-Carousel-Signature`) based on the active widget list, plugin configurations, render timestamp, and cache-buster state.
+   * **Automatic Purging**: If the server signature matches what the client previously stored, the client can render cached slides instantly without re-downloading heavy raw byte streams over WiFi (saving battery and WiFi radio time). If the server signature changes (e.g. when you click 🔄 **Force Refresh** or 🧹 **Flush Cache**), the client automatically purges its local flash/disk cache and downloads fresh frames from the server.
+
 #### Quick Reference Timing Matrix
 
 | Timing Setting | Location in Web UI | Unit | Primary Purpose | How It Interacts With Hardware / Server |
@@ -559,6 +565,44 @@ sequenceDiagram
 | **Device Poll Interval** | **Tab 1**: Device Settings Form | Seconds (`1800` = 30m) | Base sleep duration for single/grid screen layouts. | Sent in `X-Refresh-Rate` header when carousel rotation is inactive or unconfigured. |
 | **Widget Show Duration** | **Tab 1**: Active Widget Cards | Minutes & Seconds (`30s`, `1m`, `5m`) | On-screen slide duration in Carousel mode. | Dynamically overrides `X-Refresh-Rate` header per poll cycle; dictates microcontroller hardware deep sleep duration between slide transitions. |
 | **Cache Refresh Period** | **Tab 2**: Plugin Settings Accordion | Hours & Minutes (`0h 30m`, `0h 0m`) | External API fetch throttle window. | Managed asynchronously by background scheduler (`scheduler.js`) every 4 mins. Decouples web requests from client device rendering. |
+| **Client-Side Cache** | Hardware non-volatile flash/disk | Bytes / Slots | On-device slide caching & offline playback. | Managed via `X-Carousel-Signature` header. Client purges local flash/disk cache whenever server signature mismatches. |
+
+---
+
+### 💾 Client-Side Caching & Hardware Memory Management
+
+To distinguish server-side API data caching from on-device display behavior, InkFlow implements a dedicated **client-side caching architecture**. This mechanism runs directly on physical E-Paper display hardware (Arduino, ESP32-S3, and Raspberry Pi) to minimize WiFi radio power draw and enable instant slide playback.
+
+#### 1. Hardware Storage Allocation per Client Architecture
+
+* **Arduino Uno R4 (Waveshare E-Paper Shield B)**: Uses an onboard 8MB SPI Flash chip (`MX25R6435F` controlled via `cache_manager.h`). Up to 16 raw 1-bit monochrome slide slots (256KB per slot) are cached directly in non-volatile hardware flash memory.
+* **ESP32-S3 / Seeed Studio XIAO E-Paper**: Uses the micro-controller's internal `LittleFS` flash filesystem (`cache_manager.h`) to store dithered grayscale or 1-bit binary slide payloads across reboots.
+* **Raspberry Pi (Python Client)**: Utilizes local disk caching (`cache_manager.py`) to persist dithered PNG and 1-bit raw bitmap files.
+
+#### 2. Signature Validation Flow (`X-Carousel-Signature`)
+
+Every HTTP display request (`GET /api/display`) returned by the server includes an MD5 signature header (**`X-Carousel-Signature`**). This signature acts as an end-to-end checksum calculated from:
+* The set of active plugins in the device's carousel.
+* Global plugin settings and credentials.
+* The server render timestamp (updated when server-side cache expires and new API data is compiled into an image).
+* Manual cache-buster triggers (set when you click 🔄 **Force Refresh** or 🧹 **Flush Cache**).
+
+```mermaid
+flowchart TD
+    A["Client Device Wakes from Sleep / Polls Server"] --> B["Fetch HTTP Response Headers"]
+    B --> C{"Does X-Carousel-Signature Match Local Flash Signature?"}
+    C -- "YES (Unchanged)" --> D["Render Cached Slide from Local SPI Flash / LittleFS / Disk"]
+    D --> E["Save Battery & WiFi Radio Time"]
+    C -- "NO (Mismatch / Refresh Triggered)" --> F["Purge Local Hardware Cache & Erasure Blocks"]
+    F --> G["Download Fresh 1-Bit / 4-Gray Bitmap Payload"]
+    G --> H["Save Payload & New Signature to Hardware Storage"]
+    H --> I["Display Fresh Image on E-Paper Panel"]
+```
+
+#### 3. How Web Control Actions Purge Physical Client Caches
+
+* 🔄 **Force Refresh (`POST /api/display/refresh`)**: Immediately fetches fresh data from external web APIs, re-renders the device layout image, increments the server's `cacheBuster` timestamp, and returns a new `X-Carousel-Signature`. On the device's next poll check-in, the signature mismatch forces the hardware client to erase its flash cache and download the newly generated frame.
+* 🧹 **Flush Cache (`POST /api/display/flush-cache`)**: Updates the `cacheBuster` timestamp to generate a new `X-Carousel-Signature` *without* running an immediate heavy re-render operation on the server. On the next check-in, the device registers the signature mismatch and purges its local hardware flash/disk cache.
 
 ---
 
