@@ -798,21 +798,47 @@ To ensure your widget renders crisp, readable, and aesthetic output across 1-bit
 Create a file named [`plugins/quote_of_the_day.js`](plugins/quote_of_the_day.js):
 
 ```javascript
-// plugins/quote_of_the_day.js
+/**
+ * plugins/quote_of_the_day.js
+ * 
+ * Example InkFlow Plugin Module
+ * Demonstrates module metadata, user settings schema, async external API fetching,
+ * XML escaping, and responsive SVG layout generation for E-Paper screens.
+ */
+
+// 1. IMPORT REQUIRED NODE.JS CORE MODULES
+// Use native 'https' or standard packages to make external API network calls
 const https = require('https');
 
+/**
+ * HELPER: Fetch JSON data over HTTPS returning a Promise
+ * @param {string} url - The remote API endpoint URL
+ * @returns {Promise<Object>} - Parsed JSON response object
+ */
 const getJson = (url) => {
   return new Promise((resolve, reject) => {
     https.get(url, { headers: { 'User-Agent': 'InkFlowServer/1.0' } }, (res) => {
       let data = '';
+      // Accumulate raw data chunks as they arrive from the stream
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
-        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+        try {
+          // Parse string buffer into a JavaScript object
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(e);
+        }
       });
     }).on('error', reject);
   });
 };
 
+/**
+ * HELPER: Escape special XML characters to prevent SVG rendering syntax errors
+ * Always sanitize external dynamic text before injecting into SVG strings!
+ * @param {string} unsafe - Raw text string from API or user input
+ * @returns {string} - XML-safe escaped string
+ */
 const escapeXml = (unsafe) => {
   if (!unsafe) return "";
   return unsafe.toString()
@@ -823,23 +849,43 @@ const escapeXml = (unsafe) => {
     .replace(/'/g, '&apos;');
 };
 
+// 2. EXPORT THE PLUGIN MODULE OBJECT
+// InkFlow automatically loads all JS files exported in the plugins/ folder
 module.exports = {
+  // UNIQUE IDENTIFIER: Must match the filename without extension (e.g., 'quote_of_the_day')
   id: "quote_of_the_day",
+
+  // FRIENDLY NAME: Displayed in the Web Control Center catalog & widget selection menu
   name: "Daily Inspiration Quote",
+
+  // DESCRIPTION: Brief summary of what this widget displays
   description: "Fetches inspiring quotes and displays them with crisp SVG typography.",
   
+  // CONFIGURATION FIELDS: Dynamic settings form controls rendered in the Web UI
+  // Options: 'text', 'password', 'select', 'number'
   configFields: [
     { key: "category", label: "Quote Category", type: "text", default: "inspirational" }
   ],
 
+  /**
+   * DATA FETCHER METHOD: Invoked asynchronously by the server's background scheduler (scheduler.js)
+   * The scheduler caches the returned JSON payload on disk according to the plugin's Cache Refresh Period.
+   * @param {Object} settings - Merged global and per-device user configurations
+   * @returns {Promise<Object>} - Clean JSON data payload passed into renderSVG()
+   */
   async fetchData(settings) {
     try {
+      // Query third-party web API endpoint
       const res = await getJson("https://dummyjson.com/quotes/random");
+      
+      // Return structured data payload for layout rendering
       return {
         quote: res.quote || "Simplicity is the prerequisite for reliability.",
         author: res.author || "Edsger W. Dijkstra"
       };
     } catch (e) {
+      // FALLBACK DATA: Handle network failures gracefully so screen renders cleanly even offline
+      console.error("[Quote Plugin] Fetch failed, using offline fallback:", e.message);
       return {
         quote: "Talk is cheap. Show me the code.",
         author: "Linus Torvalds"
@@ -847,31 +893,43 @@ module.exports = {
     }
   },
 
+  /**
+   * SVG RENDER METHOD: Compiles the cached JSON payload into raw SVG layout elements
+   * The returned SVG string is compiled by the server into 1-bit or 4-gray E-Paper bitmap streams.
+   * @param {Object} data - Data payload object returned by fetchData()
+   * @param {number} width - Screen width in pixels (e.g. 800 for 7.5" panel, 400 for 4.2" panel)
+   * @param {number} height - Screen height in pixels (e.g. 480 for 7.5" panel, 300 for 4.2" panel)
+   * @returns {string} - Complete SVG markup string (enclosed inside <g> tag)
+   */
   renderSVG(data, width, height) {
+    // 1. Calculate dynamic responsive layout margins and padding
     const padding = 30;
+
+    // 2. Sanitize all dynamic string values to prevent XML syntax breakage
     const quoteText = escapeXml(data.quote);
     const authorText = escapeXml(data.author);
 
+    // 3. Return responsive SVG vector graphics markup
     return `
       <g>
-        <!-- Header Banner -->
+        <!-- Top Header Banner Box -->
         <rect x="0" y="0" width="${width}" height="45" fill="black" />
         <text x="${padding}" y="28" font-family="sans-serif" font-size="16" font-weight="bold" fill="white" letter-spacing="1">
           DAILY QUOTE
         </text>
 
-        <!-- Quote Card Box -->
+        <!-- Main Content Card Frame -->
         <rect x="${padding}" y="75" width="${width - padding * 2}" height="${height - 110}" rx="12" fill="none" stroke="black" stroke-width="2" />
         
-        <!-- Opening Quote Mark Icon -->
+        <!-- Large Decorative Background Quote Mark -->
         <text x="${padding + 20}" y="125" font-family="serif" font-size="64" font-weight="bold" fill="black" opacity="0.25">“</text>
 
-        <!-- Quote Body -->
+        <!-- Quote Body Text -->
         <text x="${padding + 30}" y="150" font-family="sans-serif" font-size="20" font-weight="500" fill="black">
           ${quoteText}
         </text>
 
-        <!-- Author Attribution -->
+        <!-- Author Attribution (Right-Aligned) -->
         <text x="${width - padding - 30}" y="${height - 60}" font-family="sans-serif" font-size="16" font-weight="bold" text-anchor="end" fill="black">
           — ${authorText}
         </text>
