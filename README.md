@@ -592,7 +592,6 @@ flowchart TD
     A["Client Device Wakes from Sleep / Polls Server"] --> B["Fetch HTTP Response Headers"]
     B --> C{"Does X-Carousel-Signature Match Local Flash Signature?"}
     C -- "YES (Unchanged)" --> D["Render Cached Slide from Local SPI Flash / LittleFS / Disk"]
-    D --> E["Save Battery & WiFi Radio Time"]
     C -- "NO (Mismatch / Refresh Triggered)" --> F["Purge Local Hardware Cache & Erasure Blocks"]
     F --> G["Download Fresh 1-Bit / 4-Gray Bitmap Payload"]
     G --> H["Save Payload & New Signature to Hardware Storage"]
