@@ -1,3 +1,8 @@
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)
+![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Arduino%20%7C%20ESP32-orange.svg)
+![E-Paper](https://img.shields.io/badge/E--Paper-Waveshare%20%7C%20TRMNL-informational.svg)
+
 # 🚀 InkFlow E-Ink Server — Universal Custom E-Paper Dashboard Platform
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins as beautiful SVG layouts, rasterizes them with advanced high-contrast dithering, and serves them dynamically to multiple physical **E-Ink Displays** of varying sizes.
