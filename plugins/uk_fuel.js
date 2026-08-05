@@ -526,7 +526,7 @@ module.exports = {
             <path d="M12,2 L2,13 H11 V22 L21,11 H12 Z" transform="scale(0.85)" />
           </g>
           <text x="${padding + 22}" y="35" font-family="sans-serif" font-size="20" font-weight="bold" fill="white" letter-spacing="1">UK FUEL FINDER</text>
-          <text x="${width - padding}" y="33" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="white" opacity="0.8" text-anchor="end">Radius: ${data.localRadius} mi${data.postcode ? ` (${data.postcode})` : ''} • Refreshed: ${escapeXml(data.updatedAt)}</text>
+          <text x="${width - padding}" y="33" font-family="sans-serif" font-size="11.5" font-weight="bold" fill="white" opacity="0.8" text-anchor="end">Radius: ${data.localRadius} mi${data.postcode ? ` (${escapeXml(data.postcode)})` : ''} • Refreshed: ${escapeXml(data.updatedAt)}</text>
 
           <!-- Cheapest Cards -->
           ${localCardsHtml}

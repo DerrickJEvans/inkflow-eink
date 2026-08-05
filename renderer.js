@@ -516,6 +516,10 @@ const renderDeviceImage = async (device, settings) => {
   // 1. Create the scalable vector graphic
   let svgString = await generateSVG(device, settings);
 
+  // Sanitize SVG XML: Convert any unescaped '&' characters (from APIs, station names, RSS titles, etc.)
+  // into valid '&amp;' XML entities to prevent Sharp/librsvg XML parsing errors (EntityRef: expecting ';')
+  svgString = svgString.replace(/&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)/g, '&amp;');
+
   // 2. Sharp Grayscale Rasterization (Flatten transparent SVG to white background)
   const rawGrayscale = await sharp(Buffer.from(svgString))
     .resize(w, h)
