@@ -359,7 +359,7 @@ const checkDeviceSleepStatus = (device) => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false
+      hourCycle: 'h23'
     };
     const formatter = new Intl.DateTimeFormat('en-GB', options);
     const parts = formatter.formatToParts(new Date());
@@ -482,6 +482,8 @@ const fetchDeviceDisplayData = async (device, forceRefresh = false, advanceIndex
   if (cached && !forceRefresh && (now - cached.timestamp < cacheDurationMs)) {
     if (sleepStatus.isSleeping && !cachedIsSleepScreen) {
       console.log(`[Sleep Period] Device ${device.id} has entered quiet hours. Bypassing stale cache to render sleep screen immediately.`);
+    } else if (!sleepStatus.isSleeping && cachedIsSleepScreen) {
+      console.log(`[Sleep Period] Device ${device.id} has exited quiet hours. Bypassing sleep screen cache to render active content immediately.`);
     } else {
       return cached.data;
     }
@@ -1221,9 +1223,9 @@ app.get('/api/display/image.png', async (req, res) => {
     const data = await fetchDeviceDisplayData(device, force, advanceIndex);
     
     const cached = imageCache[device.id];
-    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepStatus = checkDeviceSleepStatus(device);
-    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
+    const activeRate = (cached && cached.refreshRate && cached.data && cached.data.imageId !== 'sleep_screen') ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = sleepStatus.isSleeping ? sleepStatus.remainingSecs : resolveDeepSleepInterval(device, activeRate);
 
     const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
     const totalImages = activePluginsList.length;
@@ -1291,9 +1293,9 @@ app.get('/api/display/image.bmp', async (req, res) => {
     const data = await fetchDeviceDisplayData(device, force, advanceIndex);
     
     const cached = imageCache[device.id];
-    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepStatus = checkDeviceSleepStatus(device);
-    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
+    const activeRate = (cached && cached.refreshRate && cached.data && cached.data.imageId !== 'sleep_screen') ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = sleepStatus.isSleeping ? sleepStatus.remainingSecs : resolveDeepSleepInterval(device, activeRate);
 
     const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
     const totalImages = activePluginsList.length;
@@ -1415,9 +1417,9 @@ app.get('/api/display/raw', async (req, res) => {
     const data = await fetchDeviceDisplayData(device, force, true);
 
     const cached = imageCache[device.id];
-    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepStatus = checkDeviceSleepStatus(device);
-    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
+    const activeRate = (cached && cached.refreshRate && cached.data && cached.data.imageId !== 'sleep_screen') ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = sleepStatus.isSleeping ? sleepStatus.remainingSecs : resolveDeepSleepInterval(device, activeRate);
 
     const activePluginsList = (device.activePlugins || []).filter(pId => PLUGINS[pId]);
     const totalImages = activePluginsList.length;
@@ -1470,9 +1472,9 @@ app.all('/api/display', async (req, res) => {
     const imageUrl = `${protocol}://${serverIp}/api/display/image.${ext}?device=${device.id}`;
 
     const cached = imageCache[device.id];
-    const rate = (cached && cached.refreshRate) ? cached.refreshRate : (device.refreshRate || 1800);
     const sleepStatus = checkDeviceSleepStatus(device);
-    const sleepInterval = sleepStatus.isSleeping ? rate : resolveDeepSleepInterval(device, rate);
+    const activeRate = (cached && cached.refreshRate && cached.data && cached.data.imageId !== 'sleep_screen') ? cached.refreshRate : (device.refreshRate || 1800);
+    const sleepInterval = sleepStatus.isSleeping ? sleepStatus.remainingSecs : resolveDeepSleepInterval(device, activeRate);
 
     res.setHeader('X-Trmnl-Deep-Sleep', sleepInterval.toString());
     

@@ -167,6 +167,7 @@ def poll_server():
                     
                     consecutive_failures = 0
                     carousel_sig = response.headers.get('X-Carousel-Signature')
+                    image_id = response.headers.get('X-Image-ID')
                     image_index_val = response.headers.get('X-Image-Index')
                     total_images_val = response.headers.get('X-Total-Images')
                     refresh_rate_val = response.headers.get('X-Refresh-Rate')
@@ -194,7 +195,8 @@ def poll_server():
                     is_cached = False
                     raw_bytes = None
                     
-                    if carousel_sig and image_index is not None:
+                    # Only use carousel cache for active content (skip special screens like sleep_screen)
+                    if carousel_sig and image_index is not None and image_id != 'sleep_screen':
                         manifest = cache_manager.read_cache_manifest()
                         if manifest.get('carousel_signature') != carousel_sig:
                             print(f"[{time.strftime('%H:%M:%S')}] [Cache] Carousel signature mismatch. Purging cache...")
@@ -226,7 +228,7 @@ def poll_server():
                             elif len(raw_bytes) > expected_size:
                                 raw_bytes = raw_bytes[:expected_size]
                         
-                        if carousel_sig and image_index is not None:
+                        if carousel_sig and image_index is not None and image_id != 'sleep_screen':
                             cache_manager.save_cached_slide(image_index, raw_bytes)
                             print(f"[{time.strftime('%H:%M:%S')}] [Cache] Saved Slide {image_index} to local disk cache.")
                 
