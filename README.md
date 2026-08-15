@@ -119,8 +119,7 @@ The various panels and client devices available have differing requirements to r
 
 ### 3. Premium Glassmorphic Web Control Center
 The InkFlow-eInk server is controllable via a web page "control centre" with features to manage client devices, produce and configure plug in apps and manage the use of large language models in plug in production and operation.
-* **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
-* **Timeline Carousel Drawer**: Form controls and drag-and-drop rotation sequence timeline expand horizontally at the bottom of the console, giving you maximum width to reorder and calibrate display rotation cycles.
+* **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device list with rendering of each devices configured widgets and display order. Pallet of widgets to be added is also provided along with configuration panel for dithering style to be used and "quiet time" for when the display is not updated.
 * **AI Plugin Studio**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations. Saving options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
 ### 4. Background Cache & Configurable Refresh Periods
