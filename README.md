@@ -118,7 +118,7 @@ The various panels and client devices available have differing requirements to r
 * **Post-Refresh Stabilization**: Automatically incorporates a 2-second stabilization delay post-refresh before putting the display to sleep or powering it off. This allows panel voltages to settle naturally, preventing the common "fading text" issue on physical e-paper panels.
 
 ### 3. Premium Glassmorphic Web Control Center
-The inkflow server is controllable via a web page "control centre" with features to manage client devices, produce and configure plug in apps and manage the use of large language models in plug in productiona and operation.
+The inkflow server is controllable via a web page "control centre" with features to manage client devices, produce and configure plug in apps and manage the use of large language models in plug in production and operation.
 * **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
 * **Timeline Carousel Drawer**: Form controls and drag-and-drop rotation sequence timeline expand horizontally at the bottom of the console, giving you maximum width to reorder and calibrate display rotation cycles.
 * **AI Plugin Studio**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations. Saving options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
