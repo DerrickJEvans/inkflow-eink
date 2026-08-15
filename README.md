@@ -598,8 +598,8 @@ flowchart TD
     B --> C{"Does X-Carousel-Signature <br/> Match <br/> Local Flash Signature?"}
     C -- "YES (Unchanged)" --> D["Render Cached Slide <br/> from Local <br/> SPI Flash / LittleFS / Disk"]
     C -- "NO (Mismatch / <br/> Refresh Triggered)" --> F["Purge Local Hardware <br/> Cache & Erasure Blocks"]
-    F --> G["Download Fresh  <br/> 1-Bit / 4-Gray Bitmap Payload"]
-    G --> H["Save Payload & <br/> New Signature to Hardware Storage"]
+    F --> G["Download Fresh  <br/> 1-Bit / <br/> 4-Gray Bitmap Payload"]
+    G --> H["Save Payload & <br/> New Signature <br/> to Hardware Storage"]
     H --> I["Display Fresh Image <br/> on E-Paper Panel"]
 ```
 
