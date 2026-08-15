@@ -3,11 +3,11 @@
 ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Arduino%20%7C%20ESP32-orange.svg)
 ![E-Paper](https://img.shields.io/badge/E--Paper-Waveshare%20%7C%20TRMNL-informational.svg)
 
-# 🚀 InkFlow E-Ink Server — Universal Custom E-Paper Dashboard Platform
+# ✒️ InkFlow-eInk Server — Universal Custom E-Paper Dashboard Platform
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins as beautiful SVG layouts, rasterizes them with advanced high-contrast dithering, and serves them dynamically to multiple physical **E-Ink Displays** of varying sizes.
 
-Designed for self-hosted home LAN environments, InkFlow supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/XIAO microcontrollers—allowing you to build the ultimate wireless status console.
+Designed for self-hosted home LAN environments, InkFlow-eInk supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/XIAO microcontrollers—allowing you to build the ultimate wireless status console.
 
 <img width="4080" height="2296" alt="clients" src="https://github.com/user-attachments/assets/b95c4842-c6e4-41d2-8978-96fcd34198c1" />
 
@@ -15,17 +15,17 @@ The Node JS Express server code has been built and tested on Raspberry PI 4 B an
 
 Python client code  has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino C++ client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield. There is also an ESP32S client based on the SEEED Studio EE04 ePaper Board also written in C++.
 
-Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnmostic page and a configuration captive web page.
+Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnostic page and a configuration captive web page.
 
 The C++ MCU clients have support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
 
-The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Also shown are the Arduino UNO R4 client and also the Seeed Studio EE04 board with 4.26 inch panels.
+The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a Raspberry Pi 4B python client with WaveShare ePaper Hat and 7.5 inch screen and capacitive touch buttons in 3D printed enclosure. Also shown are the Arduino UNO R4 client and  the Seeed Studio EE04 board with 4.26 inch panels.
 
 ---
 
 ## 📸 Example Client & Server Setup
 
-The image below shows the **reTerminal E1001** running TRMNL firmware (left), **Raspberry Pi Zero 2W** running the InkFlow Python client (middle), and an **Arduino Uno R4 WiFi** running the InkFlow C++ client (right). These are all served dynamically from a single **Raspberry Pi 5 Server** (middle rear).
+The image below shows the **reTerminal E1001** running TRMNL firmware (left), **Raspberry Pi Zero 2W** running the InkFlow-eInk Python client (middle), and an **Arduino Uno R4 WiFi** running the InkFlow-eInk C++ client (right). These are all served dynamically from a single **Raspberry Pi 5 Server** (middle rear).
 
 <img width="4065" height="1923" alt="Inkflow clients and server" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
 
@@ -33,7 +33,10 @@ The image below shows the **reTerminal E1001** running TRMNL firmware (left), **
 
 ## 🏗️ Architectural Flow
 
-InkFlow decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, draw, and sleep:
+InkFlow-eInk strictly decouples layout generation and graphics processing from physical display hardware:
+
+* **100% Server-Side Image Production**: All SVG layout generation (`plugin.renderSVG()`), Sharp vector rasterization, dithering (Floyd-Steinberg, Atkinson, Bayer, 4-Gray), and 1-bit binary bit-packing are executed **exclusively on the central server**.
+* **Zero Client Rendering Overhead**: Physical E-Ink displays (Arduino, Seeed Studio XIAO, Raspberry Pi, TRMNL) **never generate SVG layouts or dither images**. Low-power clients simply fetch ready-to-draw pre-rendered binary pixel streams or PNGs, store them in local non-volatile hardware storage (SPI flash/disk caching), and stream the raw pixels directly to the physical display driver panel before entering deep sleep:
 
 ```mermaid
 graph TD
@@ -43,19 +46,19 @@ graph TD
     classDef client fill:#1b241b,stroke:#00ff66,stroke-width:2px,color:#ffffff;
     classDef note fill:#333333,stroke:#666666,stroke-width:1px,color:#dddddd;
 
-    subgraph ServerSide ["🌐 InkFlow Server Layout Processing"]
-        A["🔌 Plugin Apps (Weather, Notes, etc.)"]:::server --> B["🎨 SVG Renderer & Rasterizer (Sharp)"]:::server
-        B --> C["🌓 Dither Engine (Floyd-Steinberg / 4-Gray)"]:::server
+    subgraph ServerSide ["🌐 InkFlow-eInk Server Layout Processing"]
+        A["🔌 Plugin Apps <br/> (Weather, Notes, etc.)"]:::server --> B["🎨 SVG Renderer <br/> & <br/> Rasterizer (Sharp)"]:::server
+        B --> C["🌓 Dither Engine <br/> (Floyd-Steinberg / 4-Gray)"]:::server
         
-        C --> D1["GET /api/display (JSON Metadata)"]:::endpoint
-        C --> D2["GET /api/display/image.png (Grayscale/Mono PNG)"]:::endpoint
-        C --> D3["GET /api/display/raw (1-Bit Packed Binary Stream)"]:::endpoint
+        C --> D1["GET /api/display <br/> (JSON Metadata)"]:::endpoint
+        C --> D2["GET /api/display/image.png <br/> (Grayscale/Mono PNG)"]:::endpoint
+        C --> D3["GET /api/display/raw <br/> (1-Bit Packed Binary Stream)"]:::endpoint
     end
 
-    subgraph ClientSide ["📟 E-Ink Setup & Hardware Clients"]
+    subgraph ClientSide ["📟 E-Ink Clients"]
         C1["TRMNL Firmware Client"]:::client
-        C2["InkFlow Python Client (Raspberry Pi)"]:::client
-        C3["InkFlow Arduino C++ Client (Uno R4/XIAO)"]:::client
+        C2["InkFlow-eInk <br/> Python Client <br/> (Raspberry Pi)"]:::client
+        C3["InkFlow-eInk <br/> Arduino C++ Client <br/> (Uno R4/XIAO)"]:::client
     end
 
     %% Client 1 Connections
@@ -64,23 +67,23 @@ graph TD
     D2 -->|3. Downloads PNG| C1
 
     %% Client 2 Connections
-    C2 -->|COLOR_DEPTH=4 - 4-Gray| D2
-    C2 -->|COLOR_DEPTH=2 - 1-Bit Mono| D3
+    C2 ---->|"COLOR_DEPTH=4 <br/> 4-Gray"| D2
+    C2 ---->|"COLOR_DEPTH=2 <br/> 1-Bit Mono"| D3
 
     %% Client 3 Connections
-    C3 -->|Downloads 1-Bit Stream to Cache| D3
+    C3 --->|"Downloads 1-Bit <br/> Stream to Cache"| D3
 
     %% Notes
-    N1["Client Auto-Purges Local Cache on X-Carousel-Signature Mismatch"]:::note
+    N1["Client Auto-Purges Local <br/> Cache on <br/> X-Carousel-Signature <br/> Mismatch"]:::note
     C2 -.-> N1
     C3 -.-> N1
 ```
 
 The TRMNL firmware client uses the TRMNL API to fetch JSON status information (`/api/display`), which directs it to download the compiled PNG image (`/api/display/image.png`). 
 
-The InkFlow clients fetch layout data directly:
-* **InkFlow Python Client (Raspberry Pi)**: Can operate in either **4-level Grayscale** (`COLOR_DEPTH=4`) by fetching the compiled PNG (`/api/display/image.png`) or **Monochrome** (`COLOR_DEPTH=2`, Default) by fetching the lightweight 1-bit binary pixel stream (`/api/display/raw`).
-* **InkFlow Arduino C++ Client (Uno R4 / XIAO)**: Fetches raw pixel streams (1-bit packed for UNO R4, 4-level grayscale for XIAO) to stream directly to hardware display drivers or local flash/disk caches.
+The InkFlow-eInk clients fetch layout data directly:
+* **InkFlow-eInk Python Client (Raspberry Pi)**: Can operate in either **4-level Grayscale** (`COLOR_DEPTH=4`) by fetching the compiled PNG (`/api/display/image.png`) or **Monochrome** (`COLOR_DEPTH=2`, Default) by fetching the lightweight 1-bit binary pixel stream (`/api/display/raw`).
+* **InkFlow-eInk Arduino C++ Client (Uno R4 / XIAO)**: Fetches raw pixel streams (1-bit packed for UNO R4, 4-level grayscale for XIAO) to stream directly to hardware display drivers or local flash/disk caches.
 
 ---
 
@@ -108,29 +111,28 @@ Bundled widgets include
 The various panels and client devices available have differing requirements to render an acceptable image. Inkflow server has a variety of features to optimise image production and delivery.
 * **Advanced E-Paper Dithering Suite**:
   * **Floyd-Steinberg Dithering**: Custom 1-bit dithering engine written with `Int16Array` error diffusion to ensure crisp shadows and readable gradients.
-  * **2-Bit / 4-Level Grayscale Dithering**: Custom 2-bit Floyd-Steinberg error diffusion engine that maps pixels to 4 distinct grayscale shades (`Black`, `Dark Gray`, `Light Gray`, and `White`). This is ideal for suitable grayscale-capable E-Paper panels, rendering rich gradients and high-fidelity shaded layouts.
   * **Atkinson Dithering**: Crisp, high-contrast dithering algorithm (classic Apple E-Ink standard) which distributes only 3/8 of quantization errors. Confining error distribution completely prevents high-frequency pixel clusters and electrical charge leakages, avoiding the common "faded" look on physical panels.
   * **Bayer Ordered Dithering**: High-performance deterministic point-wise ordered dithering available in both **4x4 (Classic Retro Pattern)** and **8x8 (Fine Ordered Pattern)** formats, producing smooth repeating threshold grids ideal for retro displays.
   * **Thresholded Dot-Matrix / Solid Outline (`dots` / `solid` / `none`)**: Bypasses dithering to perform pure mathematical thresholding, resulting in perfectly crisp black-and-white vectors.
+  * **2-Bit / 4-Level Grayscale Dithering**: Custom 2-bit Floyd-Steinberg error diffusion engine that maps pixels to 4 distinct grayscale shades (`Black`, `Dark Gray`, `Light Gray`, and `White`). This is ideal for suitable grayscale-capable E-Paper panels, rendering rich gradients and high-fidelity shaded layouts.
 * **1-Bit Raw Bit-Packing**: Packs dithered pixels (8 pixels per byte, MSB-first) into a tight binary buffer suitable for lightweight transmission on memory-constrained microcontrollers.
 * **Color Inversion**: Easily toggle between `Standard (Black on White)` or `Inverted (White on Black)` rendering in your device settings to flip the contrast dynamically on the fly.
 * **Ultra Low Power**: Native support for display deep sleep (using custom `X-Refresh-Rate` control headers), allowing hardware microcontrollers (like the ESP32-S3 on Seeed Studio XIAO) to sleep at **~10µA current draw** and run on batteries for months.
 * **Post-Refresh Stabilization**: Automatically incorporates a 2-second stabilization delay post-refresh before putting the display to sleep or powering it off. This allows panel voltages to settle naturally, preventing the common "fading text" issue on physical e-paper panels.
 
 ### 3. Premium Glassmorphic Web Control Center
-The inkflow server is controllable via a web page "control centre" with features to manage client devices, produce and configure plug in apps and manage the use of large language models in plug in productiona and operation.
-* **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device lists and live dithered e-paper mockup bezels align side-by-side cleanly to optimize spacing.
-* **Timeline Carousel Drawer**: Form controls and drag-and-drop rotation sequence timeline expand horizontally at the bottom of the console, giving you maximum width to reorder and calibrate display rotation cycles.
+The InkFlow-eInk server is controllable via a web page "control centre" with features to manage client devices, produce and configure plug in apps and manage the use of large language models in plug in production and operation.
+* **Device Console**: Real-time server telemetry dashboard (CPU, temperature, RAM gauges) docked in a glassmorphic horizontal bar. Auto-discovered screen device list with rendering of each devices configured widgets and display order. Pallet of widgets to be added is also provided along with configuration panel for dithering style to be used and "quiet time" for when the display is not updated.
 * **AI Plugin Studio**: Each plugin card in the catalog houses its own config template. Form fields open inline with smooth glass slide animations. Saving options compiles a Floyd-Steinberg dithered preview directly on a separate mockup frame, leaving active device cycles un-interrupted.
 
 ### 4. Background Cache & Configurable Refresh Periods
-InkFlow operates a decoupled background caching scheduler (`scheduler.js`) to minimize hits on third-party source APIs (such as TfL, weather APIs, or the UK Government Fuel Prices API).Source data is collected from sources asynchronously to image production and distribution.
+InkFlow-eInk operates a decoupled background caching scheduler (`scheduler.js`) to minimize hits on third-party source APIs (such as TfL, weather APIs, or the UK Government Fuel Prices API).Source data is collected from sources asynchronously to image production and distribution.
 * **Decoupled Background Caching**: The scheduler runs a check sweep every **4 minutes** in the background.
 * **Granular Refresh Periods**: Every single plugin can be configured with a custom cache expiration window (specified in both hours and minutes) directly from its settings accordion on the Web Control Center.
 * **Smart Bypassing**: Setting a plugin's refresh period to **`0 hours 0 minutes`** disables cache checks for it, meaning the scheduler will fetch fresh data on every 4-minute cycle (the default behavior for most widgets).
 
 ### 5. Premium SVG Widget Layouts & Styling
-InkFlow widgets are styled using high-contrast design principles optimized for grayscale e-paper panels:
+InkFlow-eInk widgets are styled using high-contrast design principles optimized for grayscale e-paper panels:
 * **High-Contrast Title Banners**: Widgets (including Tide Timetable, UK Fuel Prices, Local Weather, Notice Board, System Telemetry, Airport Flight Board, RSS Bulletin, TfL Rail Status, UK Departures, and XKCD Comic) use a solid black title banner with white text and line-art icons for maximum legibility.
 * **World Clock Night Shading**: The World Clock map replaces high-contrast diagonal hatching with a premium, semi-transparent shaded overlay (`fill-opacity="0.30"`), allowing for clean dithering on both 1-bit and 4-gray screens without map text/detail occlusion.
 
@@ -138,25 +140,25 @@ InkFlow widgets are styled using high-contrast design principles optimized for g
 
 ## 🏁 Quick Navigation
 
-To make deploying and using InkFlow as simple as possible, use the links below to jump directly to your chosen setup path:
+There are several options for deploying the server and clients. Use the links below to jump directly to your chosen setup path:
 
 1. [**🖥️ Step 1: Deploy the Server (Docker or Bare-Metal)**](#-step-1-server-deployment)
 2. [**📟 Step 2: Set Up Your Client Screens**](#-step-2-client-screen-setup)
    - [Option A: Headless OS Image (Automatic Firstboot Setup)](#option-a-headless-os-image-automatic-firstboot-setup)
    - [Option B: Pi Python Client (Pimoroni/Waveshare Hat Setup)](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)
    - [Option C: Arduino & XIAO Microcontrollers (Battery Powered)](#option-c-arduino--xiao-microcontrollers-ultra-low-power)
-   - [Option D: Combined Server & Client Setup (Single Raspberry Pi)](#option-d-combined-server--client-setup-single-raspberry-pi)
-3. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
-4. [**🔌 Step 4: Plugin Developer Guide (Custom Widgets)**](#-plugin-developer-guide--creating-custom-widgets)
-5. [**🛠️ Step 5: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
-6. [**🧠 Step 6: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
-7. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
+3. [**🖥️📟 An Alternative: Combined Server & Client Setup (Single Raspberry Pi)**](#an-alternative-combined-server-and-client-setup-single-raspberry-pi)
+4. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
+5. [**🔌 Step 4: Plugin Developer Guide (Custom Widgets)**](#-plugin-developer-guide--creating-custom-widgets)
+6. [**🛠️ Step 5: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
+7. [**🧠 Step 6: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
+8. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
 
 ---
 
 ## 🖥️ Step 1: Server Deployment
 
-First, deploy the central InkFlow server on a server host (such as a Raspberry Pi 5 or an Ubuntu Home Server). This server handles rendering and layout management.
+First, deploy the central InkFlow-eInk server on a server host (such as a Raspberry Pi 5 or an Ubuntu Home Server). This server handles rendering and layout management.
 
 > [!NOTE]
 > The GitHub repository is **public**. All clone, checkout, and installation commands run seamlessly without needing any GitHub Personal Access Tokens (PATs) or passwords.
@@ -289,7 +291,7 @@ Login to Raspberry PI and follow the instructions below
         * Set `TRMNL_FULL_REFRESH_INTERVAL=10` in your `client/.env` file to control the number of fast, non-flashing partial updates performed before triggering a full screen flashing refresh to clear ghosting.
 
       * **🌓 4-Level Grayscale Support (for compatible screens like 7.5" V2)**:
-        * InkFlow supports high-fidelity 4-level grayscale rendering (2-bit color depth), enabling rich gradients, maps, and detailed UI elements on compatible panels.
+        * InkFlow-eInk supports high-fidelity 4-level grayscale rendering (2-bit color depth), enabling rich gradients, maps, and detailed UI elements on compatible panels.
         * **Client Setup**: Add this to your local `client/.env` file on the Pi:
           ```ini
           TRMNL_COLOR_DEPTH=4
@@ -326,7 +328,7 @@ Login to Raspberry PI and follow the instructions below
 
 1. Open the Arduino IDE and load the source files from the [**`arduino/`**](arduino) directory.
    - For **Seeed Studio XIAO ePaper Display Board (B) EE04**, compile the sketch from the [**`xiao_eepaper_client/`**](arduino/xiao_eepaper_client) directory:
-     - **`xiao_eepaper_client.ino`**: Grayscale E-Ink client managing connections, telemetry, and 4-level grayscale rendering.
+     - **`xiao_eepaper_client.ino`**: Grayscale E-Ink client managing connections, telemetry, and driving 4-level grayscale pre-rendered bitmaps to the EPD panel.
      - **`config_manager.h`**: Saves WiFi and server IP configs to the XIAO's non-volatile preferences.
      - **`cache_manager.h`**: Cache manager utilizing `LittleFS` for offline slide rotation.
      - **`graphics_drawing.h`**: Canvas rendering wrapper utilizing the Seeed GFX library.
@@ -349,7 +351,7 @@ Login to Raspberry PI and follow the instructions below
 
 ---
 
-### Option D: Combined Server & Client Setup (Single Raspberry Pi)
+## An Alternative: Combined Server and Client Setup (Single Raspberry Pi)
 *Ideal if you want to use a single Raspberry Pi to run both the central server AND drive a locally attached E-Paper panel (e.g., as a self-contained smart clock/dashboard device).*
 
 1. **Deploy the Server First**: Follow the steps in [Step 1: Server Deployment](#🖥️-step-1-server-deployment) (Option B is recommended to install the server natively under `/opt/trmnl-pi-server` on Raspberry Pi OS).
@@ -377,7 +379,7 @@ Login to Raspberry PI and follow the instructions below
 
 ## 🛠️ Master Control Utilities
 
-For the linux based server and client there are various CLI scripts to monitor and manage your setup usin interactive shell panels or quick CLI commands.
+For the linux based server and client there are various CLI scripts to monitor and manage your setup using interactive shell panels or quick CLI commands.
 
 ### 1. Server CLI Utility (`./inkflow.sh`)
 Execute commands from the project root directory on your server:
@@ -427,7 +429,7 @@ If you swap your physical E-Paper display panel for a different model after inst
 
 ## 🌐 Web Control Center — Server User Guide
 
-InkFlow features a modern, glassmorphic Web Control Center hosted directly on **port `5000`** of your server (`http://<server-ip>:5000`). It provides real-time hardware monitoring, device configuration, live E-Paper previews, dynamic widget management, and AI engine controls.
+InkFlow features a modern, glassmorphic Web Control Center hosted directly on **port `5000`** of your server (`http://<server-ip>:5000` or `inkflow.local:5000`). It provides real-time hardware monitoring, device configuration, live E-Paper previews, dynamic widget management, and AI engine controls.
 
 <img width="1078" height="1368" alt="webcontrol" src="https://github.com/user-attachments/assets/e363cc2d-7c35-4685-8a4c-2e87b6ea11b2" />
 
@@ -435,9 +437,9 @@ The Control Center is organized into **three primary workspace tabs** accessible
 
 ---
 
-### Tab 1: 🎛️ Device Console
+### Tab 1: 📟 Device Console
 
-The Device Console is your operational command center. It monitors server health, tracks connected physical E-Ink screens, displays real-time dithered previews, and manages widget rotation sequences per device.
+The Device Console is your operational command centre. It monitors server health, tracks connected physical E-Ink screens, displays real-time dithered previews, and manages widget rotation sequences per device.
 
 #### 1. Pi Host Metrics Telemetry Pane
 Located at the top of the console, this pane displays real-time server hardware stats updated continuously:
@@ -456,11 +458,11 @@ Lists all physical displays connected to or auto-discovered by the server:
 #### 3. E-Ink Device Frame Mockup & Controls
 An interactive, pixel-accurate rendering frame representing your physical display:
 * **Live Display Mockup**: Renders the compiled SVG/dithered bitmap exactly as it appears on the target panel.
-* **Widget Carousel Tabs & Nav Buttons (`◀` / `▶`)**: Cycle back and forth through active widgets assigned to the selected device.
+* **Widget Carousel Tabs & Nav Buttons (`◄` / `►`)**: Cycle back and forth through active widgets assigned to the selected device.
 * **Action Buttons**:
   * 🔄 **Force Refresh**: Triggers an immediate server re-render with fresh data, updates the cache-buster signature header, and forces the client to download the new frame on its next poll cycle.
-  * 🧹 **Flush Cache**: Invalidates the device's carousel signature without running an immediate render operation, prompting the client to clear its local flash/disk cache on its next sync.
-  * 🖼️ **PNG URL**: Opens the direct full-color/grayscale PNG image endpoint in a new tab (`/api/display/image.png?device=<id>`).
+  * 🧪 **Flush Cache**: Invalidates the device's carousel signature without running an immediate render operation, prompting the client to clear its local flash/disk cache on its next sync.
+  * 🔗 **PNG URL**: Opens the direct full-color/grayscale PNG image endpoint in a new tab (`/api/display/image.png?device=<id>`).
   * 💾 **RAW Stream**: Opens the direct 1-bit packed binary byte stream endpoint (`/api/display/raw?device=<id>`).
 
 #### 4. Layout & Device Settings Form
@@ -476,12 +478,12 @@ Select any device from the list to expand its configuration form:
   * **Bayer 4x4 & Bayer 8x8**: Ordered pattern matrix dithering for retro grid styles.
   * **4-Level Grayscale (`4gray`)**: 2-bit error diffusion mapping to 4 shades (`Black`, `Dark Gray`, `Light Gray`, `White`) for compatible panels (e.g. Waveshare 7.5" V2).
 * **Color Inversion**: Swap black and white colors dynamically (ideal for Dark Mode display aesthetics).
-* **🌙 Quiet Hours (Sleep Schedule)**:
+* 🌙 **Quiet Hours (Sleep Schedule)**:
   * **Status**: Toggle Enabled / Disabled.
   * **Start & End Times**: Set local sleep hours (e.g. `22:00` to `07:00`).
   * **Timezone**: Custom IANA timezone string (e.g. `Europe/London`).
   * *Behavior*: During quiet hours, hardware microcontrollers enter deep sleep to save battery power, while Raspberry Pi Python clients suspend polling loops to prevent overnight panel flashing.
-* **Live Telemetry Card**: Reports reported Client Firmware type, Firmware Version, WiFi signal strength (RSSI in dBm), and Battery percentage.
+* **Live Telemetry Card**: Reports reported Client Firmware type, Firmware Version, Wi-Fi signal strength (RSSI in dBm), and Battery percentage.
 
 #### 5. Widget Carousel Rotation Sequence & Palette
 * **Rotation Sequence**: Interactive list of active widgets assigned to the device. Reorder widgets by dragging cards or clicking arrow controls. Each active card features an inline **Show Duration** control (`Show: XX min YY sec`) defining how long that slide remains visible on screen before rotating.
@@ -490,49 +492,52 @@ Select any device from the list to expand its configuration form:
 
 #### 6. Connection Guide Tabs
 Copy-paste integration URLs formatted for your target display hardware:
-* **🔌 Arduino / XIAO**: `/api/display/raw?device=<id>&width=800&height=480`
-* **🐍 Pi Zero Python**: `/api/display/image.png?device=<id>&width=800&height=480`
-* **📦 TRMNL BYOS**: Custom server URL set to `http://<server-ip>:5000`
+* 🔌 **Arduino / XIAO**: `/api/display/raw?device=<id>&width=800&height=480`
+* 🐍 **Pi Zero Python**: `/api/display/image.png?device=<id>&width=800&height=480`
+* 📦 **TRMNL BYOS**: Custom server URL set to `http://<server-ip>:5000`
 
 ---
 
 ### ⏱️ Understanding Refresh Timing: Poll Interval, Show Duration & Cache Refresh
 
-InkFlow features a decoupled, multi-tier timing architecture designed to maximize microcontroller battery life, enable smooth multi-widget carousels, and strictly protect third-party web API rate limits. Understanding how these three timing settings interact ensures optimal system performance:
+InkFlow-eInk features a decoupled, multi-tier timing architecture designed to maximize microcontroller battery life, enable smooth multi-widget carousels, and strictly protect third-party web API rate limits. Understanding how these three timing settings interact ensures optimal system performance:
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant App as External API / Web Service
-    participant Sched as Background Scheduler (Every 4 mins)
-    participant Server as InkFlow Server (Render & Carousel Engine)
+    participant Sched as Background Scheduler (scheduler.js)
+    participant Disk as Local JSON File Cache
+    participant Server as InkFlow Server (server.js & renderer.js)
     participant Client as E-Paper Device (Arduino / XIAO / Pi)
 
     rect rgb(240, 245, 255)
-        note over Sched,App: 1. Global Plugin Cache Refresh (Background)
-        Sched->>Sched: Check cache age vs. Global Cache Refresh Period (e.g. 30m)
+        note over Sched,Disk: 1. Global Plugin Data Cache Refresh (JSON Only — NO Image Processing)
+        Sched->>Sched: Check cache age vs. Global Cache Refresh Period (every 4 mins)
         alt Cache Expired or 0h 0m
-            Sched->>App: Fetch fresh API data (Weather, News, Trains)
+            Sched->>App: Fetch raw API data (Weather, News, Trains)
             App-->>Sched: Return fresh API JSON
-            Sched->>Server: Save to cache/data_<device>_<plugin>.json
+            Sched->>Disk: Write JSON payload to cache/data_<device>_<plugin>.json
         else Cache Still Fresh
-            Sched->>Sched: Skip external API call (Serve cached JSON)
+            Sched->>Sched: Skip external API call (Keep existing JSON file on disk)
         end
     end
 
     rect rgb(245, 255, 240)
-        note over Client,Server: 2. Device Check-in & Dynamic Carousel Rotation
-        Client->>Server: GET /api/display?device=kitchen
-        Server->>Server: Load active widget data from local JSON cache
-        Server->>Server: Render dithered frame & inject X-Refresh-Rate = Active Widget Show Duration (e.g. 60s)
-        Server-->>Client: Return Bitmap Stream + Header (X-Refresh-Rate: 60)
+        note over Client,Server: 2. Device Check-in & On-Demand Image Generation
+        Client->>Server: GET /api/display (or /raw /image.png)
+        Server->>Disk: Read active widget JSON payload from disk
+        Server->>Server: Execute plugin.renderSVG() -> Sharp rasterize -> Dither Engine
+        Server->>Server: Compile PNG / 1-Bit RAW stream & inject X-Refresh-Rate (Show Duration)
+        Server-->>Client: Return Bitmap Payload + X-Carousel-Signature Header
         Server->>Server: Advance carousel index to next widget for next poll cycle
     end
 
     rect rgb(255, 245, 240)
-        note over Client: 3. Low-Power Deep Sleep / Pause
-        Client->>Client: Display image on E-Paper panel
-        Client->>Client: Enter Hardware Deep Sleep / Pause for 60 seconds (Show Duration)
+        note over Client: 3. Low-Power Deep Sleep & On-Device Storage
+        Client->>Client: Save pre-rendered bitmap to local SPI Flash / LittleFS / Disk
+        Client->>Client: Stream raw pixels directly into physical EPD display driver
+        Client->>Client: Enter Hardware Deep Sleep for Show Duration (e.g. 60s)
     end
 
     Client->>Server: GET /api/display?device=kitchen (After 60s)
@@ -555,13 +560,28 @@ sequenceDiagram
    * **Scope**: Global plugin configuration set per widget type (in hours & minutes, e.g. `0h 30m` for Open-Meteo Weather, `1h 0m` for RSS feeds).
    * **Function**: Controls how frequently the background scheduler (`scheduler.js`) makes network calls to external APIs.
    * **Decoupling Data Ingestion from Screen Rotation**: The background scheduler runs asynchronously every **4 minutes**. During each sweep, if a plugin's cached JSON data is younger than its configured Cache Refresh Period, external network calls are skipped. Setting a period to `0h 0m` refreshes external data on every 4-minute sweep.
-   * **Key Advantage**: Allows client displays to rapidly cycle through different widgets every 30 to 60 seconds (**Show Duration**) without exhausting third-party API rate limits or delaying client device check-ins (**Cache Refresh Period**).
+   * **Key Advantage**: Allows client displays to rapidly cycle through different widgets every 30 to 60 seconds (**Show Duration**) without exhausting third-party web API rate limits or delaying client device check-ins (**Cache Refresh Period**).
 
 4. **Client-Side Cache & Signature Synchronization** (*Hardware SPI Flash, LittleFS, or Disk*)
    * **Scope**: Client hardware feature (Arduino Uno R4 SPI Flash, ESP32-S3 LittleFS, or Raspberry Pi disk storage).
-   * **Function**: Stores downloaded 1-bit / 4-gray slide bitstreams directly on the physical client device.
+   * **Function**: Stores downloaded pre-rendered 1-bit / 4-gray slide bitstreams directly on the physical client device.
    * **`X-Carousel-Signature` Header Verification**: On every check-in, the server returns an MD5 signature header (`X-Carousel-Signature`) based on the active widget list, plugin configurations, render timestamp, and cache-buster state.
-   * **Automatic Purging**: If the server signature matches what the client previously stored, the client can render cached slides instantly without re-downloading heavy raw byte streams over WiFi (saving battery and WiFi radio time). If the server signature changes (e.g. when you click 🔄 **Force Refresh** or 🧹 **Flush Cache**), the client automatically purges its local flash/disk cache and downloads fresh frames from the server.
+   * **Automatic Purging**: If the server signature matches what the client previously stored, the client can display cached pre-rendered slides instantly without re-downloading heavy raw byte streams over WiFi (saving battery and WiFi radio time). If the server signature changes (e.g. when you click 🔄 **Force Refresh** or 🧪 **Flush Cache**), the client automatically purges its local flash/disk cache and downloads fresh pre-rendered frames from the server.
+
+---
+
+### 🖼️ Image Production & Cache Lifecycle (Where & When Files Are Produced)
+
+To ensure complete clarity regarding **where and when** SVG layouts, PNG bitmaps, and 1-bit RAW streams are generated vs. stored:
+
+| Pipeline Stage | Executed On | Timing & Trigger | What Is Produced / Processed |
+| :--- | :--- | :--- | :--- |
+| **1. Data Fetching (JSON Only)** | **Server** (`scheduler.js`) | Asynchronously every 4 minutes | External REST/RSS API calls fetch raw data and write JSON files to `cache/data_<device>_<plugin>.json` if data is older than **Cache Refresh Period**. **(No SVG, PNG, or bitmaps are generated at this step).** |
+| **2. SVG Generation (On-Demand)** | **Server** (`server.js` + plugins) | **AFTER** JSON update, when client polls or refreshes | Reads `cache/data_<device>_<plugin>.json` and calls `plugin.renderSVG(data, width, height)` to construct the SVG XML layout string in Node.js memory. |
+| **3. Rasterization & Dithering** | **Server** (`renderer.js`) | Immediately following SVG generation | Sharp rasterizes SVG XML into pixels, runs dithering (Floyd-Steinberg, Atkinson, Bayer, 4-Gray), and compiles a PNG (`/api/display/image.png`) and 1-bit MSB-first binary stream (`/api/display/raw`) simultaneously. |
+| **4. Payload Transfer** | **Network** (Wi-Fi / LAN) | Driven by client wake cycles (**Show Duration**) | Server transmits pre-dithered binary buffer or PNG alongside `X-Refresh-Rate` and `X-Carousel-Signature` HTTP response headers. |
+| **5. Hardware Storage Caching** | **Client** (Uno R4 / XIAO / Pi) | Upon receiving response header with new signature | Client writes the received pre-rendered bitmap payload and signature to SPI Flash (`MX25R6435F`), `LittleFS`, or local disk. |
+| **6. Panel Display Driving** | **Client** (Uno R4 / XIAO / Pi) | Every wake-up cycle | **Zero image processing**. Client streams raw pre-dithered pixel bytes directly into physical EPD display driver registers and enters deep sleep (~10µA draw). |
 
 #### Quick Reference Timing Matrix
 
@@ -576,7 +596,7 @@ sequenceDiagram
 
 ### 💾 Client-Side Caching & Hardware Memory Management
 
-To distinguish server-side API data caching from on-device display behavior, InkFlow implements a dedicated **client-side caching architecture**. This mechanism runs directly on physical E-Paper display hardware (Arduino, ESP32-S3, and Raspberry Pi) to minimize WiFi radio power draw and enable instant slide playback.
+To distinguish server-side API data caching from on-device display behavior, InkFlow-eInk implements a dedicated **client-side caching architecture**. This mechanism runs directly on physical E-Paper display hardware (Arduino, ESP32-S3, and Raspberry Pi) to minimize WiFi radio power draw and enable instant slide playback.
 
 #### 1. Hardware Storage Allocation per Client Architecture
 
@@ -590,31 +610,31 @@ Every HTTP display request (`GET /api/display`) returned by the server includes 
 * The set of active plugins in the device's carousel.
 * Global plugin settings and credentials.
 * The server render timestamp (updated when server-side cache expires and new API data is compiled into an image).
-* Manual cache-buster triggers (set when you click 🔄 **Force Refresh** or 🧹 **Flush Cache**).
+* Manual cache-buster triggers (set when you click 🔄 **Force Refresh** or 🧪 **Flush Cache**).
 
 ```mermaid
 flowchart TD
-    A["Client Device Wakes from Sleep / Polls Server"] --> B["Fetch HTTP Response Headers"]
-    B --> C{"Does X-Carousel-Signature Match Local Flash Signature?"}
-    C -- "YES (Unchanged)" --> D["Render Cached Slide from Local SPI Flash / LittleFS / Disk"]
-    C -- "NO (Mismatch / Refresh Triggered)" --> F["Purge Local Hardware Cache & Erasure Blocks"]
-    F --> G["Download Fresh 1-Bit / 4-Gray Bitmap Payload"]
-    G --> H["Save Payload & New Signature to Hardware Storage"]
-    H --> I["Display Fresh Image on E-Paper Panel"]
+    A["Client Device Wakes from <br/> Sleep / Polls Server"] --> B["Fetch HTTP Response Headers"]
+    B --> C{"Does X-Carousel-Signature <br/> Match <br/> Local Flash Signature?"}
+    C -- "YES (Unchanged)" --> D["Stream Stored Pre-Rendered <br/> Bitmap from Local <br/> SPI Flash / LittleFS / Disk <br/> to Display Driver"]
+    C -- "NO (Mismatch / <br/> Refresh Triggered)" --> F["Purge Local Hardware <br/> Cache & Erase Blocks"]
+    F --> G["Download Fresh  <br/> 1-Bit / <br/> 4-Gray Bitmap Payload"]
+    G --> H["Save Payload & <br/> New Signature <br/> to Hardware Storage"]
+    H --> I["Display Fresh Image <br/> on E-Paper Panel"]
 ```
 
 #### 3. How Web Control Actions Purge Physical Client Caches
 
 * 🔄 **Force Refresh (`POST /api/display/refresh`)**: Immediately fetches fresh data from external web APIs, re-renders the device layout image, increments the server's `cacheBuster` timestamp, and returns a new `X-Carousel-Signature`. On the device's next poll check-in, the signature mismatch forces the hardware client to erase its flash cache and download the newly generated frame.
-* 🧹 **Flush Cache (`POST /api/display/flush-cache`)**: Updates the `cacheBuster` timestamp to generate a new `X-Carousel-Signature` *without* running an immediate heavy re-render operation on the server. On the next check-in, the device registers the signature mismatch and purges its local hardware flash/disk cache.
+* 🧪 **Flush Cache (`POST /api/display/flush-cache`)**: Updates the `cacheBuster` timestamp to generate a new `X-Carousel-Signature` *without* running an immediate heavy re-render operation on the server. On the next check-in, the device registers the signature mismatch and purges its local hardware flash/disk cache.
 
 ---
 
-### Tab 2: ✨ AI Studio & Global Configs
+### Tab 2: ⚙️ AI Studio & Global Configs
 
 The AI Studio tab allows you to generate new custom widgets in natural English using artificial intelligence, test them on an isolated previewer, and configure settings for all installed server plugins.
 
-#### 1. ✨ AI Widget Generator
+#### 1. ⚙️ AI Widget Generator
 Describe desired layout components in plain English:
 * **Prompt Field**: Enter instructions (e.g. *"Create a stock market tracker for Apple and Tesla with dithered layout blocks and high-contrast sparklines"*).
 * **Generate Button**: Triggers the active AI engine (Gemini, Groq, or Ollama) to synthesize JavaScript code, structure UI parameters, and register the plugin.
@@ -640,7 +660,7 @@ Search and calibrate all installed plugins (Weather, RSS, Notice Board, TfL Stat
 
 The AI Admin tab manages local offline LLMs (via Ollama) alongside cloud AI providers (Google Gemini, Groq Cloud), allowing you to route reasoning tasks efficiently.
 
-#### 1. 🎙 Ollama Local Manager
+#### 1. 🦙 Ollama Local Manager
 Manage your zero-cost, offline local AI pipeline:
 * **Status Badge**: Real-time indicator (`ONLINE` / `OFFLINE`).
 * **Connection Host**: Set your local or remote Ollama server address (default: `http://localhost:11434`).
@@ -670,19 +690,19 @@ Direct specific AI features to different backend providers:
 
 ## 🔌 Plugin Developer Guide — Creating Custom Widgets
 
-InkFlow's modular plugin architecture allows developers to easily create and add custom widgets. Plugins fetch remote data (from REST APIs, RSS feeds, system metrics, database queries, etc.) and construct dither-ready SVG layouts that are rasterized by the server and pushed to E-Paper display screens.
+InkFlow-eInk's modular plugin architecture allows developers to easily create and add custom widgets. Plugins fetch remote data (from REST APIs, RSS feeds, system metrics, database queries, etc.) and construct dither-ready SVG layouts that are rasterized by the server and pushed to E-Paper display screens.
 
 ---
 
 ### 1. 🏗️ Plugin Architecture & Lifecycle
 
-* **Directory Location**: All plugins reside in the [`/plugins`](plugins) directory at the root of the server repository (e.g. `plugins/my_custom_widget.js`).
+* **Directory Location**: All plugins reside in the [**`plugins/`**](plugins) directory at the root of the server repository (e.g. `plugins/my_custom_widget.js`).
 * **Auto-Discovery**: On server startup (or when requested via the Web Control Center), InkFlow automatically scans the `plugins` folder, clears Node's `require.cache` for modified files, and loads compliant modules into memory.
 * **Zero-Restart Hot-Reloading**: Creating, updating, or deleting a `.js` file in the `plugins` folder hot-reloads the module instantly—no server restart required!
 
 ---
 
-### 2. 📜 Plugin API Specification & Export Contract
+### 2. 📝 Plugin API Specification & Export Contract
 
 Every plugin file must be a standard Node.js module exporting an object (`module.exports = { ... }`) that satisfies the following contract:
 
@@ -795,7 +815,7 @@ To ensure your widget renders crisp, readable, and aesthetic output across 1-bit
 
 ### 4. 📝 Step-by-Step Complete Working Example
 
-Create a file named [`plugins/quote_of_the_day.js`](plugins/quote_of_the_day.js):
+Create a file named [**`plugins/quote_of_the_day.js`**](plugins/quote_of_the_day.js):
 
 ```javascript
 /**
@@ -946,7 +966,7 @@ module.exports = {
 1. **Save the File**: Place `quote_of_the_day.js` into the `plugins/` directory of your InkFlow server.
 2. **Preview in Control Center**:
    - Open your browser to `http://<server-ip>:5000`.
-   - Navigate to **Tab 2: ✨ AI Studio & Global Configs**.
+   - Navigate to **Tab 2: ⚙️ AI Studio & Global Configs**.
    - Locate your plugin in the **Hosted Server Widgets Catalog** and click it to trigger a live render on the AI previewer bezel!
 3. **Direct PNG API Test**:
    - Test rendering directly via your browser:
@@ -954,7 +974,7 @@ module.exports = {
      http://<server-ip>:5000/api/display/preview-plugin.png?id=quote_of_the_day
      ```
 4. **Assign to Client Displays**:
-   - Go to **Tab 1: 🎛️ Device Console**.
+   - Go to **Tab 1: 📟 Device Console**.
    - Select your target device, click your new widget from the **Available Widget Palette** to add it to the rotation sequence, and click 💾 **Save Layout**. Your physical E-Paper display will now cycle through your custom widget!
 
 ---
@@ -1067,7 +1087,7 @@ InkFlow exposes standardized endpoints for easy integration with custom scripts 
 
 ---
 
-## 📁 Repository Map
+## 🗺️ Repository Map
 
 * [**`server.js`**](server.js): Main Express server hosting API endpoints and managing system settings.
 * [**`renderer.js`**](renderer.js): Graphic rendering engine handling SVG construction, Sharp rasterization, and dithering.
@@ -1092,6 +1112,6 @@ The repository also has STL files for 3D printed cases for the Raspberry Pi 4  w
 <img width="4080" height="2296" alt="cases" src="https://github.com/user-attachments/assets/856277f8-2fe8-487a-b442-7a8cd2e67b75" />
 
 
-## 🛡️ License
+## 📜 License
 
 This project is licensed under the [MIT License](LICENSE) (MIT). Feel free to use, modify, and distribute it in your custom low-power dashboard environments!
