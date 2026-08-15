@@ -526,9 +526,14 @@ sequenceDiagram
     rect rgb(245, 255, 240)
         note over Client,Server: 2. Device Check-in & On-Demand Image Generation
         Client->>Server: GET /api/display (or /raw /image.png)
-        Server->>Disk: Read active widget JSON payload from disk
-        Server->>Server: Execute plugin.renderSVG() -> Sharp rasterize -> Dither Engine
-        Server->>Server: Compile PNG / 1-Bit RAW stream & inject X-Refresh-Rate (Show Duration)
+        Server->>Server: Check RAM Image Cache (imageCache age vs Show Duration)
+        alt Image Cache Expired or Force Refresh
+            Server->>Disk: Read active widget JSON payload from disk
+            Server->>Server: Execute plugin.renderSVG() -> Sharp rasterize -> Dither Engine
+            Server->>Server: Compile PNG / 1-Bit RAW stream & update RAM imageCache
+        else Image Cache Still Fresh (< Show Duration)
+            Server->>Server: Serve pre-rendered frame directly from RAM imageCache
+        end
         Server-->>Client: Return Bitmap Payload + X-Carousel-Signature Header
         Server->>Server: Advance carousel index to next widget for next poll cycle
     end
