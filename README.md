@@ -44,18 +44,18 @@ graph TD
     classDef note fill:#333333,stroke:#666666,stroke-width:1px,color:#dddddd;
 
     subgraph ServerSide ["🌐 InkFlow Server Layout Processing"]
-        A["🔌 Plugin Apps (Weather, Notes, etc.)"]:::server --> B["🎨 SVG Renderer & Rasterizer (Sharp)"]:::server
-        B --> C["🌓 Dither Engine (Floyd-Steinberg / 4-Gray)"]:::server
+        A["🔌 Plugin Apps <br/> (Weather, Notes, etc.)"]:::server --> B["🎨 SVG Renderer <br/> & <br/> Rasterizer (Sharp)"]:::server
+        B --> C["🌓 Dither Engine <br/> (Floyd-Steinberg / 4-Gray)"]:::server
         
-        C --> D1["GET /api/display (JSON Metadata)"]:::endpoint
-        C --> D2["GET /api/display/image.png (Grayscale/Mono PNG)"]:::endpoint
-        C --> D3["GET /api/display/raw (1-Bit Packed Binary Stream)"]:::endpoint
+        C --> D1["GET /api/display <br/> (JSON Metadata)"]:::endpoint
+        C --> D2["GET /api/display/image.png <br/> (Grayscale/Mono PNG)"]:::endpoint
+        C --> D3["GET /api/display/raw <br/> (1-Bit Packed Binary Stream)"]:::endpoint
     end
 
     subgraph ClientSide ["📟 E-Ink Setup & Hardware Clients"]
         C1["TRMNL Firmware Client"]:::client
-        C2["InkFlow-eInk Python Client (Raspberry Pi)"]:::client
-        C3["InkFlow-eInk Arduino C++ Client (Uno R4/XIAO)"]:::client
+        C2["InkFlow-eInk <br/> Python Client <br/> (Raspberry Pi)"]:::client
+        C3["InkFlow-eInk <br/> Arduino C++ Client <br/> (Uno R4/XIAO)"]:::client
     end
 
     %% Client 1 Connections
@@ -71,7 +71,7 @@ graph TD
     C3 -->|Downloads 1-Bit Stream to Cache| D3
 
     %% Notes
-    N1["Client Auto-Purges Local Cache on X-Carousel-Signature Mismatch"]:::note
+    N1["Client Auto-Purges Local <br/> Cache on <br/> X-Carousel-Signature <br/> Mismatch"]:::note
     C2 -.-> N1
     C3 -.-> N1
 ```
