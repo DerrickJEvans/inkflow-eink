@@ -3,11 +3,11 @@
 ![Platform](https://img.shields.io/badge/platform-Raspberry%20Pi%20%7C%20Arduino%20%7C%20ESP32-orange.svg)
 ![E-Paper](https://img.shields.io/badge/E--Paper-Waveshare%20%7C%20TRMNL-informational.svg)
 
-# ✒️ InkFlow E-Ink Server — Universal Custom E-Paper Dashboard Platform
+# ✒️ InkFlow-eInk Server — Universal Custom E-Paper Dashboard Platform
 
 An optimized, premium Node.js Express server that aggregates data from multiple plugins as beautiful SVG layouts, rasterizes them with advanced high-contrast dithering, and serves them dynamically to multiple physical **E-Ink Displays** of varying sizes.
 
-Designed for self-hosted home LAN environments, InkFlow supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/XIAO microcontrollers—allowing you to build the ultimate wireless status console.
+Designed for self-hosted home LAN environments, InkFlow-eInk supports a wide variety of client screens—ranging from official TRMNL hardware to Raspberry Pi Zero standalone clients and ultra-low-power memory-constrained Arduino/XIAO microcontrollers—allowing you to build the ultimate wireless status console.
 
 <img width="4080" height="2296" alt="clients" src="https://github.com/user-attachments/assets/b95c4842-c6e4-41d2-8978-96fcd34198c1" />
 
@@ -25,7 +25,7 @@ The image above shows SEED Studio reTerminal client, with TRMNL firmware, and a 
 
 ## 📸 Example Client & Server Setup
 
-The image below shows the **reTerminal E1001** running TRMNL firmware (left), **Raspberry Pi Zero 2W** running the InkFlow Python client (middle), and an **Arduino Uno R4 WiFi** running the InkFlow C++ client (right). These are all served dynamically from a single **Raspberry Pi 5 Server** (middle rear).
+The image below shows the **reTerminal E1001** running TRMNL firmware (left), **Raspberry Pi Zero 2W** running the InkFlow-eInk Python client (middle), and an **Arduino Uno R4 WiFi** running the InkFlow-eInk C++ client (right). These are all served dynamically from a single **Raspberry Pi 5 Server** (middle rear).
 
 <img width="4065" height="1923" alt="Inkflow clients and server" src="https://github.com/user-attachments/assets/c22e4195-dcdd-4fa5-8cfb-be87e91789db" />
 
@@ -33,7 +33,7 @@ The image below shows the **reTerminal E1001** running TRMNL firmware (left), **
 
 ## 🏗️ Architectural Flow
 
-InkFlow decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, draw, and sleep:
+InkFlow-eInk decouples high-fidelity rendering from display hardware. The server generates and rasterizes complex layouts, letting low-power clients simply fetch, draw, and sleep:
 
 ```mermaid
 graph TD
@@ -78,7 +78,7 @@ graph TD
 
 The TRMNL firmware client uses the TRMNL API to fetch JSON status information (`/api/display`), which directs it to download the compiled PNG image (`/api/display/image.png`). 
 
-The InkFlow clients fetch layout data directly:
+The InkFlow-eInk clients fetch layout data directly:
 * **InkFlow Python Client (Raspberry Pi)**: Can operate in either **4-level Grayscale** (`COLOR_DEPTH=4`) by fetching the compiled PNG (`/api/display/image.png`) or **Monochrome** (`COLOR_DEPTH=2`, Default) by fetching the lightweight 1-bit binary pixel stream (`/api/display/raw`).
 * **InkFlow Arduino C++ Client (Uno R4 / XIAO)**: Fetches raw pixel streams (1-bit packed for UNO R4, 4-level grayscale for XIAO) to stream directly to hardware display drivers or local flash/disk caches.
 
@@ -156,7 +156,7 @@ There are several options for deploying the server and clients. Use the links be
 
 ## 🖥️ Step 1: Server Deployment
 
-First, deploy the central InkFlow server on a server host (such as a Raspberry Pi 5 or an Ubuntu Home Server). This server handles rendering and layout management.
+First, deploy the central InkFlow-eInk server on a server host (such as a Raspberry Pi 5 or an Ubuntu Home Server). This server handles rendering and layout management.
 
 > [!NOTE]
 > The GitHub repository is **public**. All clone, checkout, and installation commands run seamlessly without needing any GitHub Personal Access Tokens (PATs) or passwords.
@@ -498,7 +498,7 @@ Copy-paste integration URLs formatted for your target display hardware:
 
 ### ⏱️ Understanding Refresh Timing: Poll Interval, Show Duration & Cache Refresh
 
-InkFlow features a decoupled, multi-tier timing architecture designed to maximize microcontroller battery life, enable smooth multi-widget carousels, and strictly protect third-party web API rate limits. Understanding how these three timing settings interact ensures optimal system performance:
+InkFlow-eInk features a decoupled, multi-tier timing architecture designed to maximize microcontroller battery life, enable smooth multi-widget carousels, and strictly protect third-party web API rate limits. Understanding how these three timing settings interact ensures optimal system performance:
 
 ```mermaid
 sequenceDiagram
@@ -576,7 +576,7 @@ sequenceDiagram
 
 ### 💾 Client-Side Caching & Hardware Memory Management
 
-To distinguish server-side API data caching from on-device display behavior, InkFlow implements a dedicated **client-side caching architecture**. This mechanism runs directly on physical E-Paper display hardware (Arduino, ESP32-S3, and Raspberry Pi) to minimize WiFi radio power draw and enable instant slide playback.
+To distinguish server-side API data caching from on-device display behavior, InkFlow-eInk implements a dedicated **client-side caching architecture**. This mechanism runs directly on physical E-Paper display hardware (Arduino, ESP32-S3, and Raspberry Pi) to minimize WiFi radio power draw and enable instant slide playback.
 
 #### 1. Hardware Storage Allocation per Client Architecture
 
@@ -670,7 +670,7 @@ Direct specific AI features to different backend providers:
 
 ## 🔌 Plugin Developer Guide — Creating Custom Widgets
 
-InkFlow's modular plugin architecture allows developers to easily create and add custom widgets. Plugins fetch remote data (from REST APIs, RSS feeds, system metrics, database queries, etc.) and construct dither-ready SVG layouts that are rasterized by the server and pushed to E-Paper display screens.
+InkFlow-eInk's modular plugin architecture allows developers to easily create and add custom widgets. Plugins fetch remote data (from REST APIs, RSS feeds, system metrics, database queries, etc.) and construct dither-ready SVG layouts that are rasterized by the server and pushed to E-Paper display screens.
 
 ---
 
