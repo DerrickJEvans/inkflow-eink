@@ -145,7 +145,7 @@ There are several options for deploying the server and clients. Use the links be
    - [Option A: Headless OS Image (Automatic Firstboot Setup)](#option-a-headless-os-image-automatic-firstboot-setup)
    - [Option B: Pi Python Client (Pimoroni/Waveshare Hat Setup)](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)
    - [Option C: Arduino & XIAO Microcontrollers (Battery Powered)](#option-c-arduino--xiao-microcontrollers-ultra-low-power)
-3. [** An Alternative: Combined Server & Client Setup (Single Raspberry Pi)**](#option-d-combined-server--client-setup-single-raspberry-pi)
+3. [**📟 An Alternative: Combined Server & Client Setup (Single Raspberry Pi)**](#An-Alternative-Combined-Server--Client-Setup (Single Raspberry Pi))
 4. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
 5. [**🔌 Step 4: Plugin Developer Guide (Custom Widgets)**](#-plugin-developer-guide--creating-custom-widgets)
 6. [**🛠️ Step 5: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
