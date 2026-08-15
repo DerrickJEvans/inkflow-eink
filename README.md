@@ -138,7 +138,7 @@ InkFlow widgets are styled using high-contrast design principles optimized for g
 
 ## 🏁 Quick Navigation
 
-To make deploying and using InkFlow as simple as possible, use the links below to jump directly to your chosen setup path:
+There are several options for deploying the server and clients. Use the links below to jump directly to your chosen setup path:
 
 1. [**🖥️ Step 1: Deploy the Server (Docker or Bare-Metal)**](#-step-1-server-deployment)
 2. [**📟 Step 2: Set Up Your Client Screens**](#-step-2-client-screen-setup)
