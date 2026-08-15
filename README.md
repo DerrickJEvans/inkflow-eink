@@ -534,15 +534,23 @@ sequenceDiagram
         else Image Cache Still Fresh (< Show Duration)
             Server->>Server: Serve pre-rendered frame directly from RAM imageCache
         end
-        Server-->>Client: Return Bitmap Payload + X-Carousel-Signature Header
+        Server-->>Client: Send Response Headers (X-Carousel-Signature, X-Refresh-Rate)
         Server->>Server: Advance carousel index to next widget for next poll cycle
     end
 
     rect rgb(255, 245, 240)
-        note over Client: 3. Low-Power Deep Sleep & On-Device Storage
-        Client->>Client: Save pre-rendered bitmap to local SPI Flash / LittleFS / Disk
-        Client->>Client: Stream raw pixels directly into physical EPD display driver
-        Client->>Client: Enter Hardware Deep Sleep for Show Duration (e.g. 60s)
+        note over Client: 3. Client Header Validation & Hardware Display Driving
+        Client->>Client: Compare server X-Carousel-Signature with Local Cache Manifest
+        alt Cache Hit (Signature Matches & Slide Exists in Flash/Disk)
+            Client->>Server: Abort HTTP Payload Stream (Close TCP Socket / http.end())
+            Client->>Client: Read pre-rendered bitmap from local SPI Flash / LittleFS / Disk
+        else Cache Miss (Signature Mismatch or Missing Slide)
+            Client->>Client: Purge stale local cache if signature changed
+            Server-->>Client: Download fresh 1-Bit / 4-Gray bitmap payload over Wi-Fi
+            Client->>Client: Write bitmap payload & new signature to SPI Flash / LittleFS / Disk
+        end
+        Client->>Client: Stream pre-dithered raw pixels into EPD panel driver registers
+        Client->>Client: Enter Hardware Deep Sleep / Pause for Show Duration (e.g. 60s)
     end
 
     Client->>Server: GET /api/display?device=kitchen (After 60s)
