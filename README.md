@@ -426,7 +426,7 @@ If you swap your physical E-Paper display panel for a different model after inst
 
 ## 🌐 Web Control Center — Server User Guide
 
-InkFlow features a modern, glassmorphic Web Control Center hosted directly on **port `5000`** of your server (`http://<server-ip>:5000`). It provides real-time hardware monitoring, device configuration, live E-Paper previews, dynamic widget management, and AI engine controls.
+InkFlow features a modern, glassmorphic Web Control Center hosted directly on **port `5000`** of your server (`http://<server-ip>:5000` or inkflow.local:5000). It provides real-time hardware monitoring, device configuration, live E-Paper previews, dynamic widget management, and AI engine controls.
 
 <img width="1078" height="1368" alt="webcontrol" src="https://github.com/user-attachments/assets/e363cc2d-7c35-4685-8a4c-2e87b6ea11b2" />
 
@@ -436,7 +436,7 @@ The Control Center is organized into **three primary workspace tabs** accessible
 
 ### Tab 1: 🎛️ Device Console
 
-The Device Console is your operational command center. It monitors server health, tracks connected physical E-Ink screens, displays real-time dithered previews, and manages widget rotation sequences per device.
+The Device Console is your operational command centre. It monitors server health, tracks connected physical E-Ink screens, displays real-time dithered previews, and manages widget rotation sequences per device.
 
 #### 1. Pi Host Metrics Telemetry Pane
 Located at the top of the console, this pane displays real-time server hardware stats updated continuously:
