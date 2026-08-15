@@ -15,7 +15,7 @@ The Node JS Express server code has been built and tested on Raspberry PI 4 B an
 
 Python client code  has been built and tested using Raspberry Pis Zero 2W, 4 and 5 using Raspbian Bookworm and Trixie with a Waveshare ePaper HAT. The Arduino C++ client has been built using an Arduino Uno R4 Wifi with Waveshare ePaper Shield. There is also an ESP32S client based on the SEEED Studio EE04 ePaper Board also written in C++.
 
-Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnmostic page and a configuration captive web page.
+Optionally, for the Python client on a Raspberry Pi, there is support for capacitive touch buttons using the Adafruit MPR 121 module to provide forward and back buttons plus a diagnostic page and a configuration captive web page.
 
 The C++ MCU clients have support for tactile physical buttons connected to spare GPIO ports to provide the same control functionality.
 
