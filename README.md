@@ -43,7 +43,7 @@ graph TD
     classDef client fill:#1b241b,stroke:#00ff66,stroke-width:2px,color:#ffffff;
     classDef note fill:#333333,stroke:#666666,stroke-width:1px,color:#dddddd;
 
-    subgraph ServerSide ["🌐 InkFlow Server Layout Processing"]
+    subgraph ServerSide ["🌐 InkFlow-eInk Server Layout Processing"]
         A["🔌 Plugin Apps <br/> (Weather, Notes, etc.)"]:::server --> B["🎨 SVG Renderer <br/> & <br/> Rasterizer (Sharp)"]:::server
         B --> C["🌓 Dither Engine <br/> (Floyd-Steinberg / 4-Gray)"]:::server
         
@@ -52,7 +52,7 @@ graph TD
         C --> D3["GET /api/display/raw <br/> (1-Bit Packed Binary Stream)"]:::endpoint
     end
 
-    subgraph ClientSide ["📟 E-Ink Setup & Hardware Clients"]
+    subgraph ClientSide ["📟 E-Ink Clients"]
         C1["TRMNL Firmware Client"]:::client
         C2["InkFlow-eInk <br/> Python Client <br/> (Raspberry Pi)"]:::client
         C3["InkFlow-eInk <br/> Arduino C++ Client <br/> (Uno R4/XIAO)"]:::client
