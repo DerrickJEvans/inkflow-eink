@@ -145,12 +145,12 @@ There are several options for deploying the server and clients. Use the links be
    - [Option A: Headless OS Image (Automatic Firstboot Setup)](#option-a-headless-os-image-automatic-firstboot-setup)
    - [Option B: Pi Python Client (Pimoroni/Waveshare Hat Setup)](#option-b-pi-python-client-pimoroniwaveshare-epd-setup)
    - [Option C: Arduino & XIAO Microcontrollers (Battery Powered)](#option-c-arduino--xiao-microcontrollers-ultra-low-power)
-   - [Option D: Combined Server & Client Setup (Single Raspberry Pi)](#option-d-combined-server--client-setup-single-raspberry-pi)
-3. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
-4. [**🔌 Step 4: Plugin Developer Guide (Custom Widgets)**](#-plugin-developer-guide--creating-custom-widgets)
-5. [**🛠️ Step 5: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
-6. [**🧠 Step 6: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
-7. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
+3. [** An Alternative: Combined Server & Client Setup (Single Raspberry Pi)**](#option-d-combined-server--client-setup-single-raspberry-pi)
+4. [**🌐 Step 3: Server Web Control Center User Guide**](#-web-control-center--server-user-guide)
+5. [**🔌 Step 4: Plugin Developer Guide (Custom Widgets)**](#-plugin-developer-guide--creating-custom-widgets)
+6. [**🛠️ Step 5: Master Control Utilities & CLI**](#%EF%B8%8F-master-control-utilities)
+7. [**🧠 Step 6: Configure AI Integration (Gemini, Groq, Ollama)**](#-hybrid-multi-provider-ai-integration)
+8. [**📡 Developer API Reference (Endpoints & JSON BYOS)**](#-api-reference--protocol-specification)
 
 ---
 
@@ -349,7 +349,7 @@ Login to Raspberry PI and follow the instructions below
 
 ---
 
-### Option D: Combined Server & Client Setup (Single Raspberry Pi)
+## An Alternative: Combined Server & Client Setup (Single Raspberry Pi)
 *Ideal if you want to use a single Raspberry Pi to run both the central server AND drive a locally attached E-Paper panel (e.g., as a self-contained smart clock/dashboard device).*
 
 1. **Deploy the Server First**: Follow the steps in [Step 1: Server Deployment](#🖥️-step-1-server-deployment) (Option B is recommended to install the server natively under `/opt/trmnl-pi-server` on Raspberry Pi OS).
