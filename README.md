@@ -594,13 +594,13 @@ Every HTTP display request (`GET /api/display`) returned by the server includes 
 
 ```mermaid
 flowchart TD
-    A["Client Device Wakes from Sleep / Polls Server"] --> B["Fetch HTTP Response Headers"]
-    B --> C{"Does X-Carousel-Signature Match Local Flash Signature?"}
-    C -- "YES (Unchanged)" --> D["Render Cached Slide from Local SPI Flash / LittleFS / Disk"]
-    C -- "NO (Mismatch / Refresh Triggered)" --> F["Purge Local Hardware Cache & Erasure Blocks"]
-    F --> G["Download Fresh 1-Bit / 4-Gray Bitmap Payload"]
-    G --> H["Save Payload & New Signature to Hardware Storage"]
-    H --> I["Display Fresh Image on E-Paper Panel"]
+    A["Client Device Wakes from <br/> Sleep / Polls Server"] --> B["Fetch HTTP Response Headers"]
+    B --> C{"Does X-Carousel-Signature <br/> Match <br/> Local Flash Signature?"}
+    C -- "YES (Unchanged)" --> D["Render Cached Slide <br/> from Local <br/> SPI Flash / LittleFS / Disk"]
+    C -- "NO (Mismatch / <br/> Refresh Triggered)" --> F["Purge Local Hardware <br/> Cache & Erasure Blocks"]
+    F --> G["Download Fresh  <br/> 1-Bit / 4-Gray Bitmap Payload"]
+    G --> H["Save Payload & <br/> New Signature to Hardware Storage"]
+    H --> I["Display Fresh Image <br/> on E-Paper Panel"]
 ```
 
 #### 3. How Web Control Actions Purge Physical Client Caches
